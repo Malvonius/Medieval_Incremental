@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "../core/decimal";
-import { formatDuration, formatNumber, formatPercent } from "./format";
+import { formatDuration, formatNumber, formatPercent, setNotation } from "./format";
 
 describe("formatNumber", () => {
   it.each([
@@ -28,6 +28,15 @@ describe("formatPercent", () => {
     [8.444, "844 %"],
   ])("%d → %s", (input, expected) => {
     expect(formatPercent(input)).toBe(expected);
+  });
+});
+
+describe("wissenschaftliche Notation", () => {
+  it("ersetzt Suffixe", () => {
+    setNotation("scientific");
+    expect(formatNumber(1_234)).toBe("1,23e3");
+    setNotation("suffix");
+    expect(formatNumber(1_234)).toBe("1,23 Tsd.");
   });
 });
 

@@ -5,6 +5,7 @@
   const OPTIONS: readonly { value: BuyAmount; label: string }[] = [
     { value: 1, label: "×1" },
     { value: 10, label: "×10" },
+    { value: "next", label: "→10" },
     { value: "max", label: "Max" },
   ];
 </script>

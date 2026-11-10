@@ -9,10 +9,13 @@ import { type GameState, gain } from "./state";
 import { tickWarroom } from "./warroom";
 import { tickAlchemy } from "./alchemy";
 import { tickSiege } from "./siege";
+import { evaluateAchievements } from "./achievements";
+import type { AchievementId } from "../content/achievements";
 import { type StoryNode, StoryDirector } from "./story";
 
 export interface SimulationEvents extends Record<string, unknown> {
   story: StoryNode;
+  achievement: AchievementId;
 }
 
 /**
@@ -74,9 +77,11 @@ export class Simulation {
 
   private advanceStory(): void {
     const done = this.director.evaluate(this.state);
-    if (done.length === 0) return;
+    const earned = evaluateAchievements(this.state);
+    if (done.length === 0 && earned.length === 0) return;
     this.invalidate();
     for (const node of done) this.events.emit("story", node);
+    for (const id of earned) this.events.emit("achievement", id);
   }
 
   storyNode(id: string): StoryNode | undefined {

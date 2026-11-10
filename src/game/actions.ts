@@ -24,7 +24,17 @@ import { buildingCost, clickValue, isBuildingVisible, isUpgradeVisible } from ".
 import { type GameState, gain, spend } from "./state";
 import { Decimal } from "../core/decimal";
 
-export type BuyAmount = number | "max";
+/** Feste Menge, so viel wie bezahlbar, oder bis zum nächsten Zehner. */
+export type BuyAmount = number | "max" | "next";
+
+export const MILESTONE_STEP = 10;
+
+/** Löst eine Kaufmenge gegen den Besitz und das bezahlbare Maximum auf. */
+export function resolveAmount(amount: BuyAmount, owned: number, affordable: () => number): number {
+  if (amount === "max") return affordable();
+  if (amount === "next") return MILESTONE_STEP - (owned % MILESTONE_STEP);
+  return amount;
+}
 
 const NOT_ENOUGH: Readonly<Record<ResourceId, string>> = {
   gold: "Nicht genug Gold.",
@@ -53,9 +63,9 @@ export type Action =
   | { readonly type: "chooseEnding"; readonly ending: EndingId };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
-  if (amount !== "max") return amount;
   const def = BUILDINGS[building];
-  return maxAffordable(def.cost, state.buildings[building], state.resources[def.costResource]);
+  const owned = state.buildings[building];
+  return resolveAmount(amount, owned, () => maxAffordable(def.cost, owned, state.resources[def.costResource]));
 }
 
 function buyBuilding(state: GameState, building: BuildingId, requested: BuyAmount): Result {

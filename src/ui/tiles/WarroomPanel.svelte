@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { GameController } from "../../app/controller";
   import { EXPEDITIONS, EXPEDITION_IDS, RECRUIT_SWORDS } from "../../content/balance";
-  import type { BuyAmount } from "../../game/actions";
+  import { type BuyAmount, resolveAmount } from "../../game/actions";
   import { expeditionDuration, expeditionLosses, expeditionSlots, recruitCost } from "../../game/rates";
   import { aliveSoldiers } from "../../game/state";
   import { LAUNCH_BLOCKER_TEXT, launchBlocker, maxRecruitable } from "../../game/warroom";
@@ -17,7 +17,7 @@
   let amount = $state<BuyAmount>(1);
 
   const recruitable = $derived(maxRecruitable(snap.state));
-  const count = $derived(amount === "max" ? recruitable : amount);
+  const count = $derived(resolveAmount(amount, aliveSoldiers(snap.state), () => recruitable));
   const shown = $derived(Math.max(1, count));
   const cost = $derived(recruitCost(snap.state, shown));
   const canRecruit = $derived(count >= 1 && count <= recruitable);

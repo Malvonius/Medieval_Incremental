@@ -52,7 +52,8 @@ export function toPlain(state: DeepReadonly<GameState>) {
       fortifications: { ...state.siege.fortifications },
       ending: state.siege.ending,
     },
-    story: { completed: [...state.story.completed] },
+    story: { completed: [...state.story.completed], completedAt: state.story.completed.map((_, i) => state.story.completedAt[i] ?? 0) },
+    achievements: { ...state.achievements },
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
   };
@@ -111,6 +112,21 @@ function readRecord<K extends string, V>(
 const RECIPE_SET: ReadonlySet<string> = new Set(RECIPE_IDS);
 const EXPEDITION_SET: ReadonlySet<string> = new Set(EXPEDITION_IDS);
 const RESEARCH_SET: ReadonlySet<string> = new Set(RESEARCH_IDS);
+
+/** Entfernt Duplikate; fehlende Zeitstempel (ältere Spielstände) werden mit 0 ergänzt. */
+function readStory(completed: readonly string[], rawAt: unknown): GameState["story"] {
+  const at = Array.isArray(rawAt) ? rawAt : [];
+  const seen = new Set<string>();
+  const out: GameState["story"] = { completed: [], completedAt: [] };
+  completed.forEach((id, i) => {
+    if (seen.has(id)) return;
+    seen.add(id);
+    const t: unknown = at[i];
+    out.completed.push(id);
+    out.completedAt.push(typeof t === "number" && Number.isFinite(t) && t >= 0 ? t : 0);
+  });
+  return out;
+}
 
 const ENDING_SET: ReadonlySet<string> = new Set(ENDING_IDS);
 
@@ -214,7 +230,8 @@ export function fromPlain(data: unknown, now: number): GameState {
     chapel: { vows: readRecord(section(chapel, "vows"), d.chapel.vows, "chapel.vows", readBoolean) },
     ritual: readRecord(section(data, "ritual"), d.ritual, "ritual", readCount),
     siege: readSiege(section(data, "siege"), d.siege),
-    story: { completed: [...new Set(rawCompleted)] },
+    story: readStory(rawCompleted, story["completedAt"]),
+    achievements: readRecord(section(data, "achievements"), d.achievements, "achievements", readBoolean),
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),
       clicks: readCount(stats["clicks"], "stats.clicks", 0),

@@ -12,6 +12,22 @@
   const snapshot = $derived(game.snapshot);
   let active = $state<TileId>("keep");
   const activeTile = $derived(TILES.find((t) => t.id === active));
+
+  /** 1–9 wählt eine Kachel, Leertaste treibt Steuern ein. Nicht in Eingabefeldern oder auf Knöpfen. */
+  function onkeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("input, textarea, select, button, [role=dialog]")) return;
+    const index = Number.parseInt(event.key, 10);
+    const tile = Number.isInteger(index) ? TILES[index - 1] : undefined;
+    if (tile && $snapshot.state.tiles[tile.id]) {
+      active = tile.id;
+      event.preventDefault();
+    } else if (event.key === " ") {
+      game.dispatch({ type: "collect" });
+      event.preventDefault();
+    }
+  }
   const actLabel = $derived.by(() => {
     const { flags } = $snapshot.state;
     if (flags.act5Complete) {
@@ -24,6 +40,8 @@
     return "Akt I · Die Ruine";
   });
 </script>
+
+<svelte:window {onkeydown} />
 
 <div class="shell">
   <header class="top">
