@@ -69,7 +69,7 @@ export interface BuildingDef {
 export const BUILDINGS = {
   serf: {
     name: "Leibeigener",
-    description: "Pflügt den verbrannten Acker. Klagt nicht. Noch nicht.",
+    description: "Pflügt den verbrannten Acker und schweigt dabei. Zumindest, solange du hinsiehst.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 10, growth: 1.15 },
@@ -79,7 +79,7 @@ export const BUILDINGS = {
   },
   woodcutter: {
     name: "Holzfäller",
-    description: "Schlägt Holz im Schwarzforst, solange das Licht reicht.",
+    description: "Fällt Bäume im Schwarzforst, solange das Licht reicht. Und die Wölfe es erlauben.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 120, growth: 1.15 },
@@ -89,7 +89,7 @@ export const BUILDINGS = {
   },
   mill: {
     name: "Mühle",
-    description: "Ihr Rad knarrt die ganze Nacht. Niemand fragt, was sie mahlt.",
+    description: "Ihr Rad knarrt die ganze Nacht. Was sie mahlt, will niemand so genau wissen.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 1_500, growth: 1.15 },
@@ -99,7 +99,7 @@ export const BUILDINGS = {
   },
   market: {
     name: "Marktstand",
-    description: "Salz, Talg und Gerüchte – alles hat seinen Preis.",
+    description: "Salz, Talg und Gerüchte. Alles hat seinen Preis, die Gerüchte sind sogar günstig.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 20_000, growth: 1.15 },
@@ -119,7 +119,7 @@ export const BUILDINGS = {
   },
   granary: {
     name: "Kornspeicher",
-    description: "Wer das Korn hat, hat die Hungernden. Wer die Hungernden hat, hat das Land.",
+    description: "Wer das Korn hat, hat die Hungrigen. Und wer die Hungrigen hat, hat das Land.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 5_000_000, growth: 1.15 },
@@ -129,7 +129,7 @@ export const BUILDINGS = {
   },
   mint: {
     name: "Münzpräge",
-    description: "Silber mit deinem Antlitz – und etwas weniger Silber, als draufsteht.",
+    description: "Silberlinge mit deinem Antlitz. Und mit etwas weniger Silber, als draufsteht.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 80_000_000, growth: 1.15 },
@@ -139,7 +139,7 @@ export const BUILDINGS = {
   },
   bank: {
     name: "Bankhaus",
-    description: "Lombarden leihen dir Gold gegen Zinsen. Niemand leiht dir Gold gegen die Toten – noch nicht.",
+    description: "Lombardische Geldwechsler leihen dir Gold gegen Zins. Gegen Seelen leiht noch keiner, aber das kommt noch.",
     tile: "keep",
     costResource: "gold",
     cost: { base: 1_500_000_000, growth: 1.15 },
@@ -149,7 +149,7 @@ export const BUILDINGS = {
   },
   offering_box: {
     name: "Opferstock",
-    description: "Die Gemeinde gibt, was sie nicht hat. Für einen Gott, der nicht zuhört.",
+    description: "Die Gemeinde gibt, was sie nicht hat, für einen Gott, der nicht zurückschreibt.",
     tile: "chapel",
     costResource: "gold",
     cost: { base: 1e12, growth: 1.15 },
@@ -159,7 +159,7 @@ export const BUILDINGS = {
   },
   reliquary: {
     name: "Reliquienschrein",
-    description: "Ein Fingerknochen der Heiligen Adelheid. Der dritte, den du dieses Jahr kaufst.",
+    description: "Ein Fingerknochen der heiligen Adelheid. Schon der dritte, den du dieses Jahr erwirbst.",
     tile: "chapel",
     costResource: "gold",
     cost: { base: 4e13, growth: 1.15 },
@@ -169,7 +169,7 @@ export const BUILDINGS = {
   },
   bell_tower: {
     name: "Glockenturm",
-    description: "Die Glocke schweigt nicht mehr. Man hört sie bis Grauweiler.",
+    description: "Die Glocke schweigt nicht länger. Man hört sie bis Grauweiler, sehr zum Ärger von Grauweiler.",
     tile: "chapel",
     costResource: "gold",
     cost: { base: 1.5e15, growth: 1.15 },
@@ -179,7 +179,7 @@ export const BUILDINGS = {
   },
   candle: {
     name: "Totenlicht",
-    description: "Eine Kerze aus Talg und Asche. Die Seelen drängen sich an ihre Flamme.",
+    description: "Eine Kerze aus Talg und Asche. Die Seelen drängen sich um ihre Flamme wie Bauern um ein Freibier.",
     tile: "crypt",
     costResource: "souls",
     cost: { base: 25, growth: 1.15 },
@@ -189,7 +189,7 @@ export const BUILDINGS = {
   },
   ossuary: {
     name: "Beinhaus",
-    description: "Schädel, sauber gestapelt. Jeder trägt noch einen Namen, den niemand mehr kennt.",
+    description: "Schädel, säuberlich gestapelt. Jeder trägt einen Namen, an den sich niemand mehr erinnert.",
     tile: "crypt",
     costResource: "souls",
     cost: { base: 600, growth: 1.15 },
@@ -199,7 +199,7 @@ export const BUILDINGS = {
   },
   soul_cage: {
     name: "Seelenkäfig",
-    description: "Ein Käfig aus Knochen und kaltem Eisen. Was darin flackert, will hinaus.",
+    description: "Ein Käfig aus Knochen und kaltem Eisen. Was darin flackert, will hinaus und beschwert sich lautstark.",
     tile: "crypt",
     costResource: "souls",
     cost: { base: 50_000, growth: 1.15 },
@@ -209,7 +209,7 @@ export const BUILDINGS = {
   },
   mine: {
     name: "Erzstollen",
-    description: "Tief im Berg schürfen Gefangene nach Eisen.",
+    description: "Tief im Berg schürfen Gefangene nach Eisen. Sie singen dabei, allerdings nicht freiwillig.",
     tile: "forge",
     costResource: "gold",
     cost: { base: 400, growth: 1.18 },
@@ -234,7 +234,7 @@ export interface RecipeDef {
 export const RECIPES = {
   sword: {
     name: "Langschwert",
-    description: `Jede Klinge in der Waffenkammer hebt die Goldproduktion um ${SWORD_GOLD_BONUS * 100} %.`,
+    description: `Jede Klinge in der Waffenkammer hebt die Goldproduktion um ${SWORD_GOLD_BONUS * 100} %. Die Bauern zahlen lieber, wenn Stahl im Raum ist.`,
     tile: "forge",
     inputs: { iron: 30, gold: 400 },
     output: "swords",
@@ -275,7 +275,7 @@ export interface UpgradeDef {
 export const UPGRADES = {
   stern_reeve: {
     name: "Strenger Vogt",
-    description: "Steuern eintreiben bringt das Dreifache.",
+    description: "Ein Mann mit Peitsche und Gedächtnis. Steuern eintreiben bringt das Dreifache.",
     tile: "keep",
     costResource: "gold",
     cost: 60,
@@ -285,7 +285,7 @@ export const UPGRADES = {
   },
   iron_sickles: {
     name: "Eiserne Sicheln",
-    description: "Leibeigene produzieren doppelt so viel.",
+    description: "Wer mit Eisen erntet, erntet doppelt. Leibeigene bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 250,
@@ -295,7 +295,7 @@ export const UPGRADES = {
   },
   heavy_axes: {
     name: "Schwere Äxte",
-    description: "Holzfäller produzieren doppelt so viel.",
+    description: "Ein Hieb, ein Baum, ein müder Holzfäller. Holzfäller bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 3_000,
@@ -305,7 +305,7 @@ export const UPGRADES = {
   },
   tithe_ledger: {
     name: "Zehntbuch",
-    description: "Ein Buch voller Schulden. Steuern eintreiben bringt das Fünffache.",
+    description: "Ein Buch voller Schulden und Schuldiger. Steuern eintreiben bringt das Fünffache.",
     tile: "keep",
     costResource: "gold",
     cost: 8_000,
@@ -315,7 +315,7 @@ export const UPGRADES = {
   },
   waterwheel: {
     name: "Mühlrad aus Schwarzeiche",
-    description: "Mühlen produzieren doppelt so viel.",
+    description: "Es dreht sich auch bei Ebbe, aus Gründen, die der Müller nicht erklärt. Mühlen bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 40_000,
@@ -325,7 +325,7 @@ export const UPGRADES = {
   },
   serf_levy: {
     name: "Frondienst",
-    description: "Leibeigene arbeiten auch sonntags. Dreifache Produktion.",
+    description: "Auch sonntags wird gepflügt, Gott möge es verzeihen. Leibeigene bringen das Dreifache.",
     tile: "keep",
     costResource: "gold",
     cost: 150_000,
@@ -335,7 +335,7 @@ export const UPGRADES = {
   },
   guild_charter: {
     name: "Zunftbrief",
-    description: "Marktstände produzieren doppelt so viel.",
+    description: "Mit Siegel, Wachs und einer Gebühr für das Siegel. Marktstände bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 500_000,
@@ -345,7 +345,7 @@ export const UPGRADES = {
   },
   bellows: {
     name: "Blasebalg aus Ochsenleder",
-    description: "Die Schmiede arbeitet doppelt so schnell.",
+    description: "Der Ochse war nicht begeistert. Die Schmiede arbeitet doppelt so schnell.",
     tile: "forge",
     costResource: "gold",
     cost: 5_000,
@@ -355,7 +355,7 @@ export const UPGRADES = {
   },
   rich_vein: {
     name: "Reiche Erzader",
-    description: "Erzstollen fördern doppelt so viel Eisen.",
+    description: "Die Gefangenen haben eine Ader gefunden. Leider keine Goldader. Erzstollen fördern das Doppelte.",
     tile: "forge",
     costResource: "gold",
     cost: 25_000,
@@ -365,7 +365,7 @@ export const UPGRADES = {
   },
   quench_oil: {
     name: "Härteöl",
-    description: "Die Schmiede arbeitet nochmals doppelt so schnell.",
+    description: "Riecht nach Fisch, härtet aber vorzüglich. Die Schmiede arbeitet nochmals doppelt so schnell.",
     tile: "forge",
     costResource: "gold",
     cost: 120_000,
@@ -375,7 +375,7 @@ export const UPGRADES = {
   },
   granary_vaults: {
     name: "Gewölbe unter dem Speicher",
-    description: "Kornspeicher produzieren doppelt so viel.",
+    description: "Mehr Platz für Korn und weniger für Ratten. Kornspeicher bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 150_000_000,
@@ -385,7 +385,7 @@ export const UPGRADES = {
   },
   debased_coin: {
     name: "Gestreckte Münze",
-    description: "Münzprägen produzieren doppelt so viel.",
+    description: "Ein wenig Blei hat noch keinem geschadet, außer dem Käufer. Münzprägen bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 2_500_000_000,
@@ -395,7 +395,7 @@ export const UPGRADES = {
   },
   journeymen: {
     name: "Gesellen für Brannoc",
-    description: "Die Schmiede arbeitet doppelt so schnell.",
+    description: "Zwei Burschen, die schweigen, schwitzen und schlagen. Die Schmiede arbeitet doppelt so schnell.",
     tile: "forge",
     costResource: "gold",
     cost: 2_000_000,
@@ -405,7 +405,7 @@ export const UPGRADES = {
   },
   second_hearth: {
     name: "Zweite Esse",
-    description: "Die Warteschlange der Schmiede fasst 5 Aufträge mehr.",
+    description: "Doppelt so viel Feuer, halb so viel Geduld. Die Warteschlange der Schmiede fasst fünf Aufträge mehr.",
     tile: "forge",
     costResource: "gold",
     cost: 1_000_000,
@@ -415,7 +415,7 @@ export const UPGRADES = {
   },
   war_map: {
     name: "Kriegskarte von Vhal",
-    description: "Expeditionen dauern ein Drittel kürzer.",
+    description: "Endlich weiß jemand, wo Norden ist. Expeditionen dauern ein Drittel kürzer.",
     tile: "warroom",
     costResource: "gold",
     cost: 8_000_000,
@@ -425,7 +425,7 @@ export const UPGRADES = {
   },
   field_surgeon: {
     name: "Feldscher",
-    description: "Halbiert die Verluste auf Expeditionen.",
+    description: "Er sägt schnell und fragt wenig. Halbiert die Verluste auf Expeditionen.",
     tile: "warroom",
     costResource: "gold",
     cost: 30_000_000,
@@ -435,7 +435,7 @@ export const UPGRADES = {
   },
   second_captain: {
     name: "Zweite Hauptfrau",
-    description: "Eine weitere Expedition kann gleichzeitig unterwegs sein.",
+    description: "Sera hat eine Schwester, und die ist noch schlechter gelaunt. Eine weitere Expedition kann gleichzeitig ausrücken.",
     tile: "warroom",
     costResource: "gold",
     cost: 60_000_000,
@@ -445,7 +445,7 @@ export const UPGRADES = {
   },
   thumbscrews: {
     name: "Daumenschrauben",
-    description: "Jedes Verhör bringt einen zusätzlichen Hinweis.",
+    description: "Ein kleines Werkzeug für große Geständnisse. Jedes Verhör bringt einen zusätzlichen Hinweis.",
     tile: "dungeon",
     costResource: "gold",
     cost: 5_000_000,
@@ -455,7 +455,7 @@ export const UPGRADES = {
   },
   blackiron_chains: {
     name: "Ketten aus Schwarzeisen",
-    description: "Fronarbeiter bringen den doppelten Bonus.",
+    description: "Schwer, kalt und überaus überzeugend. Fronarbeiter bringen den doppelten Bonus.",
     tile: "dungeon",
     costResource: "gold",
     cost: 40_000_000,
@@ -465,7 +465,7 @@ export const UPGRADES = {
   },
   pact_hunger: {
     name: "Pakt des Hungers",
-    description: "Die Toten wollen gefüttert werden. Im Gegenzug füllen sie deine Truhen: Gold ×2.",
+    description: "Die Toten wollen gefüttert werden und füllen dir dafür die Truhen. Gold ×2.",
     tile: "crypt",
     costResource: "souls",
     cost: 400,
@@ -475,7 +475,7 @@ export const UPGRADES = {
   },
   pact_iron: {
     name: "Pakt des Eisens",
-    description: "Die Stollen werden nicht mehr einstürzen. Niemand fragt, wer sie stützt: Eisen ×2.",
+    description: "Die Stollen stürzen nicht mehr ein. Wer sie abstützt, fragst du besser nicht. Eisen ×2.",
     tile: "crypt",
     costResource: "souls",
     cost: 1_500,
@@ -485,7 +485,7 @@ export const UPGRADES = {
   },
   pact_lament: {
     name: "Pakt der Klage",
-    description: "Wer klagt, bleibt. Seelen ×2.",
+    description: "Wer jammert, der bleibt, und wer bleibt, der zählt. Seelen ×2.",
     tile: "crypt",
     costResource: "souls",
     cost: 4_000,
@@ -495,7 +495,7 @@ export const UPGRADES = {
   },
   pact_harvest: {
     name: "Pakt der Ernte",
-    description: "Jede Ähre auf deinen Feldern wurzelt in einem Grab: Gold ×3.",
+    description: "Jede Ähre auf deinen Feldern wurzelt in einem Grab. Gold ×3.",
     tile: "crypt",
     costResource: "souls",
     cost: 150_000,
@@ -515,7 +515,7 @@ export const UPGRADES = {
   },
   bank_charter: {
     name: "Wechselbrief",
-    description: "Bankhäuser produzieren doppelt so viel.",
+    description: "Ein Stück Pergament, das mehr wert ist als die Kuh, aus der es gemacht wurde. Bankhäuser bringen das Doppelte.",
     tile: "keep",
     costResource: "gold",
     cost: 50_000_000_000,
@@ -525,7 +525,7 @@ export const UPGRADES = {
   },
   incense: {
     name: "Weihrauch aus Grauweiler",
-    description: "Opferstöcke bringen doppelt so viel Glauben.",
+    description: "Riecht heilig und kostet entsprechend. Opferstöcke bringen doppelt so viel Glauben.",
     tile: "chapel",
     costResource: "gold",
     cost: 5e13,
@@ -535,7 +535,7 @@ export const UPGRADES = {
   },
   holy_bones: {
     name: "Heilige Gebeine",
-    description: "Reliquienschreine bringen doppelt so viel Glauben.",
+    description: "Garantiert echt, mit Urkunde. Reliquienschreine bringen doppelt so viel Glauben.",
     tile: "chapel",
     costResource: "gold",
     cost: 2e15,
@@ -545,7 +545,7 @@ export const UPGRADES = {
   },
   second_altar: {
     name: "Zweiter Altar",
-    description: "Du kannst ein weiteres Gelübde ablegen.",
+    description: "Wer zwei Gelübde ablegt, muss doppelt so viel bereuen. Erlaubt ein weiteres Gelübde.",
     tile: "chapel",
     costResource: "gold",
     cost: 2e14,
@@ -555,7 +555,7 @@ export const UPGRADES = {
   },
   blessed_arrows: {
     name: "Geweihte Pfeile",
-    description: "In Weihwasser getaucht. Die Toten fürchten sie. Wehrkraft ×2.",
+    description: "In Weihwasser getaucht und vom Kaplan angehaucht. Die Toten mögen das gar nicht. Wehrkraft ×2.",
     tile: "warroom",
     costResource: "gold",
     cost: 5e12,
@@ -565,7 +565,7 @@ export const UPGRADES = {
   },
   boiling_pitch: {
     name: "Pechnasen",
-    description: "Kochendes Pech über dem Tor. Auch Tote brennen. Wehrkraft ×2.",
+    description: "Kochendes Pech über dem Tor. Auch Tote brennen, und zwar prächtig. Wehrkraft ×2.",
     tile: "warroom",
     costResource: "gold",
     cost: 1e14,
@@ -585,7 +585,7 @@ export const UPGRADES = {
   },
   steward: {
     name: "Verwalter",
-    description: "Ein pedantischer Mann mit Rechenbrett. Kauft selbstständig Gold-Gebäude (abschaltbar).",
+    description: "Ein pedantischer Mann mit Rechenbrett und ohne Freunde. Kauft selbstständig Gold-Gebäude (abschaltbar).",
     tile: "keep",
     costResource: "gold",
     cost: 5e6,
@@ -595,7 +595,7 @@ export const UPGRADES = {
   },
   third_altar: {
     name: "Dritter Altar",
-    description: "Ein weiteres Gelübde – und damit neue Verbindungen zwischen ihnen.",
+    description: "Noch ein Gelübde, noch mehr Verbindungen und noch mehr Kerzenwachs auf dem Boden.",
     tile: "chapel",
     costResource: "gold",
     cost: 1e16,
@@ -631,7 +631,7 @@ export interface ExpeditionDef {
 export const EXPEDITIONS = {
   bandits: {
     name: "Banditenlager im Schwarzforst",
-    description: "Gesindel, das Bauern ausraubt. Dein Gesindel.",
+    description: "Gesindel, das Bauern ausraubt. Und zwar deine Bauern.",
     soldiers: 8,
     durationSeconds: 120,
     lossRate: 0.2,
@@ -641,7 +641,7 @@ export const EXPEDITIONS = {
   },
   toll_fort: {
     name: "Zollfeste an der Furt",
-    description: "Ein Söldnerhauptmann erhebt Zoll im Namen des Ordens.",
+    description: "Ein Söldnerhauptmann erhebt dort Zoll im Namen des Ordens. Das ist dein Geschäft, nicht seins.",
     soldiers: 25,
     durationSeconds: 240,
     lossRate: 0.2,
@@ -651,7 +651,7 @@ export const EXPEDITIONS = {
   },
   outpost: {
     name: "Vorposten des Grauen Ordens",
-    description: "Ein Wachturm aus grauem Stein. Seine Fahne trägt kein Wappen.",
+    description: "Ein Wachturm aus grauem Stein. Seine Fahne trägt kein Wappen, nur Staub.",
     soldiers: 60,
     durationSeconds: 420,
     lossRate: 0.25,
@@ -661,7 +661,7 @@ export const EXPEDITIONS = {
   },
   komturei: {
     name: "Die Komturei von Grauweiler",
-    description: "Das Herz des Ordens in diesem Land. Wer sie nimmt, nimmt ihm die Stimme.",
+    description: "Das Herz des Ordens in diesen Landen. Wer sie nimmt, bringt ihn zum Schweigen.",
     soldiers: 200,
     durationSeconds: 1_200,
     lossRate: 0.4,
@@ -698,7 +698,7 @@ type ResearchKey =
 export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   mercury: {
     name: "Quecksilberlehre",
-    description: "Lebendiges Silber, das jedes Metall verschlingt. Gold ×2.",
+    description: "Lebendiges Silber, das jedes Metall verschlingt. Bitte nicht trinken. Gold ×2.",
     gold: 2e9,
     souls: 0,
     durationSeconds: 180,
@@ -707,7 +707,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   distillate: {
     name: "Destillat der Toten",
-    description: "Was bleibt, wenn man einen Leichnam lange genug kocht. Seelen ×2.",
+    description: "Was übrig bleibt, wenn man einen Leichnam lange genug kocht. Riecht wie erwartet. Seelen ×2.",
     gold: 5e8,
     souls: 1_500,
     durationSeconds: 240,
@@ -716,7 +716,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   black_iron: {
     name: "Schwarzeisen",
-    description: "Mit Quecksilber gehärtet, mit Seelen abgeschreckt. Eisen ×3.",
+    description: "Mit Quecksilber gehärtet und mit Seelen abgeschreckt. Eisen ×3.",
     gold: 5e9,
     souls: 3_000,
     durationSeconds: 300,
@@ -725,7 +725,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   homunculus: {
     name: "Homunculus",
-    description: "Ein Wesen aus Wurzel und Blut, das Wunden schließt. Expeditionsverluste halbiert.",
+    description: "Ein Wesen aus Alraune und Blut, das Wunden schließt und dabei kichert. Halbiert die Expeditionsverluste.",
     gold: 1e10,
     souls: 8_000,
     durationSeconds: 360,
@@ -734,7 +734,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   soul_glass: {
     name: "Seelenglas",
-    description: "Glas, in dem man die Toten sehen kann. Und sie dich. Seelen ×3.",
+    description: "Glas, durch das man die Toten sieht. Und die Toten dich. Seelen ×3.",
     gold: 2e10,
     souls: 20_000,
     durationSeconds: 480,
@@ -743,7 +743,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   transmutation: {
     name: "Transmutation",
-    description: "Blei zu Gold. Der Preis ist nicht Blei. Gold ×3.",
+    description: "Aus Blei wird Gold. Der Preis dafür ist allerdings nicht Blei. Gold ×3.",
     gold: 5e10,
     souls: 50_000,
     durationSeconds: 720,
@@ -752,7 +752,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   elixir: {
     name: "Elixier des Lebens",
-    description: "Deine Soldaten marschieren ohne Schlaf. Expeditionen doppelt so schnell.",
+    description: "Deine Soldaten marschieren ohne Schlaf und ohne Murren. Vor allem ohne Murren. Expeditionen doppelt so schnell.",
     gold: 1e11,
     souls: 100_000,
     durationSeconds: 780,
@@ -761,7 +761,7 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
   },
   philosophers_stone: {
     name: "Der Stein der Weisen",
-    description: "Das Ziel aller Alchemie. Er zeigt die Wahrheit – ob du willst oder nicht. Gold ×2.",
+    description: "Das Ziel aller Alchemie. Er zeigt die Wahrheit, ob du willst oder nicht. Gold ×2.",
     gold: 5e11,
     souls: 500_000,
     durationSeconds: 1_200,
@@ -843,19 +843,19 @@ type FortificationKey = "palisade" | "tower" | "gatehouse";
 export const FORTIFICATIONS: Readonly<Record<FortificationKey, FortificationDef>> = {
   palisade: {
     name: "Palisade",
-    description: "Angespitzte Pfähle aus dem Schwarzforst. Sie halten Lebende auf – und manchmal Tote.",
+    description: "Angespitzte Pfähle aus dem Schwarzforst. Sie halten Lebende auf und Tote zumindest kurz.",
     cost: { base: 2e12, growth: 1.18 },
     defense: 150,
   },
   tower: {
     name: "Wehrturm",
-    description: "Stein auf Asche. Von oben sieht man das Heer kommen.",
+    description: "Stein auf Asche. Von oben sieht man das Heer kommen und kann rechtzeitig fluchen.",
     cost: { base: 1e14, growth: 1.18 },
     defense: 2_000,
   },
   gatehouse: {
     name: "Torhaus",
-    description: "Zwei Fallgitter, drei Mordlöcher und ein Tor aus Schwarzeisen.",
+    description: "Zwei Fallgatter, drei Pechnasen und ein Tor aus Schwarzeisen. Klopfen zwecklos.",
     cost: { base: 5e15, growth: 1.18 },
     defense: 25_000,
   },
@@ -896,13 +896,13 @@ export interface EndingDef {
 export const ENDINGS: Readonly<Record<EndingId, EndingDef>> = {
   light: {
     name: "Die letzte Glocke läuten",
-    description: "Ruf die Gemeinde zusammen, läute die Glocke und zerschlage den Stein. Was er gibt, verlierst du mit ihm.",
+    description: "Ruf die Gemeinde zusammen, läute die Glocke und zerschlag den Stein. Was er dir gab, verlierst du mit ihm.",
     costResource: "faith",
     cost: 1_500_000,
   },
   ash: {
     name: "Den Stein nehmen",
-    description: "Halte ihn fest. Die Toten gehorchen jetzt dir. Jemand muss sie ja führen.",
+    description: "Halt ihn fest. Die Toten gehorchen nun dir, und irgendwer muss sie ja anführen.",
     costResource: "souls",
     cost: 2e8,
   },

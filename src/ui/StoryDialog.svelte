@@ -31,7 +31,7 @@
       <p class="act">{$tx("Akt")} {ACT_NUMERALS[node.act - 1]}</p>
       <h2 id="story-title">{$loc.story(node).title}</h2>
       {#each $loc.story(node).text as paragraph, i (i)}
-        <p class="text">{paragraph}</p>
+        <p class="text" class:lead={i === 0}>{paragraph}</p>
       {/each}
       <div class="actions">
         <button class="btn" bind:this={button} onclick={() => game.dismissStory()}>
@@ -62,8 +62,10 @@
     background: linear-gradient(180deg, #221b14 0%, #15110d 100%);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius);
-    padding: 24px 26px 20px;
-    box-shadow: var(--shadow);
+    outline: 1px solid rgb(212 165 74 / 0.18);
+    outline-offset: -6px;
+    padding: 26px 28px 22px;
+    box-shadow: var(--shadow), inset 0 0 60px rgb(0 0 0 / 0.5);
   }
 
   .act {
@@ -80,6 +82,16 @@
     font-weight: 400;
     font-size: 1.8rem;
     color: var(--gold);
+  }
+
+  .lead::first-letter {
+    float: left;
+    font-family: var(--font-display);
+    font-size: 3.1em;
+    line-height: 0.85;
+    margin: 4px 8px 0 0;
+    color: var(--gold);
+    text-shadow: 0 2px 0 #000;
   }
 
   .text {

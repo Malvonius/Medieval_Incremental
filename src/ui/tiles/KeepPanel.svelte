@@ -69,8 +69,11 @@
     flex-direction: column;
     align-items: center;
     padding: 14px;
-    background: linear-gradient(180deg, #3a2a17 0%, #22180e 100%);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgb(240 200 120 / 0.18), transparent 70%),
+      linear-gradient(180deg, #3d2c18 0%, #20160c 100%);
     border: 1px solid var(--gold);
+    box-shadow: inset 0 1px 0 rgb(255 230 180 / 0.15), inset 0 -4px 10px rgb(0 0 0 / 0.4), 0 4px 14px rgb(0 0 0 / 0.5);
     border-radius: var(--radius);
     transition: transform 60ms ease, filter 120ms ease;
   }

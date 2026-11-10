@@ -7,6 +7,8 @@ export interface SceneModel {
   readonly act: number;
   readonly houses: number;
   readonly forge: boolean;
+  readonly mill: boolean;
+  readonly market: boolean;
   readonly forging: boolean;
   readonly chapel: boolean;
   readonly tower: boolean;
@@ -33,6 +35,8 @@ export function sceneModel(s: DeepReadonly<GameState>): SceneModel {
     // Logarithmisch: die ersten Gebäude zählen sichtbar, später wächst das Dorf langsamer.
     houses: Math.min(MAX_HOUSES, Math.floor(Math.log2(keep + 1) * 3)),
     forge: s.tiles.forge,
+    mill: s.buildings.mill > 0,
+    market: s.buildings.market > 0,
     forging: s.forge.queue.length > 0,
     chapel: s.tiles.chapel,
     tower: s.buildings.bell_tower > 0 || flags.act4Complete,

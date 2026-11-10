@@ -31,7 +31,7 @@ export const EVENT_CHANCE = 0.5;
 export const EVENTS = {
   harvest: {
     title: "Eine gute Ernte",
-    text: "Zum ersten Mal seit der Pest biegen sich die Ähren. Die Bauern wagen zu lächeln.",
+    text: "Zum ersten Mal seit der Pest biegen sich die Ähren. Die Bauern wagen sogar zu lächeln, wenn auch vorsichtig.",
     condition: (s) => s.tiles.keep,
     choices: [
       { label: "Ein Fest ausrichten (Gold ×2 für 5 min)", effects: [{ kind: "buff", resource: "gold", factor: 2, seconds: 300 }] },
@@ -40,7 +40,7 @@ export const EVENTS = {
   },
   plague: {
     title: "Die Pest kehrt zurück",
-    text: "In den Hütten am Fluss husten die Kinder Blut. Die Alten schlagen Kreuze.",
+    text: "In den Hütten am Fluss husten die Kinder Blut. Die Alten schlagen Kreuze, der Bader schlägt Rechnungen.",
     condition: (s) => s.buildings.serf >= 20,
     choices: [
       { label: "Quarantäne (−20 % Gold)", effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.2 }] },
@@ -58,7 +58,7 @@ export const EVENTS = {
   },
   raid: {
     title: "Überfall bei Nacht",
-    text: "Reiter ohne Wappen brennen eine Scheune nieder und verschwinden im Schwarzforst.",
+    text: "Reiter ohne Wappen brennen eine Scheune nieder und verschwinden im Schwarzforst. Die Kühe sind empört.",
     condition: (s) => s.tiles.warroom && s.warroom.soldiers >= 10,
     choices: [
       { label: "Verfolgen (−10 % Soldaten, +3 Gefangene)", effects: [{ kind: "loseSoldiers", fraction: 0.1 }, { kind: "prisoners", amount: 3 }] },
@@ -67,7 +67,7 @@ export const EVENTS = {
   },
   wisp: {
     title: "Ein Licht in der Krypta",
-    text: "Zwischen den Gebeinen tanzt ein Licht, das nicht zu den anderen gehört. Es will, dass du ihm folgst.",
+    text: "Zwischen den Gebeinen tanzt ein Licht, das nicht zu den anderen gehört. Es möchte, dass du ihm folgst.",
     condition: (s) => s.tiles.crypt,
     choices: [
       { label: "Ihm folgen (+5 min Seelen)", effects: [{ kind: "gainSeconds", resource: "souls", seconds: 300 }] },
@@ -76,7 +76,7 @@ export const EVENTS = {
   },
   pilgrims: {
     title: "Pilger am Tor",
-    text: "Sie haben von der Predigt gehört. Sie sind barfuß aus Grauweiler gekommen.",
+    text: "Sie haben von deiner Predigt gehört und sind barfuß aus Grauweiler gekommen. Ihre Füße riechen entsprechend.",
     condition: (s) => s.tiles.chapel,
     choices: [
       { label: "Aufnehmen (+10 min Glauben)", effects: [{ kind: "gainSeconds", resource: "faith", seconds: 600 }] },

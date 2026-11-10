@@ -61,7 +61,7 @@
 
 <style>
   .scene {
-    height: 150px;
+    height: 200px;
     margin-bottom: 16px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -71,7 +71,7 @@
 
   @media (max-width: 760px) {
     .scene {
-      height: 110px;
+      height: 130px;
     }
   }
 </style>

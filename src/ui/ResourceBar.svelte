@@ -80,8 +80,24 @@
     margin: 0;
   }
 
+  dt::before {
+    margin-right: 4px;
+    color: var(--gold);
+  }
+  .gold dt::before { content: "⛁"; }
+  .iron dt::before { content: "⚒"; }
+  .swords dt::before { content: "⚔"; }
+  .soldiers dt::before { content: "⛨"; }
+  .prisoners dt::before { content: "⛓"; }
+  .souls dt::before { content: "☽"; }
+  .faith dt::before { content: "✝"; }
+  .ash dt::before { content: "✶"; }
+  .seals dt::before { content: "⚜"; }
+  .defense dt::before { content: "♜"; }
+
   .res {
-    background: var(--bg-sunken);
+    background: linear-gradient(180deg, #1a1510 0%, #0d0a08 100%);
+    box-shadow: inset 0 1px 0 rgb(255 230 180 / 0.05);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 6px 12px;
