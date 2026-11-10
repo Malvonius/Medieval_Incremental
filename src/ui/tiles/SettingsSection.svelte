@@ -1,22 +1,29 @@
 <script lang="ts">
   import { audio } from "../../app/audio";
+  import { LOCALES, type Locale, locale, t } from "../../i18n";
   import { type Notation, settings, updateSettings } from "../../app/settings";
 
   const AUTOSAVE = [15, 30, 60] as const;
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Einstellungen</h3>
+  <h3 class="section-title">{$t("settings.title")}</h3>
   <div class="grid">
     <label>
-      <span>Zahlenformat</span>
+      <span>{$t("settings.language")}</span>
+      <select value={$locale} onchange={(e) => locale.set(e.currentTarget.value as Locale)}>
+        {#each Object.entries(LOCALES) as [code, name] (code)}<option value={code}>{name}</option>{/each}
+      </select>
+    </label>
+    <label>
+      <span>{$t("settings.notation")}</span>
       <select value={$settings.notation} onchange={(e) => updateSettings({ notation: e.currentTarget.value as Notation })}>
         <option value="suffix">1,23 Mio.</option>
         <option value="scientific">1,23e6</option>
       </select>
     </label>
     <label>
-      <span>Automatisch speichern</span>
+      <span>{$t("settings.autosave")}</span>
       <select
         value={String($settings.autosaveSeconds)}
         onchange={(e) => updateSettings({ autosaveSeconds: Number(e.currentTarget.value) as 15 | 30 | 60 })}
@@ -26,7 +33,7 @@
     </label>
     <label class="check">
       <input type="checkbox" checked={$settings.reduceMotion} onchange={(e) => updateSettings({ reduceMotion: e.currentTarget.checked })} />
-      <span>Animationen reduzieren</span>
+      <span>{$t("settings.motion")}</span>
     </label>
     <label class="check">
       <input
@@ -37,10 +44,10 @@
           audio.unlock();
         }}
       />
-      <span>Ton</span>
+      <span>{$t("settings.sound")}</span>
     </label>
     <label>
-      <span>Lautstärke</span>
+      <span>{$t("settings.volume")}</span>
       <input
         type="range"
         min="0"

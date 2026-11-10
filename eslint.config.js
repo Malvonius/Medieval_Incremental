@@ -3,7 +3,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  { ignores: ["dist/", "node_modules/", "coverage/", "**/*.svelte"] },
+  { ignores: ["dist/", "node_modules/", "coverage/", "src-tauri/", "public/sw.js", "playwright-report/", "test-results/", "**/*.svelte"] },
   js.configs.recommended,
   tseslint.configs.strict,
   {

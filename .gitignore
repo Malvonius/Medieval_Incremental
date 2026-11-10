@@ -4,3 +4,5 @@ coverage/
 *.log
 .DS_Store
 sim-report.csv
+playwright-report/
+test-results/

@@ -8,6 +8,7 @@
   import TileMenu from "./TileMenu.svelte";
   import { audio } from "../app/audio";
   import { TILES } from "./tiles/registry";
+  import { t } from "../i18n";
   import Scene from "./Scene.svelte";
 
   let { game }: { game: GameController } = $props();
@@ -72,7 +73,7 @@
     <section class="panel" aria-labelledby="panel-title">
       {#if activeTile?.Panel}
         {@const Panel = activeTile.Panel}
-        <h2 id="panel-title" class="panel-title"><span aria-hidden="true">{activeTile.glyph}</span> {activeTile.title}</h2>
+        <h2 id="panel-title" class="panel-title"><span aria-hidden="true">{activeTile.glyph}</span> {$t(`tile.${activeTile.id}`)}</h2>
         <Panel {game} />
       {:else}
         <h2 id="panel-title" class="panel-title">Versiegelt</h2>
