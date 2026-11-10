@@ -2,8 +2,10 @@ import type { Component } from "svelte";
 import type { GameController } from "../../app/controller";
 import type { TileId } from "../../content/ids";
 import ChroniclePanel from "./ChroniclePanel.svelte";
+import DungeonPanel from "./DungeonPanel.svelte";
 import ForgePanel from "./ForgePanel.svelte";
 import KeepPanel from "./KeepPanel.svelte";
+import WarroomPanel from "./WarroomPanel.svelte";
 
 export interface TileView {
   readonly id: TileId;
@@ -18,8 +20,8 @@ export interface TileView {
 export const TILES: readonly TileView[] = [
   { id: "keep", title: "Burgfried", glyph: "♜", sealedHint: "", Panel: KeepPanel },
   { id: "forge", title: "Schmiede", glyph: "⚒", sealedHint: "Kalte Asche in einer verlassenen Esse.", Panel: ForgePanel },
-  { id: "warroom", title: "Kriegsrat", glyph: "⚔", sealedHint: "Ein Kartentisch, bedeckt mit Staub.", Panel: null },
-  { id: "dungeon", title: "Kerker", glyph: "⛓", sealedHint: "Von unten dringt leises Kettenrasseln.", Panel: null },
+  { id: "warroom", title: "Kriegsrat", glyph: "⚔", sealedHint: "Ein Kartentisch, bedeckt mit Staub.", Panel: WarroomPanel },
+  { id: "dungeon", title: "Kerker", glyph: "⛓", sealedHint: "Von unten dringt leises Kettenrasseln.", Panel: DungeonPanel },
   { id: "crypt", title: "Krypta", glyph: "☠", sealedHint: "Die Tür ist von innen verriegelt.", Panel: null },
   { id: "alchemy", title: "Alchemistenturm", glyph: "⚗", sealedHint: "Grünes Licht flackert hinter den Scheiben.", Panel: null },
   { id: "chapel", title: "Kapelle", glyph: "✝", sealedHint: "Die Glocke schweigt seit dem Feuer.", Panel: null },

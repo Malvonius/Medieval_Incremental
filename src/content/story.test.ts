@@ -21,8 +21,13 @@ describe("Story-Graph", () => {
     expect(STORY.filter((n) => n.requires.length === 0).length).toBeGreaterThan(0);
   });
 
-  it("hat genau einen Knoten, der Akt I abschließt", () => {
-    const enders = STORY.filter((n) => n.effects.some((e) => e.kind === "setFlag" && e.flag === "act1Complete"));
+  it.each(["act1Complete", "act2Complete"] as const)("hat genau einen Knoten, der %s setzt", (flag) => {
+    const enders = STORY.filter((n) => n.effects.some((e) => e.kind === "setFlag" && e.flag === flag));
     expect(enders).toHaveLength(1);
+  });
+
+  it("schaltet jede Kachel höchstens einmal frei", () => {
+    const tiles = STORY.flatMap((n) => n.effects.flatMap((e) => (e.kind === "unlockTile" ? [e.tile] : [])));
+    expect(new Set(tiles).size).toBe(tiles.length);
   });
 });

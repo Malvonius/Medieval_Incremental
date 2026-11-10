@@ -3,17 +3,32 @@ import {
   BUILDINGS,
   BUILDING_IDS,
   type BuildingId,
-  FORGE_QUEUE_CAPACITY,
+  EXPEDITIONS,
+  EXPEDITION_IDS,
+  INTEL_FOR_KOMTUREI,
+  type ExpeditionId,
   RECIPES,
   UPGRADES,
   UPGRADE_IDS,
+  type UpgradeEffect,
   type UpgradeId,
 } from "../content/balance";
 import type { Action } from "../game/actions";
 import { canAffordRecipe } from "../game/forge";
-import { buildingCost, buildingMultiplier, clickValue, craftDuration, isUpgradeVisible, unitRate } from "../game/rates";
+import {
+  buildingCost,
+  buildingMultiplier,
+  clickValue,
+  craftDuration,
+  forgeCapacity,
+  isBuildingVisible,
+  isUpgradeVisible,
+  recruitCost,
+  unitRate,
+} from "../game/rates";
 import { Simulation } from "../game/simulation";
 import { createInitialState } from "../game/state";
+import { launchBlocker } from "../game/warroom";
 
 export interface BotOptions {
   /** Abbruch nach dieser simulierten Spielzeit. */
@@ -38,9 +53,16 @@ export interface BotResult {
   readonly sim: Simulation;
 }
 
-/** Ausgaben für Hilfsgüter (Eisen, Schmiedetempo) dürfen höchstens so viele Sekunden Goldeinkommen kosten. */
+/** Ausgaben für Hilfsgüter (Eisen, Soldaten, Tempo) dürfen höchstens so viele Sekunden Goldeinkommen kosten. */
 const SUPPORT_BUDGET_SECONDS = 90;
 const MAX_ACTIONS_PER_STEP = 200;
+/** Sold für einen Rekruten darf höchstens so viele Sekunden Goldeinkommen kosten – sonst verhungert die Wirtschaft. */
+const RECRUIT_BUDGET_SECONDS = 25;
+
+/** Ziele nach Wichtigkeit: das größte erreichbare zuerst. */
+const EXPEDITIONS_BY_SIZE: readonly ExpeditionId[] = [...EXPEDITION_IDS].sort(
+  (a, b) => EXPEDITIONS[b].soldiers - EXPEDITIONS[a].soldiers,
+);
 
 interface Candidate {
   readonly action: Action;
@@ -51,9 +73,14 @@ interface Candidate {
 
 const isGoldBuilding = (id: BuildingId): boolean => BUILDINGS[id].produces === "gold";
 
+/** Upgrades, deren Nutzen sich nicht direkt in Gold/s ausdrücken lässt. */
+const isSupportEffect = (effect: UpgradeEffect): boolean =>
+  effect.kind !== "clickMult" && !(effect.kind === "buildingMult" && isGoldBuilding(effect.building));
+
 /**
- * Gieriger Referenzspieler: wählt den Kauf mit der kürzesten Zeit bis zur Amortisation
- * (Wartezeit + Kosten / Ertragszuwachs) und wartet, bis er ihn bezahlen kann.
+ * Gieriger Referenzspieler: wählt den Goldkauf mit der kürzesten Zeit bis zur Amortisation
+ * (Wartezeit + Kosten / Ertragszuwachs) und wartet, bis er ihn bezahlen kann. Hilfskäufe
+ * (Eisen, Schmiede, Soldaten, Expeditionen, Kerker) folgen festen, einfachen Regeln.
  * Er ist bewusst „gut, aber nicht perfekt“ – ein Maßstab fürs Pacing, kein Optimierer.
  */
 class GreedyBot {
@@ -62,11 +89,15 @@ class GreedyBot {
     private readonly clicksPerSecond: number,
   ) {}
 
+  private get budget(): Decimal {
+    return this.sim.rates.gold.mul(SUPPORT_BUDGET_SECONDS);
+  }
+
   private goldCandidates(): Candidate[] {
     const s = this.sim.view;
     const out: Candidate[] = [];
     for (const id of BUILDING_IDS) {
-      if (!isGoldBuilding(id) || !s.tiles[BUILDINGS[id].tile]) continue;
+      if (!isGoldBuilding(id) || !isBuildingVisible(s, id)) continue;
       out.push({ action: { type: "buyBuilding", building: id, amount: 1 }, cost: buildingCost(s, id, 1), gain: unitRate(s, id) });
     }
     for (const id of UPGRADE_IDS) {
@@ -80,47 +111,65 @@ class GreedyBot {
 
   private upgradeGoldGain(id: UpgradeId): Decimal | null {
     const s = this.sim.view;
-    const effect = UPGRADES[id].effect;
-    switch (effect.kind) {
-      case "buildingMult":
-        if (!isGoldBuilding(effect.building)) return null;
-        return unitRate(s, effect.building).mul(s.buildings[effect.building] * (effect.factor - 1));
-      case "clickMult":
-        return clickValue(s).mul(this.clicksPerSecond * (effect.factor - 1));
-      case "craftSpeed":
-        return null;
+    const effect: UpgradeEffect = UPGRADES[id].effect;
+    if (effect.kind === "clickMult") return clickValue(s).mul(this.clicksPerSecond * (effect.factor - 1));
+    if (effect.kind === "buildingMult" && isGoldBuilding(effect.building)) {
+      return unitRate(s, effect.building).mul(s.buildings[effect.building] * (effect.factor - 1));
     }
+    return null;
   }
 
-  /** Eisenversorgung und Schmiedetempo: gekauft, sobald günstig im Verhältnis zum Einkommen. */
-  private supportAction(): Action | null {
+  private supportUpgrade(): Action | null {
     const s = this.sim.view;
-    if (!s.tiles.forge) return null;
-    const budget = this.sim.rates.gold.mul(SUPPORT_BUDGET_SECONDS);
-    const gold = s.resources.gold;
-
     for (const id of UPGRADE_IDS) {
       const def = UPGRADES[id];
-      if (!isUpgradeVisible(s, id)) continue;
-      const support =
-        def.effect.kind === "craftSpeed" || (def.effect.kind === "buildingMult" && !isGoldBuilding(def.effect.building));
-      if (support && gold.gte(def.cost) && budget.gte(def.cost)) return { type: "buyUpgrade", upgrade: id };
+      if (!isUpgradeVisible(s, id) || !isSupportEffect(def.effect)) continue;
+      if (s.resources.gold.gte(def.cost) && this.budget.gte(def.cost)) return { type: "buyUpgrade", upgrade: id };
     }
+    return null;
+  }
 
+  private forgeAction(): Action | null {
+    const s = this.sim.view;
+    if (!s.tiles.forge) return null;
+    const gold = s.resources.gold;
     const sword = RECIPES.sword;
     const neededIron = sword.inputs.iron / craftDuration(s, "sword");
     const ironRate = this.sim.rates.iron;
     const mineCost = buildingCost(s, "mine", 1);
-    const mineRate = sword.inputs.iron > 0 ? BUILDINGS.mine.baseRate * buildingMultiplier(s, "mine") : 0;
-    if (ironRate.lt(neededIron) && gold.gte(mineCost) && (budget.gte(mineCost) || ironRate.add(mineRate).lte(0.5))) {
+    const mineRate = BUILDINGS.mine.baseRate * buildingMultiplier(s, "mine");
+    if (ironRate.lt(neededIron) && gold.gte(mineCost) && (this.budget.gte(mineCost) || ironRate.add(mineRate).lte(0.5))) {
       return { type: "buyBuilding", building: "mine", amount: 1 };
     }
-
-    if (s.forge.queue.length < FORGE_QUEUE_CAPACITY && canAffordRecipe(s, "sword", 1)) {
+    if (s.forge.queue.length < forgeCapacity(s) && canAffordRecipe(s, "sword", 1)) {
       const goldShare = new Decimal(sword.inputs.gold);
-      if (budget.gte(goldShare) || gold.gte(goldShare.mul(4))) return { type: "craft", recipe: "sword", amount: 1 };
+      if (this.budget.gte(goldShare) || gold.gte(goldShare.mul(4))) return { type: "craft", recipe: "sword", amount: 1 };
     }
     return null;
+  }
+
+  private warroomAction(): Action | null {
+    const s = this.sim.view;
+    if (!s.tiles.warroom) return null;
+    // Ist ein einmaliges Hauptziel bekannt, hält der Bot seine Truppen dafür zusammen.
+    const mainTarget = EXPEDITIONS_BY_SIZE.find((id) => !EXPEDITIONS[id].repeatable && launchBlocker(s, id) === "soldiers");
+    for (const id of EXPEDITIONS_BY_SIZE) {
+      if (mainTarget !== undefined && id !== mainTarget) continue;
+      if (launchBlocker(s, id) === null) return { type: "launchExpedition", expedition: id };
+    }
+    if (s.resources.swords.gte(1)) {
+      const cost = recruitCost(s, 1);
+      if (s.resources.gold.gte(cost) && this.sim.rates.gold.mul(RECRUIT_BUDGET_SECONDS).gte(cost)) return { type: "recruit", amount: 1 };
+    }
+    return null;
+  }
+
+  private dungeonAction(): Action | null {
+    const { dungeon, tiles } = this.sim.view;
+    if (!tiles.dungeon || dungeon.prisoners === 0) return null;
+    return dungeon.intel < INTEL_FOR_KOMTUREI
+      ? { type: "interrogate", amount: dungeon.prisoners }
+      : { type: "forceLabor", amount: dungeon.prisoners };
   }
 
   private bestGoldAction(): Action | null {
@@ -138,10 +187,20 @@ class GreedyBot {
     return best?.affordable ? best.action : null;
   }
 
+  private nextAction(): Action | null {
+    return (
+      this.dungeonAction() ??
+      this.warroomAction() ??
+      this.supportUpgrade() ??
+      this.forgeAction() ??
+      this.bestGoldAction()
+    );
+  }
+
   step(): void {
     for (let i = 0; i < this.clicksPerSecond; i += 1) this.sim.dispatch({ type: "collect" });
     for (let i = 0; i < MAX_ACTIONS_PER_STEP; i += 1) {
-      const action = this.supportAction() ?? this.bestGoldAction();
+      const action = this.nextAction();
       if (action === null) return;
       const result = this.sim.dispatch(action);
       if (!result.ok) throw new Error(`Bot wählte ungültige Aktion ${JSON.stringify(action)}: ${result.reason}`);

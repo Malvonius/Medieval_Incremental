@@ -12,7 +12,12 @@
   const snapshot = $derived(game.snapshot);
   let active = $state<TileId>("keep");
   const activeTile = $derived(TILES.find((t) => t.id === active));
-  const actLabel = $derived($snapshot.state.flags.act1Complete ? "Akt I abgeschlossen · Fortsetzung folgt" : "Akt I · Die Ruine");
+  const actLabel = $derived.by(() => {
+    const { flags } = $snapshot.state;
+    if (flags.act2Complete) return "Akt II abgeschlossen · Fortsetzung folgt";
+    if (flags.act1Complete) return "Akt II · Der Graue Orden";
+    return "Akt I · Die Ruine";
+  });
 </script>
 
 <div class="shell">

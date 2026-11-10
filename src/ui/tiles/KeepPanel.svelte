@@ -2,7 +2,7 @@
   import type { GameController } from "../../app/controller";
   import { BUILDINGS, BUILDING_IDS } from "../../content/balance";
   import type { BuyAmount } from "../../game/actions";
-  import { clickValue } from "../../game/rates";
+  import { clickValue, isBuildingVisible } from "../../game/rates";
   import { formatNumber } from "../format";
   import BuildingRow from "./BuildingRow.svelte";
   import BuyAmountToggle from "./BuyAmountToggle.svelte";
@@ -28,7 +28,7 @@
     <h3 class="section-title">Ländereien</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
-  {#each KEEP_BUILDINGS as id (id)}
+  {#each KEEP_BUILDINGS.filter((id) => isBuildingVisible(snap.state, id)) as id (id)}
     <BuildingRow {game} {snap} building={id} {amount} />
   {/each}
 </section>

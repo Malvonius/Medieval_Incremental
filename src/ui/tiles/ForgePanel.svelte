@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { GameController } from "../../app/controller";
   import { Decimal } from "../../core/decimal";
-  import { BUILDINGS, BUILDING_IDS, FORGE_QUEUE_CAPACITY, RECIPES, SWORD_GOLD_BONUS } from "../../content/balance";
+  import { BUILDINGS, BUILDING_IDS, RECIPES } from "../../content/balance";
   import type { ResourceId } from "../../content/ids";
   import type { BuyAmount } from "../../game/actions";
-  import { craftDuration } from "../../game/rates";
+  import { armedBonus, craftDuration, forgeCapacity, isBuildingVisible } from "../../game/rates";
   import { formatDuration, formatNumber, formatPercent } from "../format";
   import { RESOURCE_LABELS } from "../labels";
   import BuildingRow from "./BuildingRow.svelte";
@@ -23,12 +23,13 @@
   const duration = $derived(craftDuration(snap.state, "sword"));
   const queueLength = $derived(snap.state.forge.queue.length);
   const progress = $derived(queueLength > 0 ? Math.min(1, snap.state.forge.progress / duration) : 0);
-  const freeSlots = $derived(FORGE_QUEUE_CAPACITY - queueLength);
+  const capacity = $derived(forgeCapacity(snap.state));
+  const freeSlots = $derived(capacity - queueLength);
   /** Wie viele Aufträge Rohstoffe und freie Plätze erlauben. */
   const fillable = $derived(
     Math.min(freeSlots, ...inputs.map(([res, cost]) => Decimal.floor(snap.state.resources[res].div(cost)).toNumber())),
   );
-  const swordBonus = $derived(snap.state.resources.swords.toNumber() * SWORD_GOLD_BONUS);
+  const swordBonus = $derived(armedBonus(snap.state));
 </script>
 
 <section class="panel-section">
@@ -36,7 +37,7 @@
     <h3 class="section-title">Bergwerk</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
-  {#each FORGE_BUILDINGS as id (id)}
+  {#each FORGE_BUILDINGS.filter((id) => isBuildingVisible(snap.state, id)) as id (id)}
     <BuildingRow {game} {snap} building={id} {amount} />
   {/each}
 </section>
@@ -53,8 +54,8 @@
     </div>
     <p class="desc">{recipe.description}</p>
 
-    <div class="queue" aria-label="Warteschlange: {queueLength} von {FORGE_QUEUE_CAPACITY}">
-      {#each { length: FORGE_QUEUE_CAPACITY }, slot (slot)}
+    <div class="queue" aria-label="Warteschlange: {queueLength} von {capacity}" style:grid-template-columns="repeat({capacity}, 1fr)">
+      {#each { length: capacity }, slot (slot)}
         <span class="slot" class:filled={slot < queueLength}>
           {#if slot === 0 && queueLength > 0}
             <span class="fill" style:width="{progress * 100}%"></span>
@@ -81,7 +82,7 @@
 <section class="panel-section">
   <h3 class="section-title">Waffenkammer</h3>
   <p class="armory">
-    <span class="num swords">{formatNumber(snap.state.resources.swords)}</span> Klingen an der Wand –
+    <span class="num swords">{formatNumber(snap.state.resources.swords)}</span> Klingen an der Wand. Zusammen mit deinen Soldaten:
     Goldproduktion <span class="num">+{formatPercent(swordBonus)}</span>
   </p>
 </section>
@@ -135,7 +136,6 @@
 
   .queue {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     margin-bottom: 10px;
   }
