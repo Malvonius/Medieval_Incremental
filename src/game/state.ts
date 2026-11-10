@@ -17,6 +17,7 @@ import {
   type VowId,
 } from "../content/balance";
 import { ACHIEVEMENT_IDS, type AchievementId } from "../content/achievements";
+import { CHALLENGE_IDS, type ChallengeId, type EventId } from "../content/depth";
 import { FLAG_IDS, type FlagId, RESOURCE_IDS, type ResourceId, TILE_IDS, type TileId } from "../content/ids";
 
 export const SAVE_VERSION = 1;
@@ -74,6 +75,21 @@ export interface SiegeState {
   ending: EndingId | null;
 }
 
+export interface EventState {
+  pending: EventId | null;
+  /** Sekunden bis zum nächsten Ereigniswurf. */
+  timer: number;
+  buff: { resource: ResourceId; factor: number; remaining: number } | null;
+}
+
+/** Bleibt über Neues Spiel+ hinweg erhalten. */
+export interface MetaState {
+  ngPlus: number;
+  memories: number;
+  challenge: ChallengeId | null;
+  challengesDone: Record<ChallengeId, boolean>;
+}
+
 export interface GameState {
   resources: Record<ResourceId, Decimal>;
   /** Lebenslang erhaltene Mengen – Grundlage für Story-Trigger. */
@@ -94,6 +110,11 @@ export interface GameState {
   /** completedAt[i] = Spielsekunde, in der completed[i] erreicht wurde. */
   story: { completed: string[]; completedAt: number[] };
   achievements: Record<AchievementId, boolean>;
+  /** Zustand des deterministischen Zufallsgenerators (uint32). */
+  rng: number;
+  events: EventState;
+  automation: { enabled: boolean; timer: number };
+  meta: MetaState;
   stats: { playSeconds: number; clicks: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
   lastSeen: number;
@@ -117,6 +138,11 @@ export function createInitialState(now: number): GameState {
     siege: { wave: 0, battle: null, fortifications: recordFrom(FORTIFICATION_IDS, () => 0), ending: null },
     story: { completed: [], completedAt: [] },
     achievements: recordFrom(ACHIEVEMENT_IDS, () => false),
+    // XOR liefert in JS int32 – erst >>> 0 macht daraus einen nicht-negativen uint32.
+    rng: ((now >>> 0) ^ 0x9e3779b9) >>> 0,
+    events: { pending: null, timer: 240, buff: null },
+    automation: { enabled: true, timer: 0 },
+    meta: { ngPlus: 0, memories: 0, challenge: null, challengesDone: recordFrom(CHALLENGE_IDS, () => false) },
     stats: { playSeconds: 0, clicks: 0 },
     lastSeen: now,
   };

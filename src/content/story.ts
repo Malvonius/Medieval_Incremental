@@ -472,4 +472,45 @@ export const STORY: readonly StoryNode[] = [
     trigger: (s) => s.siege.ending === "ash",
     effects: [{ kind: "setFlag", flag: "act5Complete" }],
   },
+
+  // ── Neues Spiel+ und Epilog ─────────────────────────────────────────────────
+  {
+    id: "a1_memory",
+    act: 1,
+    title: "Schon einmal hier",
+    text: [
+      "Du kennst diesen Brief. Du kennst das gebrochene Siegel, den leeren Brunnen, die Blicke der Bauern.",
+      "In deiner Hand liegt ein Häufchen Asche, das du nicht mitgebracht hast. Es ist warm.",
+      "Vhal erinnert sich an dich. Diesmal wirst du schneller sein.",
+    ],
+    requires: ["a1_inheritance"],
+    trigger: (s) => s.meta.ngPlus >= 1,
+    effects: [],
+  },
+  {
+    id: "a5_epilogue_light",
+    act: 5,
+    title: "Epilog: Frühling",
+    text: [
+      "Ein Jahr später blüht der Mohn auf den Feldern vor der Burg. Niemand pflügt sie um.",
+      "Manchmal, wenn die Glocke zur Vesper schlägt, glaubst du einen Hammer zu hören, der irgendwo auf einen Amboss trifft.",
+      "Doch in der Asche unter der Kapelle glimmt noch etwas. Vielleicht beginnt alles von vorn. (Neues Spiel+ im Ritual der Asche.)",
+    ],
+    requires: ["a5_end_light"],
+    trigger: () => true,
+    effects: [],
+  },
+  {
+    id: "a5_epilogue_ash",
+    act: 5,
+    title: "Epilog: Der Graue Meister",
+    text: [
+      "Die Jahre vergehen, und du alterst nicht. Ilse bringt dir jeden Abend die Zahl der Toten. Sie wird nie kleiner.",
+      "Eines Nachts klopft ein junger Erbe an dein Tor, mit einem Brief und einem gebrochenen Siegel in der Hand.",
+      "Du lächelst. Und alles beginnt von vorn. (Neues Spiel+ im Ritual der Asche.)",
+    ],
+    requires: ["a5_end_ash"],
+    trigger: () => true,
+    effects: [],
+  },
 ];

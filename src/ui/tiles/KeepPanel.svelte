@@ -36,6 +36,17 @@
   </button>
 </section>
 
+{#if snap.state.upgrades.steward}
+  <label class="steward">
+    <input
+      type="checkbox"
+      checked={snap.state.automation.enabled}
+      onchange={(e) => game.dispatch({ type: "setAutomation", enabled: e.currentTarget.checked })}
+    />
+    <span>Der Verwalter kauft Gold-Gebäude mit der kürzesten Amortisation</span>
+  </label>
+{/if}
+
 <section class="panel-section">
   <div class="bar">
     <h3 class="section-title">Ländereien</h3>
@@ -69,6 +80,15 @@
 
   .collect:active {
     transform: scale(0.985);
+  }
+
+  .steward {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
   }
 
   .floater {

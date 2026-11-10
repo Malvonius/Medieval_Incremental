@@ -3,6 +3,7 @@
   import { BUILDINGS, BUILDING_IDS, FAITH_FOR_BETRAYAL, FAITH_FOR_SERMON, VOWS, VOW_IDS } from "../../content/balance";
   import type { BuyAmount } from "../../game/actions";
   import { VOW_BLOCKER_TEXT, swornVows, vowBlocker } from "../../game/chapel";
+  import { SYNERGIES } from "../../content/depth";
   import { isBuildingVisible, vowSlots } from "../../game/rates";
   import { formatNumber } from "../format";
   import BuildingRow from "./BuildingRow.svelte";
@@ -72,6 +73,19 @@
             onclick={() => game.dispatch({ type: "swearVow", vow: id })}>Ablegen</button
           >
         {/if}
+      </li>
+    {/each}
+  </ul>
+</section>
+
+<section class="panel-section">
+  <h3 class="section-title">Verbindungen</h3>
+  <ul class="synergies">
+    {#each SYNERGIES as syn (syn.name)}
+      {@const active = snap.state.chapel.vows[syn.vows[0]] && snap.state.chapel.vows[syn.vows[1]]}
+      <li class:active>
+        <span class="name">{syn.name}</span>
+        <span class="desc">{VOWS[syn.vows[0]].name} + {VOWS[syn.vows[1]].name}: {syn.description}</span>
       </li>
     {/each}
   </ul>
@@ -186,6 +200,32 @@
   .vow .btn {
     margin-top: 4px;
     align-self: flex-start;
+  }
+
+  .synergies {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .synergies li {
+    display: grid;
+    padding: 6px 10px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--text-faint);
+  }
+
+  .synergies li.active {
+    border-style: solid;
+    border-color: var(--gold);
+    color: var(--text);
+  }
+
+  .synergies .desc {
+    font-size: 0.85rem;
   }
 
   @media (max-width: 480px) {

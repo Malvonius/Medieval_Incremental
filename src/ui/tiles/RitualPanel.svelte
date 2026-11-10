@@ -4,6 +4,7 @@
   import { ashMultiplier } from "../../game/rates";
   import { ashGain, goldForNextAsh } from "../../game/ritual";
   import { formatNumber, formatPercent } from "../format";
+  import { CHALLENGES, CHALLENGE_IDS, type ChallengeId, MEMORY_BONUS } from "../../content/depth";
 
   let { game }: { game: GameController } = $props();
 
@@ -19,6 +20,13 @@
 
   const BURNS = ["Gold, Eisen, Schwerter und Seelen", "Alle Gebäude und Verbesserungen", "Soldaten, Gefangene, Fronarbeiter und Befestigungen", "Laufende Expeditionen, Forschung, Schmiedeaufträge und Schlachten"];
   const STAYS = ["Geschichte, Kacheln, Ordenssiegel und abgewehrte Wellen", "Erforschtes Wissen, Hinweise und die Gefallenen in der Krypta", "Glauben und abgelegte Gelübde", "Alle bisher gesammelte Asche"];
+
+  let ngChallenge = $state<ChallengeId | "none">("none");
+  let ngConfirm = $state(false);
+  function startNewGamePlus(): void {
+    ngConfirm = false;
+    game.dispatch({ type: "newGamePlus", challenge: ngChallenge === "none" ? null : ngChallenge });
+  }
 
   function perform(): void {
     confirming = false;
@@ -68,7 +76,57 @@
   </div>
 </section>
 
+{#if snap.state.flags.act5Complete || snap.state.meta.ngPlus > 0}
+  <section class="panel-section">
+    <h3 class="section-title">Neues Spiel+</h3>
+    <p class="hint">
+      Erinnerungen: <strong class="num">{snap.state.meta.memories}</strong> (+{formatPercent(snap.state.meta.memories * MEMORY_BONUS)} Produktion).
+      {#if snap.state.meta.challenge}Aktive Herausforderung: <strong>{CHALLENGES[snap.state.meta.challenge].name}</strong>.{/if}
+    </p>
+    <ul class="challenges">
+      <li>
+        <label><input type="radio" bind:group={ngChallenge} value="none" /> Ohne Herausforderung</label>
+      </li>
+      {#each CHALLENGE_IDS as id (id)}
+        <li class:done={snap.state.meta.challengesDone[id]}>
+          <label>
+            <input type="radio" bind:group={ngChallenge} value={id} />
+            <strong>{CHALLENGES[id].name}</strong> – {CHALLENGES[id].description} Belohnung: {CHALLENGES[id].rewardText}{snap.state.meta.challengesDone[id] ? " ✓" : ""}
+          </label>
+        </li>
+      {/each}
+    </ul>
+    {#if snap.state.flags.act5Complete}
+      {#if ngConfirm}
+        <div class="row">
+          <span class="warn">Alles beginnt von vorn – nur Erinnerungen, Erfolge und Herausforderungen bleiben.</span>
+          <button class="btn btn-danger" onclick={startNewGamePlus}>Neu beginnen</button>
+          <button class="btn" onclick={() => (ngConfirm = false)}>Abbrechen</button>
+        </div>
+      {:else}
+        <button class="btn" onclick={() => (ngConfirm = true)}>Neues Spiel+ beginnen (+1 Erinnerung)</button>
+      {/if}
+    {:else}
+      <p class="hint">Eine Herausforderung gilt als bestanden, wenn du mit ihr ein Ende erreichst.</p>
+    {/if}
+  </section>
+{/if}
+
 <style>
+  .challenges {
+    list-style: none;
+    margin: 8px 0 12px;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .challenges li.done {
+    color: var(--moss);
+  }
+
   .stats {
     display: flex;
     gap: 24px;

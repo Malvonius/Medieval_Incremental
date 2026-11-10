@@ -26,6 +26,7 @@ import { researchStatus } from "../game/alchemy";
 import { vowBlocker } from "../game/chapel";
 import { ashGain } from "../game/ritual";
 import { battleBlocker, endingBlocker, siegeActive } from "../game/siege";
+import { decisionOpen } from "../game/depth";
 import { canAffordRecipe } from "../game/forge";
 import {
   buildingCost,
@@ -353,6 +354,9 @@ class GreedyBot {
   }
 
   private nextAction(): Action | null {
+    // Ereignisse: immer die erste Wahl; Entscheidung: Sera vertrauen (Wehrkraft).
+    if (this.sim.view.events.pending !== null) return { type: "resolveEvent", choice: 0 };
+    if (decisionOpen(this.sim.view, "trust")) return { type: "decide", decision: "trust", option: 0 };
     const ritual = this.endingAction() ?? this.ritualAction() ?? this.vowAction();
     if (ritual) return ritual;
     const research = this.researchAction();
