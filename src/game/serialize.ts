@@ -24,6 +24,7 @@ export function toPlain(state: DeepReadonly<GameState>) {
   return {
     resources: mapDecimals(state.resources),
     totals: mapDecimals(state.totals),
+    runTotals: mapDecimals(state.runTotals),
     buildings: { ...state.buildings },
     upgrades: { ...state.upgrades },
     tiles: { ...state.tiles },
@@ -41,6 +42,8 @@ export function toPlain(state: DeepReadonly<GameState>) {
       active: state.alchemy.active === null ? null : { ...state.alchemy.active },
       completed: { ...state.alchemy.completed },
     },
+    chapel: { vows: { ...state.chapel.vows } },
+    ritual: { ...state.ritual },
     story: { completed: [...state.story.completed] },
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
@@ -149,11 +152,15 @@ export function fromPlain(data: unknown, now: number): GameState {
   const warroom = section(data, "warroom");
   const dungeon = section(data, "dungeon");
   const alchemy = section(data, "alchemy");
+  const chapel = section(data, "chapel");
+  const totals = readRecord(section(data, "totals"), d.totals, "totals", readDecimal);
   const readCount = (v: unknown, p: string, f: number): number => readNumber(v, p, f, { integer: true });
 
   return {
     resources: readRecord(section(data, "resources"), d.resources, "resources", readDecimal),
-    totals: readRecord(section(data, "totals"), d.totals, "totals", readDecimal),
+    totals,
+    // Spielstände vor dem ersten Ritual kennen keinen Lauf: dann ist der Lauf das ganze Spiel.
+    runTotals: readRecord(section(data, "runTotals"), totals, "runTotals", readDecimal),
     buildings: readRecord(section(data, "buildings"), d.buildings, "buildings", readCount),
     upgrades: readRecord(section(data, "upgrades"), d.upgrades, "upgrades", readBoolean),
     tiles: readRecord(section(data, "tiles"), d.tiles, "tiles", readBoolean),
@@ -171,6 +178,8 @@ export function fromPlain(data: unknown, now: number): GameState {
       active: readActiveResearch(alchemy["active"]),
       completed: readRecord(section(alchemy, "completed"), d.alchemy.completed, "alchemy.completed", readBoolean),
     },
+    chapel: { vows: readRecord(section(chapel, "vows"), d.chapel.vows, "chapel.vows", readBoolean) },
+    ritual: readRecord(section(data, "ritual"), d.ritual, "ritual", readCount),
     story: { completed: [...new Set(rawCompleted)] },
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),

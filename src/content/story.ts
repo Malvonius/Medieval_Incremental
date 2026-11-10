@@ -1,5 +1,13 @@
 import type { StoryNode } from "../game/story";
-import { INTEL_FOR_KOMTUREI, INTEL_FOR_OUTPOST, SEALS_FOR_KOMTUREI } from "./balance";
+import {
+  FAITH_FOR_BETRAYAL,
+  FAITH_FOR_SERMON,
+  INTEL_FOR_KOMTUREI,
+  INTEL_FOR_OUTPOST,
+  REBIRTH_RUN_GOLD,
+  SEALS_FOR_KOMTUREI,
+  VOW_IDS,
+} from "./balance";
 import { completedResearchCount } from "../game/alchemy";
 
 /**
@@ -264,5 +272,96 @@ export const STORY: readonly StoryNode[] = [
     requires: ["a3_glass", "a3_voice"],
     trigger: (s) => s.alchemy.completed.philosophers_stone,
     effects: [{ kind: "setFlag", flag: "act3Complete" }],
+  },
+
+  // ── Akt IV – Glaube und Verrat ──────────────────────────────────────────────
+  {
+    id: "a4_mass",
+    act: 4,
+    title: "Die Sonntagsmesse",
+    text: [
+      "Der Bischof liest die Messe, als wäre nichts geschehen. Seine Stimme ist warm, seine Hände sind ruhig, und die Gemeinde hängt an seinen Lippen.",
+      "„Wer ihm den Kopf abschlägt, wird als Mörder eines Heiligen gehängt“, flüstert Sera. „Du musst ihnen erst die Augen öffnen.“",
+      "Nach der Messe bleibt die Kapelle leer zurück. Leer – und zum ersten Mal seit vierzig Jahren ohne ihn.",
+    ],
+    requires: ["a3_stone"],
+    trigger: () => true,
+    effects: [{ kind: "unlockTile", tile: "chapel" }],
+  },
+  {
+    id: "a4_first_faith",
+    act: 4,
+    title: "Ein eigener Altar",
+    text: [
+      "Die ersten Bauern kommen zögernd. Sie legen Kupfermünzen in den Opferstock und sehen sich dabei um, als könnte der Bischof sie hören.",
+      "Glaube ist eine seltsame Währung. Man kann ihn nicht stehlen. Aber man kann ihn kaufen.",
+    ],
+    requires: ["a4_mass"],
+    trigger: (s) => s.totals.faith.gte(100),
+    effects: [],
+  },
+  {
+    id: "a4_vow",
+    act: 4,
+    title: "Das erste Gelübde",
+    text: [
+      "Du kniest vor dem Altar und sprichst die Worte, die Ilse Varn dir aufgeschrieben hat. Die Kerzen flackern, obwohl kein Wind geht.",
+      "Etwas hat zugehört. Ob es Gott war, weißt du nicht.",
+    ],
+    requires: ["a4_first_faith"],
+    trigger: (s) => VOW_IDS.some((id) => s.chapel.vows[id]),
+    effects: [],
+  },
+  {
+    id: "a4_sermon",
+    act: 4,
+    title: "Die Predigt",
+    text: [
+      "Am dritten Sonntag steigst du selbst auf die Kanzel. In der Hand hältst du das Siegel mit dem Hirtenstab, das du im Vorposten gefunden hast.",
+      "Du erzählst ihnen alles: von der Krypta, dem Grauen Orden, dem Kissen am Bett deines Onkels. Niemand spricht. Dann steht eine alte Frau auf und spuckt auf den Bischofsstuhl.",
+      "Die Gemeinde gehört dir. Der Bischof ist verschwunden.",
+    ],
+    requires: ["a4_vow"],
+    trigger: (s) => s.totals.faith.gte(FAITH_FOR_SERMON),
+    effects: [],
+  },
+  {
+    id: "a4_betrayal",
+    act: 4,
+    title: "Der Verrat",
+    text: [
+      "In der Nacht ist der Alchemistenturm leer. Ilse Varn ist fort, und mit ihr der Stein der Weisen.",
+      "Auf ihrem Tisch liegt ein Brief in einer Handschrift, die du kennst – der des Bischofs. „Gute Schülerin“, steht darin. „Der Stein gehört dem, der ihn geschaffen hat.“",
+      "Darunter, in ihrer eigenen Schrift, ein einziger Satz: „Er ist in jedem Stein von Vhal. Verbrenne alles, oder er wird nie sterben.“",
+    ],
+    requires: ["a4_sermon"],
+    trigger: (s) => s.totals.faith.gte(FAITH_FOR_BETRAYAL),
+    effects: [{ kind: "unlockTile", tile: "ritual" }],
+  },
+  {
+    id: "a4_ashes",
+    act: 4,
+    title: "Vhal brennt",
+    text: [
+      "Die Flammen steigen höher als der Burgfried. Die Mühle, der Markt, die Schmiede – alles brennt. Aus den Mauern dringt ein Schrei, der nicht aus einer menschlichen Kehle kommt.",
+      "Am Morgen stehst du in der Asche. Sie ist warm und grau und knistert unter deinen Stiefeln, als wäre sie lebendig.",
+      "Brannoc hebt eine Handvoll davon auf und lässt sie durch die Finger rieseln. „Darauf“, sagt er, „baut man besser als auf Stein.“",
+    ],
+    requires: ["a4_betrayal"],
+    trigger: (s) => s.ritual.performed >= 1,
+    effects: [],
+  },
+  {
+    id: "a4_rebirth",
+    act: 4,
+    title: "Aus der Asche",
+    text: [
+      "Vhal steht wieder. Die neuen Mauern sind dunkler als die alten, und in ihrem Mörtel glänzt Asche.",
+      "Doch von den Hügeln im Osten kommen schlechte Nachrichten. Die Toten aus Grauweiler sind aus ihren Gräbern gestiegen – und sie marschieren unter einem Banner mit Hirtenstab und Schlüssel.",
+      "Der Bischof hat den Stein. Und er hat eine Armee.",
+    ],
+    requires: ["a4_ashes"],
+    trigger: (s) => s.ritual.performed >= 1 && s.runTotals.gold.gte(REBIRTH_RUN_GOLD),
+    effects: [{ kind: "setFlag", flag: "act4Complete" }],
   },
 ];

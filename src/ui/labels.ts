@@ -5,4 +5,5 @@ export const RESOURCE_LABELS: Readonly<Record<ResourceId, string>> = {
   iron: "Eisen",
   swords: "Schwerter",
   souls: "Seelen",
+  faith: "Glauben",
 };

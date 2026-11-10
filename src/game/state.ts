@@ -10,6 +10,8 @@ import {
   type ResearchId,
   UPGRADE_IDS,
   type UpgradeId,
+  VOW_IDS,
+  type VowId,
 } from "../content/balance";
 import { FLAG_IDS, type FlagId, RESOURCE_IDS, type ResourceId, TILE_IDS, type TileId } from "../content/ids";
 
@@ -50,10 +52,22 @@ export interface AlchemyState {
   completed: Record<ResearchId, boolean>;
 }
 
+export interface ChapelState {
+  vows: Record<VowId, boolean>;
+}
+
+export interface RitualState {
+  /** Gesammelte Asche – bleibt über alle Rituale erhalten. */
+  ash: number;
+  performed: number;
+}
+
 export interface GameState {
   resources: Record<ResourceId, Decimal>;
   /** Lebenslang erhaltene Mengen – Grundlage für Story-Trigger. */
   totals: Record<ResourceId, Decimal>;
+  /** Erhaltene Mengen seit dem letzten Ritual der Asche – Grundlage für die Ascheberechnung. */
+  runTotals: Record<ResourceId, Decimal>;
   buildings: Record<BuildingId, number>;
   upgrades: Record<UpgradeId, boolean>;
   tiles: Record<TileId, boolean>;
@@ -62,6 +76,8 @@ export interface GameState {
   warroom: WarroomState;
   dungeon: DungeonState;
   alchemy: AlchemyState;
+  chapel: ChapelState;
+  ritual: RitualState;
   story: { completed: string[] };
   stats: { playSeconds: number; clicks: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
@@ -72,6 +88,7 @@ export function createInitialState(now: number): GameState {
   return {
     resources: recordFrom(RESOURCE_IDS, () => ZERO),
     totals: recordFrom(RESOURCE_IDS, () => ZERO),
+    runTotals: recordFrom(RESOURCE_IDS, () => ZERO),
     buildings: recordFrom(BUILDING_IDS, () => 0),
     upgrades: recordFrom(UPGRADE_IDS, () => false),
     tiles: recordFrom(TILE_IDS, () => false),
@@ -80,6 +97,8 @@ export function createInitialState(now: number): GameState {
     warroom: { soldiers: 0, active: [], completed: recordFrom(EXPEDITION_IDS, () => 0), fallen: 0, seals: 0 },
     dungeon: { prisoners: 0, laborers: 0, intel: 0, interrogated: 0 },
     alchemy: { active: null, completed: recordFrom(RESEARCH_IDS, () => false) },
+    chapel: { vows: recordFrom(VOW_IDS, () => false) },
+    ritual: { ash: 0, performed: 0 },
     story: { completed: [] },
     stats: { playSeconds: 0, clicks: 0 },
     lastSeen: now,
@@ -90,6 +109,7 @@ export function gain(state: GameState, resource: ResourceId, amount: Decimal): v
   if (amount.lte(0)) return;
   state.resources[resource] = state.resources[resource].add(amount);
   state.totals[resource] = state.totals[resource].add(amount);
+  state.runTotals[resource] = state.runTotals[resource].add(amount);
 }
 
 /** Lebende Soldaten inklusive der entsandten. */

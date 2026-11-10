@@ -8,7 +8,10 @@ import {
   type ResearchId,
   UPGRADES,
   type UpgradeId,
+  type VowId,
 } from "../content/balance";
+import { breakVow, swearVow } from "./chapel";
+import { performRitual } from "./ritual";
 import type { ResourceId } from "../content/ids";
 import { startResearch } from "./alchemy";
 import { forceLabor, interrogate } from "./dungeon";
@@ -25,6 +28,7 @@ const NOT_ENOUGH: Readonly<Record<ResourceId, string>> = {
   iron: "Nicht genug Eisen.",
   swords: "Nicht genug Schwerter.",
   souls: "Nicht genug Seelen.",
+  faith: "Nicht genug Glauben.",
 };
 const notEnough = (resource: ResourceId): string => NOT_ENOUGH[resource];
 
@@ -37,7 +41,10 @@ export type Action =
   | { readonly type: "launchExpedition"; readonly expedition: ExpeditionId }
   | { readonly type: "interrogate"; readonly amount: number }
   | { readonly type: "forceLabor"; readonly amount: number }
-  | { readonly type: "research"; readonly research: ResearchId };
+  | { readonly type: "research"; readonly research: ResearchId }
+  | { readonly type: "swearVow"; readonly vow: VowId }
+  | { readonly type: "breakVow"; readonly vow: VowId }
+  | { readonly type: "ritual" };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   if (amount !== "max") return amount;
@@ -97,6 +104,12 @@ export function applyAction(state: GameState, action: Action): Result {
       return forceLabor(state, action.amount);
     case "research":
       return startResearch(state, action.research);
+    case "swearVow":
+      return swearVow(state, action.vow);
+    case "breakVow":
+      return breakVow(state, action.vow);
+    case "ritual":
+      return performRitual(state);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);

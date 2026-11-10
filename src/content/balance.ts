@@ -29,6 +29,17 @@ export const SEALS_FOR_KOMTUREI = 4;
 /** Jeder Gefallene in der Krypta liefert so viele Seelen pro Sekunde (vor Multiplikatoren). */
 export const FALLEN_SOUL_RATE = 0.05;
 
+/** Ritual der Asche: Asche = floor((Gold dieses Laufs / BASE) ^ EXPONENT); jede Asche +BONUS auf alle Produktion. */
+export const ASH_GOLD_BASE = 1e12;
+export const ASH_EXPONENT = 0.3;
+export const ASH_BONUS = 0.1;
+export const VOW_SLOTS = 1;
+
+/** Story-Schwellen von Akt IV – Story-Trigger und Kapellen-Anzeige nutzen sie gemeinsam. */
+export const FAITH_FOR_SERMON = 20_000;
+export const FAITH_FOR_BETRAYAL = 300_000;
+export const REBIRTH_RUN_GOLD = 1e15;
+
 /** Rekrutierung: Gold geometrisch nach Anzahl lebender Soldaten, dazu ein Schwert je Soldat. */
 export const RECRUIT_COST: GeometricCost = { base: 5_000, growth: 1.04 };
 export const RECRUIT_SWORDS = 1;
@@ -133,6 +144,36 @@ export const BUILDINGS = {
     baseRate: 100_000,
     requiresFlag: "act2Complete",
   },
+  offering_box: {
+    name: "Opferstock",
+    description: "Die Gemeinde gibt, was sie nicht hat. Für einen Gott, der nicht zuhört.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: { base: 1e12, growth: 1.15 },
+    produces: "faith",
+    baseRate: 1,
+    requiresFlag: null,
+  },
+  reliquary: {
+    name: "Reliquienschrein",
+    description: "Ein Fingerknochen der Heiligen Adelheid. Der dritte, den du dieses Jahr kaufst.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: { base: 4e13, growth: 1.15 },
+    produces: "faith",
+    baseRate: 10,
+    requiresFlag: null,
+  },
+  bell_tower: {
+    name: "Glockenturm",
+    description: "Die Glocke schweigt nicht mehr. Man hört sie bis Grauweiler.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: { base: 1.5e15, growth: 1.15 },
+    produces: "faith",
+    baseRate: 110,
+    requiresFlag: null,
+  },
   candle: {
     name: "Totenlicht",
     description: "Eine Kerze aus Talg und Asche. Die Seelen drängen sich an ihre Flamme.",
@@ -211,7 +252,8 @@ export type UpgradeEffect =
   | { readonly kind: "expeditionLosses"; readonly factor: number }
   | { readonly kind: "intelYield"; readonly add: number }
   | { readonly kind: "laborBonus"; readonly factor: number }
-  | { readonly kind: "resourceMult"; readonly resource: ResourceId; readonly factor: number };
+  | { readonly kind: "resourceMult"; readonly resource: ResourceId; readonly factor: number }
+  | { readonly kind: "vowSlots"; readonly add: number };
 
 export interface UpgradeDef {
   readonly name: string;
@@ -476,6 +518,36 @@ export const UPGRADES = {
     requiresFlag: null,
     effect: { kind: "buildingMult", building: "bank", factor: 2 },
   },
+  incense: {
+    name: "Weihrauch aus Grauweiler",
+    description: "Opferstöcke bringen doppelt so viel Glauben.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: 5e13,
+    requires: { building: "offering_box", count: 10 },
+    requiresFlag: null,
+    effect: { kind: "buildingMult", building: "offering_box", factor: 2 },
+  },
+  holy_bones: {
+    name: "Heilige Gebeine",
+    description: "Reliquienschreine bringen doppelt so viel Glauben.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: 2e15,
+    requires: { building: "reliquary", count: 10 },
+    requiresFlag: null,
+    effect: { kind: "buildingMult", building: "reliquary", factor: 2 },
+  },
+  second_altar: {
+    name: "Zweiter Altar",
+    description: "Du kannst ein weiteres Gelübde ablegen.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: 2e14,
+    requires: { building: "offering_box", count: 5 },
+    requiresFlag: null,
+    effect: { kind: "vowSlots", add: 1 },
+  },
 } as const satisfies Record<string, UpgradeDef>;
 
 export type UpgradeId = keyof typeof UPGRADES;
@@ -645,3 +717,60 @@ export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
 
 export type ResearchId = ResearchKey;
 export const RESEARCH_IDS = Object.keys(RESEARCH) as ResearchId[];
+
+export interface VowDef {
+  readonly name: string;
+  readonly blessing: string;
+  readonly curse: string;
+  readonly faithCost: number;
+  /** Segen und Fluch als Effekte – sie laufen durch denselben Effekt-Index wie Upgrades. */
+  readonly effects: readonly UpgradeEffect[];
+}
+
+type VowKey = "penance" | "silence" | "sword" | "poverty";
+
+export const VOWS: Readonly<Record<VowKey, VowDef>> = {
+  penance: {
+    name: "Gelübde der Buße",
+    blessing: "Glaube ×3",
+    curse: "Eisen ×0,25",
+    faithCost: 100,
+    effects: [
+      { kind: "resourceMult", resource: "faith", factor: 3 },
+      { kind: "resourceMult", resource: "iron", factor: 0.25 },
+    ],
+  },
+  silence: {
+    name: "Gelübde des Schweigens",
+    blessing: "Gold ×3",
+    curse: "Steuern eintreiben bringt nichts mehr",
+    faithCost: 5_000,
+    effects: [
+      { kind: "resourceMult", resource: "gold", factor: 3 },
+      { kind: "clickMult", factor: 0 },
+    ],
+  },
+  sword: {
+    name: "Gelübde des Schwertes",
+    blessing: "Expeditionen dreimal so schnell",
+    curse: "Doppelte Verluste",
+    faithCost: 2_000,
+    effects: [
+      { kind: "expeditionSpeed", factor: 3 },
+      { kind: "expeditionLosses", factor: 2 },
+    ],
+  },
+  poverty: {
+    name: "Gelübde der Armut",
+    blessing: "Seelen ×4",
+    curse: "Gold ×0,5",
+    faithCost: 10_000,
+    effects: [
+      { kind: "resourceMult", resource: "souls", factor: 4 },
+      { kind: "resourceMult", resource: "gold", factor: 0.5 },
+    ],
+  },
+};
+
+export type VowId = VowKey;
+export const VOW_IDS = Object.keys(VOWS) as VowId[];

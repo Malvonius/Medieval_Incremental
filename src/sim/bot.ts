@@ -15,9 +15,12 @@ import {
   UPGRADE_IDS,
   type UpgradeEffect,
   type UpgradeId,
+  type VowId,
 } from "../content/balance";
 import type { Action } from "../game/actions";
 import { researchStatus } from "../game/alchemy";
+import { vowBlocker } from "../game/chapel";
+import { ashGain } from "../game/ritual";
 import { canAffordRecipe } from "../game/forge";
 import {
   buildingCost,
@@ -62,6 +65,12 @@ const SUPPORT_BUDGET_SECONDS = 90;
 const MAX_ACTIONS_PER_STEP = 200;
 /** Eine Forschung, deren Kosten innerhalb dieser Sekunden Einkommen erreichbar sind, wird angespart. */
 const RESEARCH_SAVE_SECONDS = 600;
+/** Glaubensgebäude dürfen höchstens so viele Sekunden Goldeinkommen kosten. */
+const FAITH_BUDGET_SECONDS = 60;
+/** Erstes Ritual, sobald es mindestens so viel Asche bringt. */
+const FIRST_RITUAL_ASH = 15;
+/** Gelübde in der Reihenfolge, in der der Bot sie ablegt. */
+const VOW_PREFERENCE: readonly VowId[] = ["penance", "silence", "sword", "poverty"];
 /** Sold für einen Rekruten darf höchstens so viele Sekunden Goldeinkommen kosten – sonst verhungert die Wirtschaft. */
 const RECRUIT_BUDGET_SECONDS = 25;
 
@@ -246,6 +255,33 @@ class GreedyBot {
     return null;
   }
 
+  private chapelAction(): Action | null {
+    const s = this.sim.view;
+    if (!s.tiles.chapel) return null;
+    const budget = this.sim.rates.gold.mul(FAITH_BUDGET_SECONDS);
+    let best: { id: BuildingId; value: number } | null = null;
+    for (const id of BUILDING_IDS) {
+      if (BUILDINGS[id].produces !== "faith" || !isBuildingVisible(s, id)) continue;
+      const cost = buildingCost(s, id, 1);
+      if (cost.gt(s.resources.gold) || cost.gt(budget)) continue;
+      const value = unitRate(s, id).div(cost).toNumber();
+      if (best === null || value > best.value) best = { id, value };
+    }
+    return best === null ? null : { type: "buyBuilding", building: best.id, amount: 1 };
+  }
+
+  private vowAction(): Action | null {
+    const s = this.sim.view;
+    const vow = VOW_PREFERENCE.find((id) => vowBlocker(s, id) === null);
+    return vow === undefined ? null : { type: "swearVow", vow };
+  }
+
+  private ritualAction(): Action | null {
+    const s = this.sim.view;
+    if (!s.tiles.ritual || s.ritual.performed > 0) return null;
+    return ashGain(s) >= FIRST_RITUAL_ASH ? { type: "ritual" } : null;
+  }
+
   private dungeonAction(): Action | null {
     const { dungeon, tiles } = this.sim.view;
     if (!tiles.dungeon || dungeon.prisoners === 0) return null;
@@ -270,13 +306,19 @@ class GreedyBot {
   }
 
   private nextAction(): Action | null {
+    const ritual = this.ritualAction() ?? this.vowAction();
+    if (ritual) return ritual;
     const research = this.researchAction();
     if (research) return research;
     const launch = this.launchAction();
     if (launch) return launch;
     const goldSpending = this.saving.gold
       ? null
-      : (this.recruitAction() ?? this.supportUpgrade() ?? this.forgeAction() ?? this.bestGoldAction());
+      : (this.recruitAction() ??
+        this.supportUpgrade() ??
+        this.forgeAction() ??
+        this.chapelAction() ??
+        this.bestGoldAction());
     return this.dungeonAction() ?? this.soulAction() ?? goldSpending;
   }
 
