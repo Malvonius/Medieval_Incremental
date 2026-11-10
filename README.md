@@ -72,3 +72,14 @@ Plan voraus, sonst muss das Repository öffentlich sein. Manuell auslösen: **Ac
 Pages → Run workflow**.
 
 Vite baut mit relativen Pfaden (`base: "./"`), daher läuft das Spiel unter jedem Unterpfad.
+
+## Plattform
+
+| Thema | Stand |
+|---|---|
+| **PWA** | `public/manifest.webmanifest` + `public/sw.js`. Nach dem ersten Besuch offline spielbar und installierbar („Zum Startbildschirm hinzufügen“). |
+| **Backup** | Spielstand wird nach IndexedDB gespiegelt; löscht der Browser `localStorage`, wird er beim Start wiederhergestellt. |
+| **Cloud-Speicher** | Aktiv, wenn beim Build `VITE_CLOUD_SAVE_URL` gesetzt ist. Erwartet `PUT/GET {URL}/{Sync-Code}` mit dem Export-Text (siehe `src/app/cloud.ts`). Ohne Variable bleibt die Funktion unsichtbar. |
+| **Sprachen** | Bedienoberfläche Deutsch/Englisch (`src/i18n`). Story- und Spieltexte sind noch deutsch. |
+| **Desktop** | Tauri-2-Grundgerüst in `src-tauri/`. Bauen mit `npm run tauri:build` (benötigt Rust und die [Tauri-Systemvoraussetzungen](https://v2.tauri.app/start/prerequisites/)). |
+| **Browser-Tests** | `npm run e2e` (Playwright, Desktop + Mobil), läuft auch in CI. |

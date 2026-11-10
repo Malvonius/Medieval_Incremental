@@ -3,6 +3,7 @@
   import type { StoryNode } from "../../game/story";
   import { formatDuration, formatNumber } from "../format";
   import ProgressSection from "./ProgressSection.svelte";
+  import { CLOUD_URL, downloadSave, isValidSyncCode, syncCode, uploadSave } from "../../app/cloud";
   import SettingsSection from "./SettingsSection.svelte";
 
   let { game }: { game: GameController } = $props();
@@ -29,6 +30,19 @@
     } catch {
       // Zwischenablage nicht erlaubt (z. B. ohne HTTPS) – Text bleibt zum manuellen Kopieren sichtbar.
       copyState = "failed";
+    }
+  }
+
+  let cloudCode = $state(CLOUD_URL ? syncCode(localStorage) : "");
+  let cloudStatus = $state("");
+  async function cloud(direction: "up" | "down"): Promise<void> {
+    cloudStatus = direction === "up" ? "Lade hoch …" : "Lade herunter …";
+    try {
+      if (direction === "up") await uploadSave(cloudCode, game.exportText());
+      else game.importText(await downloadSave(cloudCode));
+      cloudStatus = direction === "up" ? "In der Cloud gesichert." : "Aus der Cloud geladen.";
+    } catch (error) {
+      cloudStatus = error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -80,6 +94,18 @@
   </div>
   {#if exported}
     <textarea readonly rows="3" aria-label="Exportierter Spielstand" onfocus={(e) => e.currentTarget.select()}>{exported}</textarea>
+  {/if}
+
+  {#if CLOUD_URL}
+    <div class="row">
+      <label class="import inline">
+        <span>Sync-Code</span>
+        <input class="code" bind:value={cloudCode} maxlength="12" spellcheck="false" />
+      </label>
+      <button class="btn" disabled={!isValidSyncCode(cloudCode)} onclick={() => cloud("up")}>In die Cloud</button>
+      <button class="btn" disabled={!isValidSyncCode(cloudCode)} onclick={() => cloud("down")}>Aus der Cloud laden</button>
+      {#if cloudStatus}<span class="hint">{cloudStatus}</span>{/if}
+    </div>
   {/if}
 
   <label class="import">
@@ -167,6 +193,20 @@
     gap: 4px;
     margin-top: 12px;
     color: var(--text-muted);
+  }
+
+  .import.inline {
+    margin: 0;
+  }
+
+  .code {
+    background: var(--bg-sunken);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 4px 8px;
+    font-family: ui-monospace, monospace;
+    width: 14ch;
   }
 
   .hint {
