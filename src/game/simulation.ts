@@ -9,6 +9,7 @@ import { type GameState, gain } from "./state";
 import { tickWarroom } from "./warroom";
 import { tickAlchemy } from "./alchemy";
 import { tickSiege } from "./siege";
+import { resolveEvent, tickAutomation, tickEvents } from "./depth";
 import { evaluateAchievements } from "./achievements";
 import type { AchievementId } from "../content/achievements";
 import { type StoryNode, StoryDirector } from "./story";
@@ -60,11 +61,15 @@ export class Simulation {
     if (tickWarroom(this.state, dt, rates.gold)) this.invalidate();
     if (tickAlchemy(this.state, dt)) this.invalidate();
     if (tickSiege(this.state, dt)) this.invalidate();
+    if (tickEvents(this.state, dt)) this.invalidate();
+    if (tickAutomation(this.state, dt)) this.invalidate();
     this.advanceStory();
   }
 
   dispatch(action: Action): Result {
-    const result = applyAction(this.state, action);
+    const result = action.type === "resolveEvent" ? resolveEvent(this.state, action.choice, this.rates) : applyAction(this.state, action);
+    // Neues Spiel+ ersetzt die Story: der Director muss seine Grenze neu bestimmen.
+    if (result.ok && action.type === "newGamePlus") this.director.sync(this.state);
     if (result.ok) {
       this.events.emit("action", action.type);
       this.invalidate();

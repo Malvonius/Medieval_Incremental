@@ -11,7 +11,17 @@ import {
   type RecipeId,
   type ResearchId,
 } from "../content/balance";
-import { type ActiveExpedition, type AlchemyState, type GameState, type SiegeState, createInitialState } from "./state";
+import { CHALLENGE_IDS, EVENT_IDS } from "../content/depth";
+import { RESOURCE_IDS, type ResourceId } from "../content/ids";
+import {
+  type ActiveExpedition,
+  type AlchemyState,
+  type EventState,
+  type GameState,
+  type MetaState,
+  type SiegeState,
+  createInitialState,
+} from "./state";
 
 /** JSON-taugliche Form des Spielstands (Decimal → String). */
 export type PlainState = ReturnType<typeof toPlain>;
@@ -54,6 +64,10 @@ export function toPlain(state: DeepReadonly<GameState>) {
     },
     story: { completed: [...state.story.completed], completedAt: state.story.completed.map((_, i) => state.story.completedAt[i] ?? 0) },
     achievements: { ...state.achievements },
+    rng: state.rng,
+    events: { pending: state.events.pending, timer: state.events.timer, buff: state.events.buff === null ? null : { ...state.events.buff } },
+    automation: { ...state.automation },
+    meta: { ...state.meta, challengesDone: { ...state.meta.challengesDone } },
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
   };
@@ -126,6 +140,41 @@ function readStory(completed: readonly string[], rawAt: unknown): GameState["sto
     out.completedAt.push(typeof t === "number" && Number.isFinite(t) && t >= 0 ? t : 0);
   });
   return out;
+}
+
+const EVENT_SET: ReadonlySet<string> = new Set(EVENT_IDS);
+const CHALLENGE_SET: ReadonlySet<string> = new Set(CHALLENGE_IDS);
+const RESOURCE_SET: ReadonlySet<string> = new Set(RESOURCE_IDS);
+
+function readEvents(source: Record<string, unknown>, defaults: EventState): EventState {
+  const pending = source["pending"] ?? null;
+  if (pending !== null && (typeof pending !== "string" || !EVENT_SET.has(pending))) throw new SaveError('Feld "events.pending" ist unbekannt.');
+  const rawBuff = source["buff"] ?? null;
+  let buff: EventState["buff"] = null;
+  if (rawBuff !== null) {
+    if (!isObject(rawBuff) || typeof rawBuff["resource"] !== "string" || !RESOURCE_SET.has(rawBuff["resource"])) {
+      throw new SaveError('Feld "events.buff" ist ungültig.');
+    }
+    buff = {
+      resource: rawBuff["resource"] as ResourceId,
+      factor: readNumber(rawBuff["factor"], "events.buff.factor", 1),
+      remaining: readNumber(rawBuff["remaining"], "events.buff.remaining", 0),
+    };
+  }
+  return { pending: pending as EventState["pending"], timer: readNumber(source["timer"], "events.timer", defaults.timer), buff };
+}
+
+function readMeta(source: Record<string, unknown>, defaults: MetaState): MetaState {
+  const challenge = source["challenge"] ?? null;
+  if (challenge !== null && (typeof challenge !== "string" || !CHALLENGE_SET.has(challenge))) {
+    throw new SaveError('Feld "meta.challenge" ist unbekannt.');
+  }
+  return {
+    ngPlus: readNumber(source["ngPlus"], "meta.ngPlus", 0, { integer: true }),
+    memories: readNumber(source["memories"], "meta.memories", 0, { integer: true }),
+    challenge: challenge as MetaState["challenge"],
+    challengesDone: readRecord(section(source, "challengesDone"), defaults.challengesDone, "meta.challengesDone", readBoolean),
+  };
 }
 
 const ENDING_SET: ReadonlySet<string> = new Set(ENDING_IDS);
@@ -232,6 +281,13 @@ export function fromPlain(data: unknown, now: number): GameState {
     siege: readSiege(section(data, "siege"), d.siege),
     story: readStory(rawCompleted, story["completedAt"]),
     achievements: readRecord(section(data, "achievements"), d.achievements, "achievements", readBoolean),
+    rng: readNumber(data["rng"], "rng", d.rng, { integer: true }) >>> 0,
+    events: readEvents(section(data, "events"), d.events),
+    automation: {
+      enabled: readBoolean(section(data, "automation")["enabled"], "automation.enabled", true),
+      timer: readNumber(section(data, "automation")["timer"], "automation.timer", 0),
+    },
+    meta: readMeta(section(data, "meta"), d.meta),
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),
       clicks: readCount(stats["clicks"], "stats.clicks", 0),

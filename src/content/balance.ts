@@ -257,7 +257,8 @@ export type UpgradeEffect =
   | { readonly kind: "laborBonus"; readonly factor: number }
   | { readonly kind: "resourceMult"; readonly resource: ResourceId; readonly factor: number }
   | { readonly kind: "vowSlots"; readonly add: number }
-  | { readonly kind: "defenseMult"; readonly factor: number };
+  | { readonly kind: "defenseMult"; readonly factor: number }
+  | { readonly kind: "steward" };
 
 export interface UpgradeDef {
   readonly name: string;
@@ -581,6 +582,26 @@ export const UPGRADES = {
     requires: null,
     requiresFlag: "act4Complete",
     effect: { kind: "defenseMult", factor: 3 },
+  },
+  steward: {
+    name: "Verwalter",
+    description: "Ein pedantischer Mann mit Rechenbrett. Kauft selbstständig Gold-Gebäude (abschaltbar).",
+    tile: "keep",
+    costResource: "gold",
+    cost: 5e6,
+    requires: null,
+    requiresFlag: "act1Complete",
+    effect: { kind: "steward" },
+  },
+  third_altar: {
+    name: "Dritter Altar",
+    description: "Ein weiteres Gelübde – und damit neue Verbindungen zwischen ihnen.",
+    tile: "chapel",
+    costResource: "gold",
+    cost: 1e16,
+    requires: null,
+    requiresFlag: "act4Complete",
+    effect: { kind: "vowSlots", add: 1 },
   },
 } as const satisfies Record<string, UpgradeDef>;
 

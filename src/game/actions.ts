@@ -15,6 +15,8 @@ import {
 import { breakVow, swearVow } from "./chapel";
 import { performRitual } from "./ritual";
 import { buildFortification, chooseEnding, startBattle } from "./siege";
+import { decide, newGamePlus, setAutomation } from "./depth";
+import type { ChallengeId, DecisionId } from "../content/depth";
 import type { ResourceId } from "../content/ids";
 import { startResearch } from "./alchemy";
 import { forceLabor, interrogate } from "./dungeon";
@@ -60,7 +62,11 @@ export type Action =
   | { readonly type: "ritual" }
   | { readonly type: "buildFortification"; readonly fortification: FortificationId; readonly amount: number }
   | { readonly type: "battle" }
-  | { readonly type: "chooseEnding"; readonly ending: EndingId };
+  | { readonly type: "chooseEnding"; readonly ending: EndingId }
+  | { readonly type: "resolveEvent"; readonly choice: number }
+  | { readonly type: "setAutomation"; readonly enabled: boolean }
+  | { readonly type: "decide"; readonly decision: DecisionId; readonly option: 0 | 1 }
+  | { readonly type: "newGamePlus"; readonly challenge: ChallengeId | null };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   const def = BUILDINGS[building];
@@ -100,7 +106,8 @@ function collect(state: GameState): Result {
   return OK;
 }
 
-export function applyAction(state: GameState, action: Action): Result {
+/** resolveEvent braucht die aktuellen Raten und wird deshalb in der Simulation behandelt. */
+export function applyAction(state: GameState, action: Exclude<Action, { type: "resolveEvent" }>): Result {
   switch (action.type) {
     case "collect":
       return collect(state);
@@ -132,6 +139,12 @@ export function applyAction(state: GameState, action: Action): Result {
       return startBattle(state);
     case "chooseEnding":
       return chooseEnding(state, action.ending);
+    case "setAutomation":
+      return setAutomation(state, action.enabled);
+    case "decide":
+      return decide(state, action.decision, action.option);
+    case "newGamePlus":
+      return newGamePlus(state, action.challenge);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);

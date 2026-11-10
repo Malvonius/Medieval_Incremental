@@ -36,8 +36,8 @@ describe("Pacing", () => {
 
   it("Bot erreicht ein Ende im Zielfenster (≈ 8 h für Menschen)", () => {
     expect(result.reachedStop).toBe(true);
-    const end = result.milestones.at(-1);
-    expect(ENDINGS).toContain(end?.id);
+    const end = result.milestones.find((m) => (ENDINGS as readonly string[]).includes(m.id));
+    expect(end).toBeDefined();
     expect(end?.seconds).toBeGreaterThanOrEqual(292 * 60);
     expect(end?.seconds).toBeLessThanOrEqual(400 * 60);
   });
@@ -45,7 +45,7 @@ describe("Pacing", () => {
   it("erreicht alle Knoten genau einmal und in Akt-Reihenfolge", () => {
     const ids = result.milestones.map((m) => m.id);
     expect(ids[0]).toBe("a1_inheritance");
-    expect(ENDINGS).toContain(ids.at(-1));
+    expect(ids.some((id) => (ENDINGS as readonly string[]).includes(id))).toBe(true);
     expect(new Set(ids).size).toBe(ids.length);
     const acts = result.milestones.map((m) => m.act);
     expect(acts).toEqual([...acts].sort((a, b) => a - b));

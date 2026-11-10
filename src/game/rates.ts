@@ -37,6 +37,7 @@ import {
 } from "../content/balance";
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
 import { achievementMultiplier } from "./achievements";
+import { CHALLENGES, CHALLENGE_IDS, DECISIONS, DECISION_IDS, MEMORY_BONUS, SYNERGIES } from "../content/depth";
 import { type GameState, aliveSoldiers } from "./state";
 
 export type Rates = Readonly<Record<ResourceId, Decimal>>;
@@ -63,6 +64,12 @@ const EFFECTS_BY_KIND: ReadonlyMap<EffectKind, readonly EffectSource[]> = (() =>
   for (const id of UPGRADE_IDS) add({ owned: (s) => s.upgrades[id], effect: UPGRADES[id].effect });
   for (const id of RESEARCH_IDS) add({ owned: (s) => s.alchemy.completed[id], effect: RESEARCH[id].effect });
   for (const id of VOW_IDS) for (const effect of VOWS[id].effects) add({ owned: (s) => s.chapel.vows[id], effect });
+  for (const { vows: [a, b], effect } of SYNERGIES) add({ owned: (s) => s.chapel.vows[a] && s.chapel.vows[b], effect });
+  for (const id of CHALLENGE_IDS) {
+    for (const effect of CHALLENGES[id].restrictions) add({ owned: (s) => s.meta.challenge === id, effect });
+    add({ owned: (s) => s.meta.challengesDone[id], effect: CHALLENGES[id].reward });
+  }
+  for (const id of DECISION_IDS) for (const option of DECISIONS[id].options) add({ owned: (s) => s.flags[option.flag], effect: option.effect });
   return map;
 })();
 
@@ -97,14 +104,20 @@ export const armedBonus = (state: View): number =>
 export const pactMultiplier = (state: View, resource: ResourceId): number =>
   productOf(state, "resourceMult", (e) => (e.resource === resource ? e.factor : null));
 
+export const memoryMultiplier = (state: View): number => 1 + state.meta.memories * MEMORY_BONUS;
+
 export const ashMultiplier = (state: View): number => 1 + state.ritual.ash * ASH_BONUS;
 
 /** Globale Multiplikatoren je Ressource: Waffen & Soldaten, Siegel, Fronarbeit, Pakte, Forschung, Gelübde, Asche. */
 export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
   const seals = 1 + state.warroom.seals * SEAL_BONUS;
   const labor = state.dungeon.laborers * laborMultiplier(state);
+  const buff = state.events.buff;
+  const temporary = buff !== null && buff.resource === resource ? buff.factor : 1;
   const pacts =
-    pactMultiplier(state, resource) * (resource === "swords" ? 1 : ashMultiplier(state) * achievementMultiplier(state));
+    pactMultiplier(state, resource) *
+    temporary *
+    (resource === "swords" ? 1 : ashMultiplier(state) * achievementMultiplier(state) * memoryMultiplier(state));
   switch (resource) {
     case "gold": {
       const armed = state.resources.swords.add(aliveSoldiers(state)).mul(SWORD_GOLD_BONUS).add(1);

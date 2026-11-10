@@ -4,6 +4,7 @@
   import NoticeToast from "./NoticeToast.svelte";
   import ResourceBar from "./ResourceBar.svelte";
   import StoryDialog from "./StoryDialog.svelte";
+  import ChoiceDialog from "./ChoiceDialog.svelte";
   import TileMenu from "./TileMenu.svelte";
   import { audio } from "../app/audio";
   import { TILES } from "./tiles/registry";
@@ -33,6 +34,12 @@
   }
   const actLabel = $derived.by(() => {
     const { flags } = $snapshot.state;
+    const ng = $snapshot.state.meta.ngPlus;
+    const suffix = ng > 0 ? ` · Neues Spiel+ ${ng}` : "";
+    return label(flags) + suffix;
+  });
+
+  function label(flags: typeof $snapshot.state.flags): string {
     if (flags.act5Complete) {
       return $snapshot.state.siege.ending === "ash" ? "Ende · Die Asche von Vhal" : "Ende · Das Licht von Vhal";
     }
@@ -41,7 +48,7 @@
     if (flags.act2Complete) return "Akt III · Was unter der Erde liegt";
     if (flags.act1Complete) return "Akt II · Der Graue Orden";
     return "Akt I · Die Ruine";
-  });
+  }
 </script>
 
 <svelte:window {onkeydown} />
@@ -76,6 +83,7 @@
 </div>
 
 <StoryDialog {game} />
+<ChoiceDialog {game} />
 <NoticeToast {game} />
 
 <style>
