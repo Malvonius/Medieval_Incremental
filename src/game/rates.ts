@@ -36,6 +36,7 @@ import {
   VOW_SLOTS,
 } from "../content/balance";
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
+import { achievementMultiplier } from "./achievements";
 import { type GameState, aliveSoldiers } from "./state";
 
 export type Rates = Readonly<Record<ResourceId, Decimal>>;
@@ -102,7 +103,8 @@ export const ashMultiplier = (state: View): number => 1 + state.ritual.ash * ASH
 export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
   const seals = 1 + state.warroom.seals * SEAL_BONUS;
   const labor = state.dungeon.laborers * laborMultiplier(state);
-  const pacts = pactMultiplier(state, resource) * (resource === "swords" ? 1 : ashMultiplier(state));
+  const pacts =
+    pactMultiplier(state, resource) * (resource === "swords" ? 1 : ashMultiplier(state) * achievementMultiplier(state));
   switch (resource) {
     case "gold": {
       const armed = state.resources.swords.add(aliveSoldiers(state)).mul(SWORD_GOLD_BONUS).add(1);

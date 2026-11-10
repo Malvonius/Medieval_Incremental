@@ -2,6 +2,8 @@
   import type { GameController } from "../../app/controller";
   import type { StoryNode } from "../../game/story";
   import { formatDuration, formatNumber } from "../format";
+  import ProgressSection from "./ProgressSection.svelte";
+  import SettingsSection from "./SettingsSection.svelte";
 
   let { game }: { game: GameController } = $props();
 
@@ -64,6 +66,9 @@
     <dd class="num">{formatNumber(snap.state.totals.swords)}</dd>
   </dl>
 </section>
+
+<ProgressSection {game} {snap} />
+<SettingsSection />
 
 <section class="panel-section">
   <h3 class="section-title">Archiv</h3>

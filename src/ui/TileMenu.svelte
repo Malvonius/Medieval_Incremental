@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snapshot } from "../app/controller";
   import type { TileId } from "../content/ids";
-    import { TILES } from "./tiles/registry";
+    import { hasAffordable } from "../game/affordable";
+  import { TILES } from "./tiles/registry";
 
   let {
     snap,
@@ -18,6 +19,7 @@
         class="tile"
         class:active={active === tile.id}
         class:sealed={!unlocked}
+        class:ready={unlocked && active !== tile.id && hasAffordable(snap.state, tile.id)}
         disabled={!unlocked}
         aria-current={active === tile.id ? "page" : undefined}
         title={unlocked ? tile.title : tile.sealedHint}
@@ -79,6 +81,17 @@
     hyphens: auto;
     text-align: center;
     line-height: 1.15;
+  }
+
+  .tile.ready {
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    50% {
+      box-shadow: 0 0 14px rgb(212 165 74 / 0.35);
+      border-color: var(--gold);
+    }
   }
 
   .tile.sealed {

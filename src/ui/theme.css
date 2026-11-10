@@ -107,3 +107,8 @@ button:disabled {
     animation: none !important;
   }
 }
+
+:root[data-reduce-motion] * {
+  transition: none !important;
+  animation: none !important;
+}

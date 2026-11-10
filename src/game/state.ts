@@ -16,6 +16,7 @@ import {
   VOW_IDS,
   type VowId,
 } from "../content/balance";
+import { ACHIEVEMENT_IDS, type AchievementId } from "../content/achievements";
 import { FLAG_IDS, type FlagId, RESOURCE_IDS, type ResourceId, TILE_IDS, type TileId } from "../content/ids";
 
 export const SAVE_VERSION = 1;
@@ -90,7 +91,9 @@ export interface GameState {
   chapel: ChapelState;
   ritual: RitualState;
   siege: SiegeState;
-  story: { completed: string[] };
+  /** completedAt[i] = Spielsekunde, in der completed[i] erreicht wurde. */
+  story: { completed: string[]; completedAt: number[] };
+  achievements: Record<AchievementId, boolean>;
   stats: { playSeconds: number; clicks: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
   lastSeen: number;
@@ -112,7 +115,8 @@ export function createInitialState(now: number): GameState {
     chapel: { vows: recordFrom(VOW_IDS, () => false) },
     ritual: { ash: 0, performed: 0 },
     siege: { wave: 0, battle: null, fortifications: recordFrom(FORTIFICATION_IDS, () => 0), ending: null },
-    story: { completed: [] },
+    story: { completed: [], completedAt: [] },
+    achievements: recordFrom(ACHIEVEMENT_IDS, () => false),
     stats: { playSeconds: 0, clicks: 0 },
     lastSeen: now,
   };

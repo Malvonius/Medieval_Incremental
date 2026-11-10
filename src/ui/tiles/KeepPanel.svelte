@@ -14,10 +14,23 @@
   const snap = $derived($snapshot);
   const KEEP_BUILDINGS = BUILDING_IDS.filter((id) => BUILDINGS[id].tile === "keep");
   let amount = $state<BuyAmount>(1);
+
+  /** Aufsteigende Zahlen beim Klick; nach der Animation (900 ms) wieder entfernt. */
+  let floaters = $state<{ id: number; text: string; x: number }[]>([]);
+  let nextFloater = 0;
+  function collect(event: MouseEvent): void {
+    const value = clickValue(snap.state);
+    if (!game.dispatch({ type: "collect" }).ok || value.lte(0)) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const id = nextFloater++;
+    floaters = [...floaters, { id, text: `+${formatNumber(value)}`, x: event.clientX - rect.left }];
+    setTimeout(() => (floaters = floaters.filter((f) => f.id !== id)), 900);
+  }
 </script>
 
 <section class="panel-section">
-  <button class="collect" onclick={() => game.dispatch({ type: "collect" })}>
+  <button class="collect" onclick={collect}>
+    {#each floaters as f (f.id)}<span class="floater num" style:left="{f.x}px" aria-hidden="true">{f.text}</span>{/each}
     <span class="label">Steuern eintreiben</span>
     <span class="value num">+{formatNumber(clickValue(snap.state))} Gold</span>
   </button>
@@ -37,6 +50,8 @@
 
 <style>
   .collect {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -54,6 +69,23 @@
 
   .collect:active {
     transform: scale(0.985);
+  }
+
+  .floater {
+    position: absolute;
+    top: 30%;
+    transform: translateX(-50%);
+    color: var(--gold);
+    font-weight: 600;
+    pointer-events: none;
+    animation: rise 900ms ease-out forwards;
+  }
+
+  @keyframes rise {
+    to {
+      transform: translate(-50%, -48px);
+      opacity: 0;
+    }
   }
 
   .label {

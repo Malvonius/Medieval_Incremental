@@ -1,5 +1,9 @@
 import { type Readable, type Writable, writable } from "svelte/store";
 import { startLoop } from "../core/loop";
+import { RingBuffer } from "../core/ringBuffer";
+import { ACHIEVEMENTS } from "../content/achievements";
+import { setNotation } from "../ui/format";
+import { settings } from "./settings";
 import type { DeepReadonly, Result } from "../core/types";
 import { GAP_THRESHOLD_SECONDS, TICK_SECONDS } from "../content/balance";
 import type { Action } from "../game/actions";
@@ -26,7 +30,8 @@ export type Notice =
   | { readonly kind: "info"; readonly message: string }
   | { readonly kind: "error"; readonly message: string };
 
-const AUTOSAVE_MS = 30_000;
+/** Verlauf der Goldproduktion: ein Wert pro Spielminute, bis zu 8 Stunden. */
+const HISTORY_MINUTES = 480;
 
 /**
  * Verbindet Simulation, Loop, Speicher und UI-Stores. Die UI ruft nur `dispatch` & Co. auf
@@ -37,6 +42,11 @@ export class GameController {
   private unsubscribeStory: () => void = () => {};
   private stopLoop: (() => void) | null = null;
   private autosaveHandle: ReturnType<typeof setInterval> | null = null;
+  private unsubscribeSettings: () => void = () => {};
+  private lastSampleMinute = -1;
+  private readonly historyBuffer = new RingBuffer<number>(HISTORY_MINUTES);
+  /** log10 der Goldproduktion je Spielminute, älteste zuerst. */
+  readonly history = writable<readonly number[]>([]);
   private frame = 0;
   private readonly snapshotStore: Writable<Snapshot>;
 
@@ -71,7 +81,14 @@ export class GameController {
   private attach(state: GameState): Simulation {
     this.unsubscribeStory();
     const sim = new Simulation(state);
-    this.unsubscribeStory = sim.events.on("story", (node) => this.storyQueue.update((q) => [...q, node]));
+    const offStory = sim.events.on("story", (node) => this.storyQueue.update((q) => [...q, node]));
+    const offAchievement = sim.events.on("achievement", (id) =>
+      this.notice.set({ kind: "info", message: `Erfolg: ${ACHIEVEMENTS[id].name} (+1 % Produktion)` }),
+    );
+    this.unsubscribeStory = () => {
+      offStory();
+      offAchievement();
+    };
     return sim;
   }
 
@@ -81,7 +98,17 @@ export class GameController {
   }
 
   private publish(): void {
+    this.sampleHistory();
     this.snapshotStore.set(this.makeSnapshot());
+  }
+
+  private sampleHistory(): void {
+    const minute = Math.floor(this.sim.view.stats.playSeconds / 60);
+    if (minute === this.lastSampleMinute) return;
+    this.lastSampleMinute = minute;
+    const rate = this.sim.rates.gold;
+    this.historyBuffer.push(rate.gt(0) ? rate.log10() : 0);
+    this.history.set(this.historyBuffer.toArray());
   }
 
   private readonly onVisibility = (): void => {
@@ -100,7 +127,13 @@ export class GameController {
       onGap: (seconds) => void catchUp(this.sim, seconds, 1),
       render: () => this.publish(),
     });
-    this.autosaveHandle = setInterval(() => this.save(), AUTOSAVE_MS);
+    this.unsubscribeSettings = settings.subscribe((s) => {
+      setNotation(s.notation);
+      document.documentElement.toggleAttribute("data-reduce-motion", s.reduceMotion);
+      if (this.autosaveHandle !== null) clearInterval(this.autosaveHandle);
+      this.autosaveHandle = setInterval(() => this.save(), s.autosaveSeconds * 1000);
+      this.publish();
+    });
     document.addEventListener("visibilitychange", this.onVisibility);
     window.addEventListener("beforeunload", this.onUnload);
   }
@@ -108,6 +141,7 @@ export class GameController {
   stop(): void {
     this.stopLoop?.();
     this.stopLoop = null;
+    this.unsubscribeSettings();
     if (this.autosaveHandle !== null) clearInterval(this.autosaveHandle);
     this.autosaveHandle = null;
     document.removeEventListener("visibilitychange", this.onVisibility);

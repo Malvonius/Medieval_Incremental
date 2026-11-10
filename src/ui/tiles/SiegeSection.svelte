@@ -2,7 +2,7 @@
   import type { GameController, Snapshot } from "../../app/controller";
   import { maxAffordable } from "../../core/economy";
   import { ENDINGS, ENDING_IDS, FORTIFICATIONS, FORTIFICATION_IDS, WAVES } from "../../content/balance";
-  import type { BuyAmount } from "../../game/actions";
+  import { type BuyAmount, resolveAmount } from "../../game/actions";
   import { defense, defenseMultiplier, fortificationCost } from "../../game/rates";
   import { BATTLE_BLOCKER_TEXT, ENDING_BLOCKER_TEXT, battleBlocker, endingBlocker } from "../../game/siege";
   import { formatDuration, formatNumber } from "../format";
@@ -20,8 +20,8 @@
   const ending = $derived(snap.state.siege.ending);
 
   function fortCount(id: (typeof FORTIFICATION_IDS)[number]): number {
-    if (amount !== "max") return amount;
-    return maxAffordable(FORTIFICATIONS[id].cost, snap.state.siege.fortifications[id], snap.state.resources.gold);
+    const owned = snap.state.siege.fortifications[id];
+    return resolveAmount(amount, owned, () => maxAffordable(FORTIFICATIONS[id].cost, owned, snap.state.resources.gold));
   }
 </script>
 

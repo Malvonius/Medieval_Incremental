@@ -87,6 +87,7 @@ export class StoryDirector {
         if (!node.trigger(state)) continue;
         this.completed.add(node.id);
         state.story.completed.push(node.id);
+        state.story.completedAt.push(state.stats.playSeconds);
         for (const effect of node.effects) applyEffect(state, effect);
         done.push(node);
         progressed = true;
