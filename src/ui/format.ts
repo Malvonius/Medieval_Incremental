@@ -5,13 +5,14 @@ const SUFFIXES = ["", " Tsd.", " Mio.", " Mrd.", " Bio.", " Brd.", " Trill.", " 
 const fixed = (value: number, digits: number): string =>
   value.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-/** 1234 → „1,23 Tsd.“, 5e30 → „5,00e30“. Kleine Werte mit höchstens einer Nachkommastelle. */
+/** 1234 → „1,23 Tsd.“, 5e30 → „5,00e30“. Werte unter 1 mit zwei, sonst höchstens einer Nachkommastelle. */
 export function formatNumber(source: DecimalSource): string {
   const value = toDecimal(source);
   if (value.lt(0)) return `-${formatNumber(value.neg())}`;
   if (value.lt(1_000)) {
     const n = value.toNumber();
-    return Number.isInteger(n) ? fixed(n, 0) : fixed(Math.floor(n * 10) / 10, 1);
+    if (Number.isInteger(n)) return fixed(n, 0);
+    return n < 1 ? fixed(Math.floor(n * 100) / 100, 2) : fixed(Math.floor(n * 10) / 10, 1);
   }
   const group = Math.floor(value.exponent / 3);
   const suffix = SUFFIXES[group];

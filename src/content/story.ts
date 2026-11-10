@@ -1,5 +1,6 @@
 import type { StoryNode } from "../game/story";
 import { INTEL_FOR_KOMTUREI, INTEL_FOR_OUTPOST, SEALS_FOR_KOMTUREI } from "./balance";
+import { completedResearchCount } from "../game/alchemy";
 
 /**
  * Story-Graph aller Akte. Reine Daten: Trigger lesen den Spielstand, Effekte verändern ihn.
@@ -173,5 +174,95 @@ export const STORY: readonly StoryNode[] = [
     requires: ["a2_traitor"],
     trigger: (s) => s.warroom.completed.komturei >= 1,
     effects: [{ kind: "setFlag", flag: "act2Complete" }],
+  },
+
+  // ── Akt III – Was unter der Erde liegt ──────────────────────────────────────
+  {
+    id: "a3_descent",
+    act: 3,
+    title: "Die Tür unter der Kapelle",
+    text: [
+      "Der Riegel ist von innen vorgeschoben. Brannoc braucht eine Nacht und drei Meißel, um ihn zu brechen.",
+      "Dahinter führt eine Wendeltreppe hinab, tiefer, als die Burg hoch ist. Die Wände sind mit Knochen ausgekleidet, Schädel an Schädel, und ganz unten liegen die Neuen: deine Gefallenen aus dem Krieg gegen den Orden.",
+      "Niemand hat sie hergebracht. Sie waren einfach da.",
+    ],
+    requires: ["a2_komturei"],
+    trigger: () => true,
+    effects: [{ kind: "unlockTile", tile: "crypt" }],
+  },
+  {
+    id: "a3_first_souls",
+    act: 3,
+    title: "Was bleibt",
+    text: [
+      "In der Krypta ist es nie ganz dunkel. Zwischen den Gebeinen glimmt ein fahles Licht, das sich bewegt, wenn du nicht hinsiehst.",
+      "Sera weigert sich, hinabzusteigen. „Das sind Seelen“, sagt sie. „Und jemand hat gelernt, sie zu halten.“",
+    ],
+    requires: ["a3_descent"],
+    trigger: (s) => s.totals.souls.gte(200),
+    effects: [],
+  },
+  {
+    id: "a3_alchemist",
+    act: 3,
+    title: "Magistra Ilse Varn",
+    text: [
+      "Der Alchemistenturm stand leer, seit dein Onkel starb. Jetzt brennt dort Licht.",
+      "Die Frau, die oben auf dich wartet, hat grüne Fingerkuppen und keine Augenbrauen. „Ich habe für deinen Onkel gearbeitet“, sagt sie. „Er wollte wissen, was der Orden mit den Toten macht. Er hat es herausgefunden.“",
+      "Sie deutet auf einen Kessel, unter dem kein Feuer brennt und der trotzdem kocht. „Bring mir Seelen. Dann zeige ich dir, wie er gestorben ist.“",
+    ],
+    requires: ["a3_first_souls"],
+    trigger: (s) => s.totals.souls.gte(3_000),
+    effects: [{ kind: "unlockTile", tile: "alchemy" }],
+  },
+  {
+    id: "a3_first_work",
+    act: 3,
+    title: "Das erste Werk",
+    text: [
+      "Ilse Varn arbeitet drei Tage ohne Schlaf. Als sie den Kolben öffnet, riecht der Turm nach Eisen und Regen.",
+      "„Die Alchemie ist kein Zauber“, sagt sie. „Sie ist eine Rechnung. Und irgendwer zahlt immer.“",
+    ],
+    requires: ["a3_alchemist"],
+    trigger: (s) => completedResearchCount(s) >= 1,
+    effects: [],
+  },
+  {
+    id: "a3_voice",
+    act: 3,
+    title: "Eine Stimme im Käfig",
+    text: [
+      "Der erste Seelenkäfig ist kaum geschlossen, da beginnt das Licht darin zu sprechen.",
+      "„Du hast meine Komturei genommen“, sagt es mit der Stimme eines alten Mannes. „Aber du hast mich nicht getötet. Niemand tötet mich. Ich bin nur hinabgestiegen – so wie du jetzt.“",
+      "Der Graue Meister. Er ist hier. Unter deiner Burg.",
+    ],
+    requires: ["a3_first_souls"],
+    trigger: (s) => s.buildings.soul_cage >= 1,
+    effects: [],
+  },
+  {
+    id: "a3_glass",
+    act: 3,
+    title: "Durch das Seelenglas",
+    text: [
+      "Im Seelenglas sind die Toten klar zu erkennen. Bauern. Soldaten. Ein Mann mit dem Siegelring deines Onkels.",
+      "Er sieht dich an und hebt die Hand, als wolle er dich warnen. Dann zeigt er nach oben. Auf die Kapelle. Auf den Bischofsstuhl.",
+    ],
+    requires: ["a3_first_work"],
+    trigger: (s) => s.alchemy.completed.soul_glass,
+    effects: [],
+  },
+  {
+    id: "a3_stone",
+    act: 3,
+    title: "Der Stein der Weisen",
+    text: [
+      "Der Stein ist kleiner als eine Faust und schwerer als ein Amboss. Wer ihn hält, sieht die Wahrheit.",
+      "Du siehst den Bischof von Vhal, wie er vor vierzig Jahren in die Krypta hinabstieg und nie wieder alterte. Du siehst ihn den Grauen Orden gründen, um Tote zu ernten. Du siehst ihn am Bett deines Onkels, mit einem Kissen in der Hand.",
+      "Der Graue Meister und der Bischof sind ein und derselbe. Und morgen ist Sonntag. Er wird die Messe in deiner Kapelle lesen.",
+    ],
+    requires: ["a3_glass", "a3_voice"],
+    trigger: (s) => s.alchemy.completed.philosophers_stone,
+    effects: [{ kind: "setFlag", flag: "act3Complete" }],
   },
 ];

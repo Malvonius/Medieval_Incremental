@@ -38,6 +38,12 @@
       <dd class="num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} Hinweise</small></dd>
     </div>
   {/if}
+  {#if snap.state.tiles.crypt}
+    <div class="res souls">
+      <dt>Seelen</dt>
+      <dd class="num">{formatNumber(snap.state.resources.souls)} <small>+{formatNumber(snap.rates.souls)}/s</small></dd>
+    </div>
+  {/if}
   {#if snap.state.warroom.seals > 0}
     <div class="res seals">
       <dt>Ordenssiegel</dt>
@@ -93,6 +99,9 @@
   }
   .prisoners dd {
     color: var(--moss);
+  }
+  .souls dd {
+    color: var(--soul);
   }
   .seals dd {
     color: var(--iron);

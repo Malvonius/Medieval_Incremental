@@ -1,7 +1,7 @@
 # Die Asche von Vhal
 
 Ein Dark-Medieval Incremental Game für den Browser. Ziel-Spielzeit: ca. 8 Stunden, aufgeteilt in fünf Akte.
-Aktuell spielbar: **Akt I – Die Ruine** und **Akt II – Der Graue Orden** (zusammen ca. 2,5 h).
+Aktuell spielbar: **Akt I – Die Ruine**, **Akt II – Der Graue Orden** und **Akt III – Was unter der Erde liegt** (zusammen ca. 4,5 h).
 
 ## Entwicklung
 
@@ -37,7 +37,7 @@ src/
 
 | Was | Wo |
 |---|---|
-| Gebäude / Upgrade / Rezept | `src/content/balance.ts` |
+| Gebäude / Upgrade / Rezept / Expedition / Forschung | `src/content/balance.ts` |
 | Story-Knoten | `src/content/story.ts` (Trigger = reine Funktion über den Spielstand) |
 | Neue Kachel | Panel unter `src/ui/tiles/`, Eintrag in `src/ui/tiles/registry.ts`, Freischaltung per Story-Effekt `unlockTile` |
 | Schemaänderung am Spielstand | `SAVE_VERSION` in `src/game/state.ts` erhöhen und Migration in `src/game/migrations.ts` anhängen |
@@ -46,8 +46,8 @@ src/
 
 Nach jeder Änderung an `balance.ts` oder Story-Triggern `npm run sim` ausführen
 (`npm run sim -- --until=a1_grey_banner` stoppt früher). Der Bot spielt etwa 28 % schneller als ein Mensch.
-Der Test `src/sim/bot.test.ts` schlägt fehl, wenn der Bot Akt I nicht in 32–54 min oder Akt II nicht
-in 88–128 min (Gesamtzeit) abschließt.
+Der Test `src/sim/bot.test.ts` schlägt fehl, wenn der Bot Akt I nicht in 32–54 min, Akt II nicht
+in 88–128 min oder Akt III nicht in 158–232 min (jeweils Gesamtzeit) abschließt.
 
 ## Roadmap
 
@@ -55,6 +55,6 @@ in 88–128 min (Gesamtzeit) abschließt.
 |---|---|---|
 | I – Die Ruine ✅ | Burg aufbauen, Schmiede, der Graue Orden erscheint | Burgfried, Schmiede, Chronik |
 | II – Der Graue Orden ✅ | Soldaten, Expeditionen, Verhöre & Fronarbeit, Sturm auf die Komturei | Kriegsrat, Kerker |
-| III – Was unter der Erde liegt | Seelen als zweite Währung, Forschung | Krypta, Alchemistenturm |
+| III – Was unter der Erde liegt ✅ | Seelen als zweite Währung, Pakte, Forschungsbaum, Stein der Weisen | Krypta, Alchemistenturm |
 | IV – Glaube und Verrat | Segen/Flüche, erstes Prestige | Kapelle, Ritual der Asche |
 | V – Die letzte Glocke | Belagerung, zwei Enden | – |

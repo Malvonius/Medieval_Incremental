@@ -36,7 +36,7 @@
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -72,8 +72,11 @@
   }
 
   .label {
+    max-width: 100%;
     font-family: var(--font-display);
     font-size: 0.9rem;
+    overflow-wrap: anywhere;
+    hyphens: auto;
     text-align: center;
     line-height: 1.15;
   }

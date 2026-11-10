@@ -8,12 +8,16 @@ import {
   INTEL_FOR_KOMTUREI,
   type ExpeditionId,
   RECIPES,
+  RESEARCH,
+  RESEARCH_IDS,
+  type ResearchId,
   UPGRADES,
   UPGRADE_IDS,
   type UpgradeEffect,
   type UpgradeId,
 } from "../content/balance";
 import type { Action } from "../game/actions";
+import { researchStatus } from "../game/alchemy";
 import { canAffordRecipe } from "../game/forge";
 import {
   buildingCost,
@@ -56,6 +60,8 @@ export interface BotResult {
 /** Ausgaben für Hilfsgüter (Eisen, Soldaten, Tempo) dürfen höchstens so viele Sekunden Goldeinkommen kosten. */
 const SUPPORT_BUDGET_SECONDS = 90;
 const MAX_ACTIONS_PER_STEP = 200;
+/** Eine Forschung, deren Kosten innerhalb dieser Sekunden Einkommen erreichbar sind, wird angespart. */
+const RESEARCH_SAVE_SECONDS = 600;
 /** Sold für einen Rekruten darf höchstens so viele Sekunden Goldeinkommen kosten – sonst verhungert die Wirtschaft. */
 const RECRUIT_BUDGET_SECONDS = 25;
 
@@ -75,7 +81,9 @@ const isGoldBuilding = (id: BuildingId): boolean => BUILDINGS[id].produces === "
 
 /** Upgrades, deren Nutzen sich nicht direkt in Gold/s ausdrücken lässt. */
 const isSupportEffect = (effect: UpgradeEffect): boolean =>
-  effect.kind !== "clickMult" && !(effect.kind === "buildingMult" && isGoldBuilding(effect.building));
+  effect.kind !== "clickMult" &&
+  !(effect.kind === "buildingMult" && isGoldBuilding(effect.building)) &&
+  !(effect.kind === "resourceMult" && effect.resource === "gold");
 
 /**
  * Gieriger Referenzspieler: wählt den Goldkauf mit der kürzesten Zeit bis zur Amortisation
@@ -84,10 +92,77 @@ const isSupportEffect = (effect: UpgradeEffect): boolean =>
  * Er ist bewusst „gut, aber nicht perfekt“ – ein Maßstab fürs Pacing, kein Optimierer.
  */
 class GreedyBot {
+  /** Währungen, die gerade für eine Forschung angespart werden. */
+  private saving = { gold: false, souls: false };
+
   constructor(
     private readonly sim: Simulation,
     private readonly clicksPerSecond: number,
   ) {}
+
+  /** Wählt die günstigste erreichbare Forschung und spart die fehlende Währung dafür an. */
+  private researchAction(): Action | null {
+    const s = this.sim.view;
+    this.saving = { gold: false, souls: false };
+    if (!s.tiles.alchemy || s.alchemy.active !== null) return null;
+
+    let target: ResearchId | null = null;
+    for (const id of RESEARCH_IDS) {
+      const status = researchStatus(s, id);
+      if (status === "ready") return { type: "research", research: id };
+      if (status !== "poor") continue;
+      if (target === null || RESEARCH[id].gold < RESEARCH[target].gold) target = id;
+    }
+    if (target === null) return null;
+
+    const def = RESEARCH[target];
+    const rates = this.sim.rates;
+    const reachable =
+      rates.gold.mul(RESEARCH_SAVE_SECONDS).add(s.resources.gold).gte(def.gold) &&
+      rates.souls.mul(RESEARCH_SAVE_SECONDS).add(s.resources.souls).gte(def.souls);
+    if (reachable) this.saving = { gold: s.resources.gold.lt(def.gold), souls: s.resources.souls.lt(def.souls) };
+    return null;
+  }
+
+  /** Seelen: Gebäude und Seelen-Pakte nach Amortisation, Gold/Eisen-Pakte sobald bezahlbar. */
+  private soulAction(): Action | null {
+    const s = this.sim.view;
+    if (!s.tiles.crypt || this.saving.souls) return null;
+    const souls = s.resources.souls;
+
+    for (const id of UPGRADE_IDS) {
+      const def = UPGRADES[id];
+      const effect: UpgradeEffect = def.effect;
+      if (def.costResource !== "souls" || !isUpgradeVisible(s, id)) continue;
+      if (effect.kind === "resourceMult" && effect.resource !== "souls" && souls.gte(def.cost)) {
+        return { type: "buyUpgrade", upgrade: id };
+      }
+    }
+
+    const income = this.sim.rates.souls;
+    let best: { action: Action; affordable: boolean; score: number } | null = null;
+    const consider = (action: Action, cost: Decimal, gain: Decimal): void => {
+      if (gain.lte(0)) return;
+      const missing = Decimal.max(cost.sub(souls), 0);
+      const wait = income.gt(0) ? missing.div(income).toNumber() : Number.POSITIVE_INFINITY;
+      const score = wait + cost.div(gain).toNumber();
+      if (best === null || score < best.score) best = { action, affordable: missing.lte(0), score };
+    };
+    for (const id of BUILDING_IDS) {
+      if (BUILDINGS[id].costResource !== "souls" || !isBuildingVisible(s, id)) continue;
+      consider({ type: "buyBuilding", building: id, amount: 1 }, buildingCost(s, id, 1), unitRate(s, id));
+    }
+    for (const id of UPGRADE_IDS) {
+      const def = UPGRADES[id];
+      const effect: UpgradeEffect = def.effect;
+      if (def.costResource !== "souls" || !isUpgradeVisible(s, id)) continue;
+      if (effect.kind === "resourceMult" && effect.resource === "souls") {
+        consider({ type: "buyUpgrade", upgrade: id }, new Decimal(def.cost), income.mul(effect.factor - 1));
+      }
+    }
+    const chosen = best as { action: Action; affordable: boolean } | null;
+    return chosen?.affordable ? chosen.action : null;
+  }
 
   private get budget(): Decimal {
     return this.sim.rates.gold.mul(SUPPORT_BUDGET_SECONDS);
@@ -97,11 +172,11 @@ class GreedyBot {
     const s = this.sim.view;
     const out: Candidate[] = [];
     for (const id of BUILDING_IDS) {
-      if (!isGoldBuilding(id) || !isBuildingVisible(s, id)) continue;
+      if (!isGoldBuilding(id) || BUILDINGS[id].costResource !== "gold" || !isBuildingVisible(s, id)) continue;
       out.push({ action: { type: "buyBuilding", building: id, amount: 1 }, cost: buildingCost(s, id, 1), gain: unitRate(s, id) });
     }
     for (const id of UPGRADE_IDS) {
-      if (!isUpgradeVisible(s, id)) continue;
+      if (UPGRADES[id].costResource !== "gold" || !isUpgradeVisible(s, id)) continue;
       const gain = this.upgradeGoldGain(id);
       if (gain === null) continue;
       out.push({ action: { type: "buyUpgrade", upgrade: id }, cost: new Decimal(UPGRADES[id].cost), gain });
@@ -116,6 +191,7 @@ class GreedyBot {
     if (effect.kind === "buildingMult" && isGoldBuilding(effect.building)) {
       return unitRate(s, effect.building).mul(s.buildings[effect.building] * (effect.factor - 1));
     }
+    if (effect.kind === "resourceMult" && effect.resource === "gold") return this.sim.rates.gold.mul(effect.factor - 1);
     return null;
   }
 
@@ -123,7 +199,7 @@ class GreedyBot {
     const s = this.sim.view;
     for (const id of UPGRADE_IDS) {
       const def = UPGRADES[id];
-      if (!isUpgradeVisible(s, id) || !isSupportEffect(def.effect)) continue;
+      if (def.costResource !== "gold" || !isUpgradeVisible(s, id) || !isSupportEffect(def.effect)) continue;
       if (s.resources.gold.gte(def.cost) && this.budget.gte(def.cost)) return { type: "buyUpgrade", upgrade: id };
     }
     return null;
@@ -148,7 +224,7 @@ class GreedyBot {
     return null;
   }
 
-  private warroomAction(): Action | null {
+  private launchAction(): Action | null {
     const s = this.sim.view;
     if (!s.tiles.warroom) return null;
     // Ist ein einmaliges Hauptziel bekannt, hält der Bot seine Truppen dafür zusammen.
@@ -157,6 +233,12 @@ class GreedyBot {
       if (mainTarget !== undefined && id !== mainTarget) continue;
       if (launchBlocker(s, id) === null) return { type: "launchExpedition", expedition: id };
     }
+    return null;
+  }
+
+  private recruitAction(): Action | null {
+    const s = this.sim.view;
+    if (!s.tiles.warroom) return null;
     if (s.resources.swords.gte(1)) {
       const cost = recruitCost(s, 1);
       if (s.resources.gold.gte(cost) && this.sim.rates.gold.mul(RECRUIT_BUDGET_SECONDS).gte(cost)) return { type: "recruit", amount: 1 };
@@ -188,13 +270,14 @@ class GreedyBot {
   }
 
   private nextAction(): Action | null {
-    return (
-      this.dungeonAction() ??
-      this.warroomAction() ??
-      this.supportUpgrade() ??
-      this.forgeAction() ??
-      this.bestGoldAction()
-    );
+    const research = this.researchAction();
+    if (research) return research;
+    const launch = this.launchAction();
+    if (launch) return launch;
+    const goldSpending = this.saving.gold
+      ? null
+      : (this.recruitAction() ?? this.supportUpgrade() ?? this.forgeAction() ?? this.bestGoldAction());
+    return this.dungeonAction() ?? this.soulAction() ?? goldSpending;
   }
 
   step(): void {

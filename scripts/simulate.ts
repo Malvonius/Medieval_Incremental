@@ -15,13 +15,20 @@ const TARGET_HUMAN_MINUTES: Readonly<Record<string, number>> = {
   a2_seal: 88,
   a2_traitor: 120,
   a2_komturei: 150,
+  a3_descent: 150,
+  a3_first_souls: 155,
+  a3_alchemist: 170,
+  a3_first_work: 180,
+  a3_voice: 200,
+  a3_glass: 225,
+  a3_stone: 270,
 };
 const BOT_SPEED_FACTOR = 0.72;
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-const stopAtNode = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length) ?? "a2_komturei";
-const result = runBot({ maxSeconds: 6 * 3600, stopAtNode });
+const stopAtNode = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length) ?? "a3_stone";
+const result = runBot({ maxSeconds: 8 * 3600, stopAtNode });
 const rows = result.milestones.map((m) => {
   const target = TARGET_HUMAN_MINUTES[m.id];
   const targetBot = target === undefined ? null : target * 60 * BOT_SPEED_FACTOR;
@@ -47,6 +54,7 @@ console.log("Upgrades:", Object.entries(v.upgrades).filter(([, b]) => b).map(([k
 console.log(`Schwerter: ${v.resources.swords.toString()}, Gold/s: ${result.sim.rates.gold.toExponential(2)}`);
 console.log("Kriegsrat:", JSON.stringify(v.warroom));
 console.log("Kerker:", JSON.stringify(v.dungeon));
+console.log("Alchemie:", JSON.stringify(v.alchemy), "Seelen/s:", result.sim.rates.souls.toExponential(2));
 
 if (process.argv.includes("--csv")) {
   const csv = ["id,act,title,bot_seconds,target_bot_seconds"]

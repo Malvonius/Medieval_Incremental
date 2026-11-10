@@ -5,7 +5,9 @@ import {
   type BuildingId,
   EXPEDITION_IDS,
   type ExpeditionId,
+  RESEARCH_IDS,
   type RecipeId,
+  type ResearchId,
   UPGRADE_IDS,
   type UpgradeId,
 } from "../content/balance";
@@ -43,6 +45,11 @@ export interface DungeonState {
   interrogated: number;
 }
 
+export interface AlchemyState {
+  active: { id: ResearchId; remaining: number } | null;
+  completed: Record<ResearchId, boolean>;
+}
+
 export interface GameState {
   resources: Record<ResourceId, Decimal>;
   /** Lebenslang erhaltene Mengen – Grundlage für Story-Trigger. */
@@ -54,6 +61,7 @@ export interface GameState {
   forge: ForgeState;
   warroom: WarroomState;
   dungeon: DungeonState;
+  alchemy: AlchemyState;
   story: { completed: string[] };
   stats: { playSeconds: number; clicks: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
@@ -71,6 +79,7 @@ export function createInitialState(now: number): GameState {
     forge: { queue: [], progress: 0 },
     warroom: { soldiers: 0, active: [], completed: recordFrom(EXPEDITION_IDS, () => 0), fallen: 0, seals: 0 },
     dungeon: { prisoners: 0, laborers: 0, intel: 0, interrogated: 0 },
+    alchemy: { active: null, completed: recordFrom(RESEARCH_IDS, () => false) },
     story: { completed: [] },
     stats: { playSeconds: 0, clicks: 0 },
     lastSeen: now,

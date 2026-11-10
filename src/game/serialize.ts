@@ -1,8 +1,15 @@
 import { Decimal, isFiniteDecimal } from "../core/decimal";
 import { SaveError } from "../core/save";
 import type { DeepReadonly } from "../core/types";
-import { EXPEDITION_IDS, type ExpeditionId, RECIPE_IDS, type RecipeId } from "../content/balance";
-import { type ActiveExpedition, type GameState, createInitialState } from "./state";
+import {
+  EXPEDITION_IDS,
+  type ExpeditionId,
+  RECIPE_IDS,
+  RESEARCH_IDS,
+  type RecipeId,
+  type ResearchId,
+} from "../content/balance";
+import { type ActiveExpedition, type AlchemyState, type GameState, createInitialState } from "./state";
 
 /** JSON-taugliche Form des Spielstands (Decimal → String). */
 export type PlainState = ReturnType<typeof toPlain>;
@@ -30,6 +37,10 @@ export function toPlain(state: DeepReadonly<GameState>) {
       seals: state.warroom.seals,
     },
     dungeon: { ...state.dungeon },
+    alchemy: {
+      active: state.alchemy.active === null ? null : { ...state.alchemy.active },
+      completed: { ...state.alchemy.completed },
+    },
     story: { completed: [...state.story.completed] },
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
@@ -88,6 +99,15 @@ function readRecord<K extends string, V>(
 
 const RECIPE_SET: ReadonlySet<string> = new Set(RECIPE_IDS);
 const EXPEDITION_SET: ReadonlySet<string> = new Set(EXPEDITION_IDS);
+const RESEARCH_SET: ReadonlySet<string> = new Set(RESEARCH_IDS);
+
+function readActiveResearch(value: unknown): AlchemyState["active"] {
+  if (value === undefined || value === null) return null;
+  if (!isObject(value)) throw new SaveError('Feld "alchemy.active" muss ein Objekt sein.');
+  const id = value["id"];
+  if (typeof id !== "string" || !RESEARCH_SET.has(id)) throw new SaveError('Feld "alchemy.active.id" ist keine gültige Forschung.');
+  return { id: id as ResearchId, remaining: readNumber(value["remaining"], "alchemy.active.remaining", 0) };
+}
 
 function readActiveExpeditions(value: unknown): ActiveExpedition[] {
   if (value === undefined) return [];
@@ -128,6 +148,7 @@ export function fromPlain(data: unknown, now: number): GameState {
   const stats = section(data, "stats");
   const warroom = section(data, "warroom");
   const dungeon = section(data, "dungeon");
+  const alchemy = section(data, "alchemy");
   const readCount = (v: unknown, p: string, f: number): number => readNumber(v, p, f, { integer: true });
 
   return {
@@ -146,6 +167,10 @@ export function fromPlain(data: unknown, now: number): GameState {
       seals: readCount(warroom["seals"], "warroom.seals", 0),
     },
     dungeon: readRecord(dungeon, d.dungeon, "dungeon", readCount),
+    alchemy: {
+      active: readActiveResearch(alchemy["active"]),
+      completed: readRecord(section(alchemy, "completed"), d.alchemy.completed, "alchemy.completed", readBoolean),
+    },
     story: { completed: [...new Set(rawCompleted)] },
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),

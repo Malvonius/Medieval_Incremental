@@ -4,4 +4,5 @@ export const RESOURCE_LABELS: Readonly<Record<ResourceId, string>> = {
   gold: "Gold",
   iron: "Eisen",
   swords: "Schwerter",
+  souls: "Seelen",
 };

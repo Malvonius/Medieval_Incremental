@@ -15,7 +15,10 @@ import {
   LABOR_GOLD_BONUS,
   LABOR_IRON_BONUS,
   RECIPES,
+  FALLEN_SOUL_RATE,
   RECRUIT_COST,
+  RESEARCH,
+  RESEARCH_IDS,
   type RecipeId,
   SEAL_BONUS,
   SWORD_GOLD_BONUS,
@@ -32,21 +35,30 @@ type View = DeepReadonly<GameState>;
 type EffectKind = UpgradeEffect["kind"];
 type EffectOf<K extends EffectKind> = Extract<UpgradeEffect, { kind: K }>;
 
-/** Einmalig nach Art indizierte Upgrade-Effekte, damit keine Berechnung alle Upgrades scannt. */
-const EFFECTS_BY_KIND: ReadonlyMap<EffectKind, readonly { id: UpgradeId; effect: UpgradeEffect }[]> = (() => {
-  const map = new Map<EffectKind, { id: UpgradeId; effect: UpgradeEffect }[]>();
-  for (const id of UPGRADE_IDS) {
-    const effect: UpgradeEffect = UPGRADES[id].effect;
-    const list = map.get(effect.kind) ?? [];
-    list.push({ id, effect });
-    map.set(effect.kind, list);
-  }
+interface EffectSource {
+  readonly owned: (state: View) => boolean;
+  readonly effect: UpgradeEffect;
+}
+
+/**
+ * Einmalig nach Art indizierte Effekte aus Upgrades und Forschung,
+ * damit keine Berechnung alle Quellen scannen muss.
+ */
+const EFFECTS_BY_KIND: ReadonlyMap<EffectKind, readonly EffectSource[]> = (() => {
+  const map = new Map<EffectKind, EffectSource[]>();
+  const add = (source: EffectSource): void => {
+    const list = map.get(source.effect.kind) ?? [];
+    list.push(source);
+    map.set(source.effect.kind, list);
+  };
+  for (const id of UPGRADE_IDS) add({ owned: (s) => s.upgrades[id], effect: UPGRADES[id].effect });
+  for (const id of RESEARCH_IDS) add({ owned: (s) => s.alchemy.completed[id], effect: RESEARCH[id].effect });
   return map;
 })();
 
 function* ownedEffects<K extends EffectKind>(state: View, kind: K): Generator<EffectOf<K>> {
-  for (const { id, effect } of EFFECTS_BY_KIND.get(kind) ?? []) {
-    if (state.upgrades[id]) yield effect as EffectOf<K>;
+  for (const { owned, effect } of EFFECTS_BY_KIND.get(kind) ?? []) {
+    if (owned(state)) yield effect as EffectOf<K>;
   }
 }
 
@@ -71,21 +83,31 @@ export const laborMultiplier = (state: View): number => productOf(state, "laborB
 export const armedBonus = (state: View): number =>
   state.resources.swords.add(aliveSoldiers(state)).toNumber() * SWORD_GOLD_BONUS;
 
-/** Globale Multiplikatoren je Ressource: Waffen & Soldaten, Ordenssiegel, Fronarbeit. */
+/** Multiplikator aus Pakten und Forschung für eine Ressource. */
+export const pactMultiplier = (state: View, resource: ResourceId): number =>
+  productOf(state, "resourceMult", (e) => (e.resource === resource ? e.factor : null));
+
+/** Globale Multiplikatoren je Ressource: Waffen & Soldaten, Ordenssiegel, Fronarbeit, Pakte & Forschung. */
 export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
   const seals = 1 + state.warroom.seals * SEAL_BONUS;
   const labor = state.dungeon.laborers * laborMultiplier(state);
+  const pacts = pactMultiplier(state, resource);
   switch (resource) {
     case "gold": {
       const armed = state.resources.swords.add(aliveSoldiers(state)).mul(SWORD_GOLD_BONUS).add(1);
-      return armed.mul(seals * (1 + labor * LABOR_GOLD_BONUS));
+      return armed.mul(seals * (1 + labor * LABOR_GOLD_BONUS) * pacts);
     }
     case "iron":
-      return new Decimal(seals * (1 + labor * LABOR_IRON_BONUS));
+      return new Decimal(seals * (1 + labor * LABOR_IRON_BONUS) * pacts);
+    case "souls":
     case "swords":
-      return new Decimal(1);
+      return new Decimal(pacts);
   }
 }
+
+/** Seelen, die von den Gefallenen in die Krypta strömen (vor Multiplikatoren). */
+export const fallenSoulBase = (state: View): number =>
+  state.tiles.crypt ? state.warroom.fallen * FALLEN_SOUL_RATE : 0;
 
 /** Produktion einer einzelnen zusätzlichen Einheit pro Sekunde (inkl. aller Multiplikatoren). */
 export function unitRate(state: View, building: BuildingId): Decimal {
@@ -95,6 +117,7 @@ export function unitRate(state: View, building: BuildingId): Decimal {
 
 export function computeRates(state: View): Rates {
   const rates = recordFrom(RESOURCE_IDS, () => ZERO);
+  rates.souls = new Decimal(fallenSoulBase(state));
   for (const id of BUILDING_IDS) {
     const count = state.buildings[id];
     if (count === 0) continue;
