@@ -3,6 +3,7 @@ import { startLoop } from "../core/loop";
 import { RingBuffer } from "../core/ringBuffer";
 import { ACHIEVEMENTS } from "../content/achievements";
 import { setNotation } from "../ui/format";
+import { ACTION_CUES, audio } from "./audio";
 import { settings } from "./settings";
 import type { DeepReadonly, Result } from "../core/types";
 import { GAP_THRESHOLD_SECONDS, TICK_SECONDS } from "../content/balance";
@@ -85,9 +86,16 @@ export class GameController {
     const offAchievement = sim.events.on("achievement", (id) =>
       this.notice.set({ kind: "info", message: `Erfolg: ${ACHIEVEMENTS[id].name} (+1 % Produktion)` }),
     );
+    const offStoryCue = sim.events.on("story", () => audio.play("story"));
+    const offAction = sim.events.on("action", (type) => {
+      const cue = ACTION_CUES[type];
+      if (cue) audio.play(cue);
+    });
     this.unsubscribeStory = () => {
       offStory();
       offAchievement();
+      offStoryCue();
+      offAction();
     };
     return sim;
   }
@@ -99,7 +107,13 @@ export class GameController {
 
   private publish(): void {
     this.sampleHistory();
+    audio.setAct(this.currentAct());
     this.snapshotStore.set(this.makeSnapshot());
+  }
+
+  private currentAct(): number {
+    const { flags } = this.sim.view;
+    return 1 + [flags.act1Complete, flags.act2Complete, flags.act3Complete, flags.act4Complete].filter(Boolean).length;
   }
 
   private sampleHistory(): void {
@@ -129,6 +143,7 @@ export class GameController {
     });
     this.unsubscribeSettings = settings.subscribe((s) => {
       setNotation(s.notation);
+      audio.apply(s);
       document.documentElement.toggleAttribute("data-reduce-motion", s.reduceMotion);
       if (this.autosaveHandle !== null) clearInterval(this.autosaveHandle);
       this.autosaveHandle = setInterval(() => this.save(), s.autosaveSeconds * 1000);
