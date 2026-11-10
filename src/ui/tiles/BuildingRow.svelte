@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
+  import { t } from "../../i18n";
   import type { GameController, Snapshot } from "../../app/controller";
     import { BUILDINGS, type BuildingId } from "../../content/balance";
   import { type BuyAmount, resolveBuyAmount } from "../../game/actions";
   import { buildingCost, unitRate } from "../../game/rates";
     import { formatNumber } from "../format";
-  import { RESOURCE_LABELS } from "../labels";
 
   let {
     game,
@@ -24,12 +26,12 @@
 <div class="row">
   <div class="info">
     <div class="head">
-      <span class="name">{def.name}</span>
-      <span class="owned num" aria-label="Anzahl">{snap.state.buildings[building]}</span>
+      <span class="name">{$loc.building(building).name}</span>
+      <span class="owned num" aria-label={$tx("Anzahl")}>{snap.state.buildings[building]}</span>
     </div>
-    <p class="desc">{def.description}</p>
+    <p class="desc">{$loc.building(building).description}</p>
     <p class="yield num">
-      je +{formatNumber(perUnit)} {RESOURCE_LABELS[def.produces]}/s · gesamt +{formatNumber(perUnit.mul(snap.state.buildings[building]))}/s
+      {$tx("je")} +{formatNumber(perUnit)} {$t(`res.${def.produces}`)}/s · {$tx("gesamt")} +{formatNumber(perUnit.mul(snap.state.buildings[building]))}/s
     </p>
   </div>
   <button
@@ -37,8 +39,8 @@
     disabled={!affordable}
     onclick={() => game.dispatch({ type: "buyBuilding", building, amount })}
   >
-    <span>Kaufen ×{shown}</span>
-    <span class="cost num">{formatNumber(cost)} {RESOURCE_LABELS[def.costResource]}</span>
+    <span>{$tx("Kaufen")} ×{shown}</span>
+    <span class="cost num">{formatNumber(cost)} {$t(`res.${def.costResource}`)}</span>
   </button>
 </div>
 

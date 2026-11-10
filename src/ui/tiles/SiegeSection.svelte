@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
+  import { t } from "../../i18n";
   import type { GameController, Snapshot } from "../../app/controller";
   import { maxAffordable } from "../../core/economy";
   import { ENDINGS, ENDING_IDS, FORTIFICATIONS, FORTIFICATION_IDS, WAVES } from "../../content/balance";
@@ -6,7 +9,6 @@
   import { defense, defenseMultiplier, fortificationCost } from "../../game/rates";
   import { BATTLE_BLOCKER_TEXT, ENDING_BLOCKER_TEXT, battleBlocker, endingBlocker } from "../../game/siege";
   import { formatDuration, formatNumber } from "../format";
-  import { RESOURCE_LABELS } from "../labels";
   import BuyAmountToggle from "./BuyAmountToggle.svelte";
 
   let { game, snap }: { game: GameController; snap: Snapshot } = $props();
@@ -26,24 +28,24 @@
 </script>
 
 <section class="panel-section siege">
-  <h3 class="section-title">Die Belagerung <small class="num">Wellen abgewehrt: {wave}/{WAVES.length}</small></h3>
+  <h3 class="section-title">{$tx("Die Belagerung")} <small class="num">{$tx("Wellen abgewehrt:")} {wave}/{WAVES.length}</small></h3>
 
-  <ol class="waves" aria-label="Wellen">
+  <ol class="waves" aria-label={$tx("Wellen")}>
     {#each WAVES as w, i (w.name)}
-      <li class:done={i < wave} class:current={i === wave} class:boss={i === WAVES.length - 1} title={w.name}></li>
+      <li class:done={i < wave} class:current={i === wave} class:boss={i === WAVES.length - 1} title={$loc.wave(i)}></li>
     {/each}
   </ol>
 
   {#if next}
     <div class="front">
       <div class="power">
-        <span class="label">Deine Wehrkraft</span>
+        <span class="label">{$tx("Deine Wehrkraft")}</span>
         <span class="num big" class:ok={power >= next.strength}>{formatNumber(power)}</span>
       </div>
       <div class="enemy">
-        <span class="label">{wave === WAVES.length - 1 ? "Der Endgegner" : `Welle ${wave + 1}`}</span>
-        <span class="name">{next.name}</span>
-        <span class="num">Stärke {formatNumber(next.strength)} · Verluste {Math.round(next.lossRate * 100)} % · {formatDuration(next.durationSeconds)}</span>
+        <span class="label">{wave === WAVES.length - 1 ? $tx("Der Endgegner") : `${$tx("Welle")} ${wave + 1}`}</span>
+        <span class="name">{$loc.wave(wave)}</span>
+        <span class="num">{$tx("Stärke")} {formatNumber(next.strength)} · {$tx("Verluste")} {Math.round(next.lossRate * 100)} % · {formatDuration(next.durationSeconds)}</span>
       </div>
     </div>
 
@@ -51,17 +53,17 @@
       <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round((1 - battleRemaining / next.durationSeconds) * 100)}>
         <span class="fill" style:width="{Math.min(100, (1 - battleRemaining / next.durationSeconds) * 100)}%"></span>
       </div>
-      <p class="status num">Die Schlacht tobt – noch {formatDuration(battleRemaining)}</p>
+      <p class="status num">{$tx("Die Schlacht tobt – noch")} {formatDuration(battleRemaining)}</p>
     {:else}
       <div class="row">
-        <button class="btn fight" disabled={blocker !== null} onclick={() => game.dispatch({ type: "battle" })}>Zur Schlacht</button>
-        {#if blocker !== null}<span class="hint">{BATTLE_BLOCKER_TEXT[blocker]}</span>{/if}
+        <button class="btn fight" disabled={blocker !== null} onclick={() => game.dispatch({ type: "battle" })}>{$tx("Zur Schlacht")}</button>
+        {#if blocker !== null}<span class="hint">{$tx(BATTLE_BLOCKER_TEXT[blocker])}</span>{/if}
       </div>
     {/if}
-    <p class="hint">Wehrkraft = Soldaten in der Burg × 10 + Befestigungen, verstärkt durch Upgrades (×{formatNumber(defenseMultiplier(snap.state))}) und Ordenssiegel. Truppen auf Expedition zählen nicht.</p>
+    <p class="hint">{$tx("Wehrkraft = Soldaten in der Burg × 10 + Befestigungen, verstärkt durch Upgrades")} (×{formatNumber(defenseMultiplier(snap.state))}) {$tx("und Ordenssiegel. Truppen auf Expedition zählen nicht.")}</p>
 
     <div class="bar">
-      <h4>Befestigungen</h4>
+      <h4>{$tx("Befestigungen")}</h4>
       <BuyAmountToggle bind:value={amount} />
     </div>
     <ul class="forts">
@@ -72,38 +74,38 @@
         {@const cost = fortificationCost(snap.state, id, shown)}
         <li>
           <div class="info">
-            <span class="name">{def.name} <span class="num owned">{snap.state.siege.fortifications[id]}</span></span>
-            <span class="desc">{def.description}</span>
-            <span class="num yield">je +{formatNumber(def.defense)} Wehrkraft (vor Multiplikatoren)</span>
+            <span class="name">{$loc.fortification(id).name} <span class="num owned">{snap.state.siege.fortifications[id]}</span></span>
+            <span class="desc">{$loc.fortification(id).description}</span>
+            <span class="num yield">{$tx("je")} +{formatNumber(def.defense)} {$tx("Wehrkraft (vor Multiplikatoren)")}</span>
           </div>
           <button
             class="btn buy"
             disabled={count < 1 || snap.state.resources.gold.lt(cost)}
             onclick={() => game.dispatch({ type: "buildFortification", fortification: id, amount: shown })}
           >
-            <span>Bauen ×{shown}</span>
-            <span class="cost num">{formatNumber(cost)} Gold</span>
+            <span>{$tx("Bauen")} ×{shown}</span>
+            <span class="cost num">{formatNumber(cost)} {$tx("Gold")}</span>
           </button>
         </li>
       {/each}
     </ul>
   {:else if ending === null}
-    <p class="story">Der Bischof ist gefallen. Der Stein der Weisen liegt im Schnee. Triff deine Wahl.</p>
+    <p class="story">{$tx("Der Bischof ist gefallen. Der Stein der Weisen liegt im Schnee. Triff deine Wahl.")}</p>
     <ul class="endings">
       {#each ENDING_IDS as id (id)}
         {@const def = ENDINGS[id]}
         {@const reason = endingBlocker(snap.state, id)}
         <li class="ending {id}">
-          <span class="name">{def.name}</span>
-          <span class="desc">{def.description}</span>
-          <span class="cost num">{formatNumber(def.cost)} {RESOURCE_LABELS[def.costResource]}</span>
-          <button class="btn" disabled={reason !== null} onclick={() => game.dispatch({ type: "chooseEnding", ending: id })}>Wählen</button>
-          {#if reason !== null}<span class="hint">{ENDING_BLOCKER_TEXT[reason]}</span>{/if}
+          <span class="name">{$loc.ending(id).name}</span>
+          <span class="desc">{$loc.ending(id).description}</span>
+          <span class="cost num">{formatNumber(def.cost)} {$t(`res.${def.costResource}`)}</span>
+          <button class="btn" disabled={reason !== null} onclick={() => game.dispatch({ type: "chooseEnding", ending: id })}>{$tx("Wählen")}</button>
+          {#if reason !== null}<span class="hint">{$tx(ENDING_BLOCKER_TEXT[reason])}</span>{/if}
         </li>
       {/each}
     </ul>
   {:else}
-    <p class="story">{ending === "light" ? "Die letzte Glocke hat geläutet. Vhal ist frei." : "Der Stein gehört dir. Die Toten gehorchen."}</p>
+    <p class="story">{$tx(ending === "light" ? "Die letzte Glocke hat geläutet. Vhal ist frei." : "Der Stein gehört dir. Die Toten gehorchen.")}</p>
   {/if}
 </section>
 

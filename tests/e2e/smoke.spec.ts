@@ -61,3 +61,30 @@ test("PWA: nach dem ersten Besuch auch offline spielbar", async ({ page, context
   await expect(page.locator("h1")).toHaveText("Die Asche von Vhal");
   await context.setOffline(false);
 });
+
+test("Ton: nach dem Einschalten entsteht ein hörbares Signal", async ({ page }) => {
+  await start(page);
+  await page.locator("button.tile", { hasText: "Chronik" }).click();
+  await page.getByLabel("Ton").check();
+  await page.locator("button.tile", { hasText: "Burgfried" }).click();
+  await page.locator("button.collect").click();
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __vhalAudio: { running: boolean; level(): number } }).__vhalAudio.level()), {
+      timeout: 5_000,
+    })
+    .toBeGreaterThan(0.001);
+});
+
+test("Englisch: Oberfläche, Story und Zahlen wechseln die Sprache", async ({ page }) => {
+  const errors = trackErrors(page);
+  await start(page);
+  await page.locator("button.tile", { hasText: "Chronik" }).click();
+  await page.getByRole("combobox").first().selectOption("en");
+  await expect(page.locator("h1")).toHaveText("The Ashes of Vhal");
+  await expect(page.locator("button.tile", { hasText: "Keep" })).toBeVisible();
+  await expect(page.locator("summary", { hasText: "The Inheritance" })).toBeVisible();
+  await page.locator("button.tile", { hasText: "Keep" }).click();
+  await expect(page.getByRole("button", { name: /Collect taxes/ })).toBeVisible();
+  await expect(page.getByText("Serf", { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});

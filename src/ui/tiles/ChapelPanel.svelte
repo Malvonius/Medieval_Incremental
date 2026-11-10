@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
   import { BUILDINGS, BUILDING_IDS, FAITH_FOR_BETRAYAL, FAITH_FOR_SERMON, VOWS, VOW_IDS } from "../../content/balance";
   import type { BuyAmount } from "../../game/actions";
@@ -27,14 +29,14 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Die Gemeinde</h3>
+  <h3 class="section-title">{$tx("Die Gemeinde")}</h3>
   <ul class="milestones">
     {#each milestones as m (m.need)}
       {@const reached = totalFaith.gte(m.need)}
       <li class:reached>
         <span class="mark" aria-hidden="true">{reached ? "✓" : "…"}</span>
-        <span class="text">{m.label}</span>
-        <span class="num need">{formatNumber(Math.min(totalFaith.toNumber(), m.need))} / {formatNumber(m.need)} Glauben</span>
+        <span class="text">{$tx(m.label)}</span>
+        <span class="num need">{formatNumber(Math.min(totalFaith.toNumber(), m.need))} / {formatNumber(m.need)} {$tx("Glauben")}</span>
       </li>
     {/each}
   </ul>
@@ -42,7 +44,7 @@
 
 <section class="panel-section">
   <div class="bar">
-    <h3 class="section-title">Haus des Glaubens</h3>
+    <h3 class="section-title">{$tx("Haus des Glaubens")}</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
   {#each CHAPEL_BUILDINGS.filter((id) => isBuildingVisible(snap.state, id)) as id (id)}
@@ -51,26 +53,26 @@
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Gelübde <small class="num">Altäre belegt: {sworn}/{slots}</small></h3>
-  <p class="hint">Jedes Gelübde schenkt einen Segen und verlangt einen Fluch. Gelübde überstehen das Ritual der Asche; ein gebrochenes Gelübde gibt keinen Glauben zurück.</p>
+  <h3 class="section-title">{$tx("Gelübde")} <small class="num">{$tx("Altäre belegt:")} {sworn}/{slots}</small></h3>
+  <p class="hint">{$tx("Jedes Gelübde schenkt einen Segen und verlangt einen Fluch. Gelübde überstehen das Ritual der Asche; ein gebrochenes Gelübde gibt keinen Glauben zurück.")}</p>
   <ul class="vows">
     {#each VOW_IDS as id (id)}
       {@const def = VOWS[id]}
       {@const blocker = vowBlocker(snap.state, id)}
       {@const isSworn = snap.state.chapel.vows[id]}
       <li class="vow" class:sworn={isSworn}>
-        <span class="name">{def.name}</span>
-        <span class="blessing">✚ {def.blessing}</span>
-        <span class="curse">✖ {def.curse}</span>
+        <span class="name">{$loc.vow(id).name}</span>
+        <span class="blessing">✚ {$loc.vow(id).blessing}</span>
+        <span class="curse">✖ {$loc.vow(id).curse}</span>
         {#if isSworn}
-          <button class="btn btn-danger" onclick={() => game.dispatch({ type: "breakVow", vow: id })}>Gelübde brechen</button>
+          <button class="btn btn-danger" onclick={() => game.dispatch({ type: "breakVow", vow: id })}>{$tx("Gelübde brechen")}</button>
         {:else}
-          <span class="cost num">{formatNumber(def.faithCost)} Glauben</span>
+          <span class="cost num">{formatNumber(def.faithCost)} {$tx("Glauben")}</span>
           <button
             class="btn"
             disabled={blocker !== null}
-            title={blocker === null ? undefined : VOW_BLOCKER_TEXT[blocker]}
-            onclick={() => game.dispatch({ type: "swearVow", vow: id })}>Ablegen</button
+            title={blocker === null ? undefined : $tx(VOW_BLOCKER_TEXT[blocker])}
+            onclick={() => game.dispatch({ type: "swearVow", vow: id })}>{$tx("Ablegen")}</button
           >
         {/if}
       </li>
@@ -79,13 +81,13 @@
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Verbindungen</h3>
+  <h3 class="section-title">{$tx("Verbindungen")}</h3>
   <ul class="synergies">
-    {#each SYNERGIES as syn (syn.name)}
+    {#each SYNERGIES as syn, si (syn.name)}
       {@const active = snap.state.chapel.vows[syn.vows[0]] && snap.state.chapel.vows[syn.vows[1]]}
       <li class:active>
-        <span class="name">{syn.name}</span>
-        <span class="desc">{VOWS[syn.vows[0]].name} + {VOWS[syn.vows[1]].name}: {syn.description}</span>
+        <span class="name">{$loc.synergy(si).name}</span>
+        <span class="desc">{$loc.vow(syn.vows[0]).name} + {$loc.vow(syn.vows[1]).name}: {$loc.synergy(si).description}</span>
       </li>
     {/each}
   </ul>

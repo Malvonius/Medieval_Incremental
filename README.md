@@ -79,7 +79,9 @@ Vite baut mit relativen Pfaden (`base: "./"`), daher läuft das Spiel unter jede
 |---|---|
 | **PWA** | `public/manifest.webmanifest` + `public/sw.js`. Nach dem ersten Besuch offline spielbar und installierbar („Zum Startbildschirm hinzufügen“). |
 | **Backup** | Spielstand wird nach IndexedDB gespiegelt; löscht der Browser `localStorage`, wird er beim Start wiederhergestellt. |
-| **Cloud-Speicher** | Aktiv, wenn beim Build `VITE_CLOUD_SAVE_URL` gesetzt ist. Erwartet `PUT/GET {URL}/{Sync-Code}` mit dem Export-Text (siehe `src/app/cloud.ts`). Ohne Variable bleibt die Funktion unsichtbar. |
-| **Sprachen** | Bedienoberfläche Deutsch/Englisch (`src/i18n`). Story- und Spieltexte sind noch deutsch. |
-| **Desktop** | Tauri-2-Grundgerüst in `src-tauri/`. Bauen mit `npm run tauri:build` (benötigt Rust und die [Tauri-Systemvoraussetzungen](https://v2.tauri.app/start/prerequisites/)). |
+| **Cloud-Speicher** | Server in `server/` (Node, ohne Abhängigkeiten): `npm run cloud-server` oder `docker build -f server/Dockerfile .`. Umgebungsvariablen: `PORT`, `DATA_DIR`, `ALLOW_ORIGIN`. Im Spiel aktiv, wenn beim Build `VITE_CLOUD_SAVE_URL=https://dein-server/saves` gesetzt ist (z. B. als Repository-Variable im Deploy-Workflow). |
+| **Sprachen** | Deutsch und Englisch – Oberfläche, Story, alle Spieltexte, Meldungen, Zahlenformat und Ink-Epilog. Tests stellen sicher, dass jede Übersetzung existiert. |
+| **Ink** | Interaktiver Epilog in `src/content/ink/*.ink`, beim Build kompiliert (Vite-Plugin), im Spiel nur die Ink-Laufzeit (eigener Chunk). |
+| **Sound** | Synthetisch über Web Audio; ein Browser-Test misst den Ausgangspegel. |
+| **Desktop** | Tauri 2 in `src-tauri/`. Lokal: `npm run tauri:build` (Rust + [Voraussetzungen](https://v2.tauri.app/start/prerequisites/)). In CI: **Actions → Desktop-Builds → Run workflow** erzeugt Installer für Windows (MSI/EXE), macOS (DMG) und Linux (DEB/AppImage) als Artefakte. |
 | **Browser-Tests** | `npm run e2e` (Playwright, Desktop + Mobil), läuft auch in CI. |

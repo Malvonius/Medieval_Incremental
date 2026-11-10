@@ -1,8 +1,9 @@
 import { type Readable, type Writable, writable } from "svelte/store";
 import { startLoop } from "../core/loop";
 import { RingBuffer } from "../core/ringBuffer";
-import { ACHIEVEMENTS } from "../content/achievements";
-import { setNotation } from "../ui/format";
+import type { AchievementId } from "../content/achievements";
+import { setNotation, setNumberLocale } from "../ui/format";
+import { locale } from "../i18n";
 import { ACTION_CUES, audio } from "./audio";
 import { settings } from "./settings";
 import type { DeepReadonly, Result } from "../core/types";
@@ -29,6 +30,7 @@ export interface Snapshot {
 export type Notice =
   | { readonly kind: "offline"; readonly report: CatchUpReport }
   | { readonly kind: "info"; readonly message: string }
+  | { readonly kind: "achievement"; readonly id: AchievementId }
   | { readonly kind: "error"; readonly message: string };
 
 /** Verlauf der Goldproduktion: ein Wert pro Spielminute, bis zu 8 Stunden. */
@@ -84,7 +86,7 @@ export class GameController {
     const sim = new Simulation(state);
     const offStory = sim.events.on("story", (node) => this.storyQueue.update((q) => [...q, node]));
     const offAchievement = sim.events.on("achievement", (id) =>
-      this.notice.set({ kind: "info", message: `Erfolg: ${ACHIEVEMENTS[id].name} (+1 % Produktion)` }),
+      this.notice.set({ kind: "achievement", id }),
     );
     const offStoryCue = sim.events.on("story", () => audio.play("story"));
     const offAction = sim.events.on("action", (type) => {
@@ -141,7 +143,11 @@ export class GameController {
       onGap: (seconds) => void catchUp(this.sim, seconds, 1),
       render: () => this.publish(),
     });
-    this.unsubscribeSettings = settings.subscribe((s) => {
+    const offLocale = locale.subscribe((lang) => {
+      setNumberLocale(lang);
+      this.publish();
+    });
+    const offSettings = settings.subscribe((s) => {
       setNotation(s.notation);
       audio.apply(s);
       document.documentElement.toggleAttribute("data-reduce-motion", s.reduceMotion);
@@ -149,6 +155,10 @@ export class GameController {
       this.autosaveHandle = setInterval(() => this.save(), s.autosaveSeconds * 1000);
       this.publish();
     });
+    this.unsubscribeSettings = () => {
+      offLocale();
+      offSettings();
+    };
     document.addEventListener("visibilitychange", this.onVisibility);
     window.addEventListener("beforeunload", this.onUnload);
   }

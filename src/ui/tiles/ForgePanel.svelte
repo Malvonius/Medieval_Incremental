@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
+  import { t } from "../../i18n";
   import type { GameController } from "../../app/controller";
   import { Decimal } from "../../core/decimal";
   import { BUILDINGS, BUILDING_IDS, RECIPES } from "../../content/balance";
@@ -6,7 +9,6 @@
   import type { BuyAmount } from "../../game/actions";
   import { armedBonus, craftDuration, forgeCapacity, isBuildingVisible } from "../../game/rates";
   import { formatDuration, formatNumber, formatPercent } from "../format";
-  import { RESOURCE_LABELS } from "../labels";
   import BuildingRow from "./BuildingRow.svelte";
   import BuyAmountToggle from "./BuyAmountToggle.svelte";
   import UpgradeList from "./UpgradeList.svelte";
@@ -34,7 +36,7 @@
 
 <section class="panel-section">
   <div class="bar">
-    <h3 class="section-title">Bergwerk</h3>
+    <h3 class="section-title">{$tx("Bergwerk")}</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
   {#each FORGE_BUILDINGS.filter((id) => isBuildingVisible(snap.state, id)) as id (id)}
@@ -43,16 +45,16 @@
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Esse</h3>
+  <h3 class="section-title">{$tx("Esse")}</h3>
   <div class="recipe">
     <div class="recipe-head">
-      <span class="name">{recipe.name}</span>
+      <span class="name">{$loc.recipe("sword").name}</span>
       <span class="meta num">
-        {#each inputs as [res, cost], i (res)}{i > 0 ? " · " : ""}{formatNumber(cost)} {RESOURCE_LABELS[res]}{/each}
+        {#each inputs as [res, cost], i (res)}{i > 0 ? " · " : ""}{formatNumber(cost)} {$t(`res.${res}`)}{/each}
         · {formatDuration(duration)}
       </span>
     </div>
-    <p class="desc">{recipe.description}</p>
+    <p class="desc">{$loc.recipe("sword").description}</p>
 
     <div class="queue" aria-label="Warteschlange: {queueLength} von {capacity}" style:grid-template-columns="repeat({capacity}, 1fr)">
       {#each { length: capacity }, slot (slot)}
@@ -66,24 +68,24 @@
 
     <div class="actions">
       <button class="btn" disabled={fillable < 1} onclick={() => game.dispatch({ type: "craft", recipe: "sword", amount: 1 })}>
-        Schmieden
+        {$tx("Schmieden")}
       </button>
       <button
         class="btn"
         disabled={fillable < 2}
         onclick={() => game.dispatch({ type: "craft", recipe: "sword", amount: fillable })}
       >
-        Warteschlange füllen{fillable >= 2 ? ` (×${fillable})` : ""}
+        {$tx("Warteschlange füllen")}{fillable >= 2 ? ` (×${fillable})` : ""}
       </button>
     </div>
   </div>
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Waffenkammer</h3>
+  <h3 class="section-title">{$tx("Waffenkammer")}</h3>
   <p class="armory">
-    <span class="num swords">{formatNumber(snap.state.resources.swords)}</span> Klingen an der Wand. Zusammen mit deinen Soldaten:
-    Goldproduktion <span class="num">+{formatPercent(swordBonus)}</span>
+    <span class="num swords">{formatNumber(snap.state.resources.swords)}</span> {$tx("Klingen an der Wand. Zusammen mit deinen Soldaten:")}
+    {$tx("Goldproduktion")} <span class="num">+{formatPercent(swordBonus)}</span>
   </p>
 </section>
 

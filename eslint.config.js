@@ -16,7 +16,7 @@ export default defineConfig(
     },
   },
   {
-    files: ["scripts/**/*.ts"],
+    files: ["scripts/**/*.ts", "server/**/*.ts"],
     rules: { "no-console": "off" },
   },
 );

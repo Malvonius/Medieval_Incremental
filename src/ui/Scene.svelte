@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tx } from "../i18n";
   import { onMount } from "svelte";
   import type { GameController } from "../app/controller";
   import { settings } from "../app/settings";
@@ -55,7 +56,7 @@
 </script>
 
 {#if !failed}
-  <div class="scene" bind:this={host} role="img" aria-label="Ansicht von Vhal"></div>
+  <div class="scene" bind:this={host} role="img" aria-label={$tx("Ansicht von Vhal")}></div>
 {/if}
 
 <style>

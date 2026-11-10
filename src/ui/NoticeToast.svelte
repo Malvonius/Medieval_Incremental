@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { loc } from "../i18n/content";
+  import { tx } from "../i18n";
   import type { GameController } from "../app/controller";
   import { formatDuration, formatNumber } from "./format";
 
   let { game }: { game: GameController } = $props();
 
   const notice = $derived(game.notice);
-  const DISMISS_MS = { offline: 12_000, info: 4_000, error: 5_000 } as const;
+  const DISMISS_MS = { offline: 12_000, info: 4_000, achievement: 4_000, error: 5_000 } as const;
 
   $effect(() => {
     const current = $notice;
@@ -18,17 +20,26 @@
 {#if $notice}
   <div class="toast {$notice.kind}" role={$notice.kind === "error" ? "alert" : "status"}>
     {#if $notice.kind === "offline"}
-      <strong>Während deiner Abwesenheit</strong>
+      <strong>{$tx("Während deiner Abwesenheit")}</strong>
+      {@const r = $notice.report}
       <p>
-        Du warst {formatDuration($notice.report.awaySeconds)} fort. Deine Leute haben
-        {formatNumber($notice.report.gains.gold)} Gold erwirtschaftet{$notice.report.gains.iron.gt(0)
-          ? ` und ${formatNumber($notice.report.gains.iron)} Eisen gefördert`
-          : ""}.
+        {r.gains.iron.gt(0)
+          ? $tx("Du warst {time} fort. Deine Leute haben {gold} Gold erwirtschaftet und {iron} Eisen gefördert.", {
+              time: formatDuration(r.awaySeconds),
+              gold: formatNumber(r.gains.gold),
+              iron: formatNumber(r.gains.iron),
+            })
+          : $tx("Du warst {time} fort. Deine Leute haben {gold} Gold erwirtschaftet.", {
+              time: formatDuration(r.awaySeconds),
+              gold: formatNumber(r.gains.gold),
+            })}
       </p>
+    {:else if $notice.kind === "achievement"}
+      <p>{$tx("Erfolg:")} {$loc.achievement($notice.id).name} (+1 % {$tx("Produktion")})</p>
     {:else}
-      <p>{$notice.message}</p>
+      <p>{$tx($notice.message)}</p>
     {/if}
-    <button class="close" aria-label="Meldung schließen" onclick={() => game.dismissNotice()}>×</button>
+    <button class="close" aria-label={$tx("Meldung schließen")} onclick={() => game.dismissNotice()}>×</button>
   </div>
 {/if}
 

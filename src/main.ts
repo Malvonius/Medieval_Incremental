@@ -23,6 +23,9 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch((error: unknown) => console.warn("Service Worker nicht registriert", error));
 }
 
+// Diagnose-Zugang für Browser-Tests (liest nur, verändert nichts am Spielstand).
+Object.assign(window, { __vhalAudio: audio });
+
 // Browser erlauben Audio erst nach einer Nutzergeste.
 const unlockAudio = (): void => audio.unlock();
 window.addEventListener("pointerdown", unlockAudio);

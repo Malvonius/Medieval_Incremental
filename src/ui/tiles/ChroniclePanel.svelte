@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
   import type { StoryNode } from "../../game/story";
   import { formatDuration, formatNumber } from "../format";
   import ProgressSection from "./ProgressSection.svelte";
+  import EpilogueDialog from "../EpilogueDialog.svelte";
   import { CLOUD_URL, downloadSave, isValidSyncCode, syncCode, uploadSave } from "../../app/cloud";
   import SettingsSection from "./SettingsSection.svelte";
 
@@ -17,6 +20,7 @@
       .reverse(),
   );
 
+  let showEpilogue = $state(false);
   let exported = $state("");
   let importText = $state("");
   let confirmReset = $state(false);
@@ -52,13 +56,13 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Aufzeichnungen</h3>
+  <h3 class="section-title">{$tx("Aufzeichnungen")}</h3>
   <ol class="log">
     {#each entries as node, i (node.id)}
       <li>
         <details open={i === 0}>
-          <summary><span class="title">{node.title}</span></summary>
-          {#each node.text as paragraph, p (p)}
+          <summary><span class="title">{$loc.story(node).title}</span></summary>
+          {#each $loc.story(node).text as paragraph, p (p)}
             <p>{paragraph}</p>
           {/each}
         </details>
@@ -68,58 +72,66 @@
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Statistik</h3>
+  <h3 class="section-title">{$tx("Statistik")}</h3>
   <dl class="stats">
-    <dt>Spielzeit</dt>
+    <dt>{$tx("Spielzeit")}</dt>
     <dd class="num">{formatDuration(snap.state.stats.playSeconds)}</dd>
-    <dt>Steuern eingetrieben</dt>
+    <dt>{$tx("Steuern eingetrieben")}</dt>
     <dd class="num">{formatNumber(snap.state.stats.clicks)}×</dd>
-    <dt>Gold insgesamt</dt>
+    <dt>{$tx("Gold insgesamt")}</dt>
     <dd class="num">{formatNumber(snap.state.totals.gold)}</dd>
-    <dt>Geschmiedete Klingen</dt>
+    <dt>{$tx("Geschmiedete Klingen")}</dt>
     <dd class="num">{formatNumber(snap.state.totals.swords)}</dd>
   </dl>
 </section>
+
+{#if snap.state.flags.act5Complete}
+  <section class="panel-section">
+    <h3 class="section-title">{$tx("Epilog")}</h3>
+    <button class="btn" onclick={() => (showEpilogue = true)}>{$tx("Den Epilog erzählen")}</button>
+  </section>
+{/if}
+{#if showEpilogue}<EpilogueDialog {game} onclose={() => (showEpilogue = false)} />{/if}
 
 <ProgressSection {game} {snap} />
 <SettingsSection />
 
 <section class="panel-section">
-  <h3 class="section-title">Archiv</h3>
+  <h3 class="section-title">{$tx("Archiv")}</h3>
   <div class="row">
-    <button class="btn" onclick={() => game.save()}>Jetzt speichern</button>
-    <button class="btn" onclick={doExport}>Exportieren</button>
-    {#if copyState === "copied"}<span class="hint">In die Zwischenablage kopiert.</span>{/if}
-    {#if copyState === "failed"}<span class="hint">Bitte manuell kopieren.</span>{/if}
+    <button class="btn" onclick={() => game.save()}>{$tx("Jetzt speichern")}</button>
+    <button class="btn" onclick={doExport}>{$tx("Exportieren")}</button>
+    {#if copyState === "copied"}<span class="hint">{$tx("In die Zwischenablage kopiert.")}</span>{/if}
+    {#if copyState === "failed"}<span class="hint">{$tx("Bitte manuell kopieren.")}</span>{/if}
   </div>
   {#if exported}
-    <textarea readonly rows="3" aria-label="Exportierter Spielstand" onfocus={(e) => e.currentTarget.select()}>{exported}</textarea>
+    <textarea readonly rows="3" aria-label={$tx("Exportierter Spielstand")} onfocus={(e) => e.currentTarget.select()}>{exported}</textarea>
   {/if}
 
   {#if CLOUD_URL}
     <div class="row">
       <label class="import inline">
-        <span>Sync-Code</span>
+        <span>{$tx("Sync-Code")}</span>
         <input class="code" bind:value={cloudCode} maxlength="12" spellcheck="false" />
       </label>
-      <button class="btn" disabled={!isValidSyncCode(cloudCode)} onclick={() => cloud("up")}>In die Cloud</button>
-      <button class="btn" disabled={!isValidSyncCode(cloudCode)} onclick={() => cloud("down")}>Aus der Cloud laden</button>
-      {#if cloudStatus}<span class="hint">{cloudStatus}</span>{/if}
+      <button class="btn" disabled={!isValidSyncCode(cloudCode)} onclick={() => cloud("up")}>{$tx("In die Cloud")}</button>
+      <button class="btn" disabled={!isValidSyncCode(cloudCode)} onclick={() => cloud("down")}>{$tx("Aus der Cloud laden")}</button>
+      {#if cloudStatus}<span class="hint">{$tx(cloudStatus)}</span>{/if}
     </div>
   {/if}
 
   <label class="import">
-    <span>Spielstand importieren</span>
-    <textarea rows="3" bind:value={importText} placeholder="Exportierten Text hier einfügen …"></textarea>
+    <span>{$tx("Spielstand importieren")}</span>
+    <textarea rows="3" bind:value={importText} placeholder={$tx("Exportierten Text hier einfügen …")}></textarea>
   </label>
   <div class="row">
-    <button class="btn" disabled={importText.trim() === ""} onclick={doImport}>Importieren</button>
+    <button class="btn" disabled={importText.trim() === ""} onclick={doImport}>{$tx("Importieren")}</button>
     {#if confirmReset}
-      <span class="hint">Aller Fortschritt geht verloren.</span>
-      <button class="btn btn-danger" onclick={() => { game.reset(); confirmReset = false; }}>Ja, neu beginnen</button>
-      <button class="btn" onclick={() => (confirmReset = false)}>Abbrechen</button>
+      <span class="hint">{$tx("Aller Fortschritt geht verloren.")}</span>
+      <button class="btn btn-danger" onclick={() => { game.reset(); confirmReset = false; }}>{$tx("Ja, neu beginnen")}</button>
+      <button class="btn" onclick={() => (confirmReset = false)}>{$tx("Abbrechen")}</button>
     {:else}
-      <button class="btn btn-danger" onclick={() => (confirmReset = true)}>Neues Spiel</button>
+      <button class="btn btn-danger" onclick={() => (confirmReset = true)}>{$tx("Neues Spiel")}</button>
     {/if}
   </div>
 </section>

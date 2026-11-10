@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
   import { EXPEDITIONS, EXPEDITION_IDS, RECRUIT_SWORDS } from "../../content/balance";
   import { type BuyAmount, resolveAmount } from "../../game/actions";
@@ -31,26 +33,26 @@
 
 <section class="panel-section">
   <div class="bar">
-    <h3 class="section-title">Rekrutierung</h3>
+    <h3 class="section-title">{$tx("Rekrutierung")}</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
   <div class="recruit">
     <dl class="stats num">
-      <div><dt>Lebend</dt><dd>{formatNumber(alive)}</dd></div>
-      <div><dt>Bereit</dt><dd>{formatNumber(snap.state.warroom.soldiers)}</dd></div>
-      <div><dt>Im Feld</dt><dd>{formatNumber(alive - snap.state.warroom.soldiers)}</dd></div>
-      <div><dt>Gefallen</dt><dd class="fallen">{formatNumber(snap.state.warroom.fallen)}</dd></div>
+      <div><dt>{$tx("Lebend")}</dt><dd>{formatNumber(alive)}</dd></div>
+      <div><dt>{$tx("Bereit")}</dt><dd>{formatNumber(snap.state.warroom.soldiers)}</dd></div>
+      <div><dt>{$tx("Im Feld")}</dt><dd>{formatNumber(alive - snap.state.warroom.soldiers)}</dd></div>
+      <div><dt>{$tx("Gefallen")}</dt><dd class="fallen">{formatNumber(snap.state.warroom.fallen)}</dd></div>
     </dl>
     <button class="btn buy" disabled={!canRecruit} onclick={() => game.dispatch({ type: "recruit", amount: shown })}>
-      <span>Rekrutieren ×{shown}</span>
-      <span class="cost num">{formatNumber(cost)} Gold · {formatNumber(shown * RECRUIT_SWORDS)} Schwerter</span>
+      <span>{$tx("Rekrutieren")} ×{shown}</span>
+      <span class="cost num">{formatNumber(cost)} Gold · {formatNumber(shown * RECRUIT_SWORDS)} {$tx("Schwerter")}</span>
     </button>
   </div>
-  <p class="hint">Jeder Soldat braucht ein Schwert und Sold. Lebende Soldaten zählen für den Goldbonus wie Klingen in der Waffenkammer.</p>
+  <p class="hint">{$tx("Jeder Soldat braucht ein Schwert und Sold. Lebende Soldaten zählen für den Goldbonus wie Klingen in der Waffenkammer.")}</p>
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Feldzüge <small class="num">Hauptleute im Feld: {snap.state.warroom.active.length}/{slots}</small></h3>
+  <h3 class="section-title">{$tx("Feldzüge")} <small class="num">{$tx("Hauptleute im Feld:")} {snap.state.warroom.active.length}/{slots}</small></h3>
   <ul class="expeditions">
     {#each EXPEDITION_IDS as id (id)}
       {@const def = EXPEDITIONS[id]}
@@ -59,38 +61,38 @@
       {@const duration = expeditionDuration(snap.state, id)}
       <li class="expedition" class:unknown={blocker === "locked"} class:done={blocker === "done"}>
         {#if blocker === "locked"}
-          <span class="name">Unbekanntes Ziel</span>
-          <p class="desc">Die Gefangenen im Kerker wissen mehr, als sie sagen.</p>
+          <span class="name">{$tx("Unbekanntes Ziel")}</span>
+          <p class="desc">{$tx("Die Gefangenen im Kerker wissen mehr, als sie sagen.")}</p>
         {:else}
           <div class="head">
-            <span class="name">{def.name}</span>
+            <span class="name">{$loc.expedition(id).name}</span>
             <span class="meta num">
-              {def.soldiers} Soldaten · {formatDuration(duration)} · Verluste {formatPercent(expeditionLosses(snap.state, id, def.soldiers) / def.soldiers)}
+              {def.soldiers} {$tx("Soldaten")} · {formatDuration(duration)} · {$tx("Verluste")} {formatPercent(expeditionLosses(snap.state, id, def.soldiers) / def.soldiers)}
             </span>
           </div>
-          <p class="desc">{def.description}</p>
+          <p class="desc">{$loc.expedition(id).description}</p>
           <p class="reward num">
-            Beute: ~{formatNumber(snap.rates.gold.mul(def.reward.goldSeconds))} Gold{def.reward.iron > 0
-              ? ` · ${formatNumber(def.reward.iron)} Eisen`
-              : ""}{def.reward.prisoners > 0 ? ` · ${def.reward.prisoners} Gefangene` : ""}{def.reward.seals > 0
-              ? ` · ${def.reward.seals} Ordenssiegel`
+            {$tx("Beute:")} ~{formatNumber(snap.rates.gold.mul(def.reward.goldSeconds))} {$tx("Gold")}{def.reward.iron > 0
+              ? ` · ${formatNumber(def.reward.iron)} ${$tx("Eisen")}`
+              : ""}{def.reward.prisoners > 0 ? ` · ${def.reward.prisoners} ${$tx("Gefangene")}` : ""}{def.reward.seals > 0
+              ? ` · ${def.reward.seals} ${$tx("Ordenssiegel")}`
               : ""}
           </p>
           {#if running}
             <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round((1 - running.remaining / duration) * 100)}>
               <span class="fill" style:width="{Math.min(100, (1 - running.remaining / duration) * 100)}%"></span>
             </div>
-            <p class="status num">Unterwegs – Rückkehr in {formatDuration(running.remaining)}</p>
+            <p class="status num">{$tx("Unterwegs – Rückkehr in")} {formatDuration(running.remaining)}</p>
           {:else if blocker === "done"}
-            <p class="status">Gefallen. Grauweiler gehört dir.</p>
+            <p class="status">{$tx("Gefallen. Grauweiler gehört dir.")}</p>
           {:else}
             <div class="actions">
               <button
                 class="btn"
                 disabled={blocker !== null}
-                onclick={() => game.dispatch({ type: "launchExpedition", expedition: id })}>Aussenden</button
+                onclick={() => game.dispatch({ type: "launchExpedition", expedition: id })}>{$tx("Aussenden")}</button
               >
-              {#if blocker !== null}<span class="hint">{LAUNCH_BLOCKER_TEXT[blocker]}</span>{/if}
+              {#if blocker !== null}<span class="hint">{$tx(LAUNCH_BLOCKER_TEXT[blocker])}</span>{/if}
             </div>
           {/if}
         {/if}

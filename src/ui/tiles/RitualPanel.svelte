@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
   import { ASH_BONUS } from "../../content/balance";
   import { ashMultiplier } from "../../game/rates";
   import { ashGain, goldForNextAsh } from "../../game/ritual";
   import { formatNumber, formatPercent } from "../format";
-  import { CHALLENGES, CHALLENGE_IDS, type ChallengeId, MEMORY_BONUS } from "../../content/depth";
+  import { CHALLENGE_IDS, type ChallengeId, MEMORY_BONUS } from "../../content/depth";
 
   let { game }: { game: GameController } = $props();
 
@@ -35,63 +37,63 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Asche</h3>
+  <h3 class="section-title">{$tx("Asche")}</h3>
   <dl class="stats num">
-    <div><dt>Gesammelt</dt><dd class="ash">{formatNumber(ritual.ash)}</dd></div>
-    <div><dt>Bonus</dt><dd>×{formatNumber(current)}</dd></div>
-    <div><dt>Rituale</dt><dd>{ritual.performed}</dd></div>
+    <div><dt>{$tx("Gesammelt")}</dt><dd class="ash">{formatNumber(ritual.ash)}</dd></div>
+    <div><dt>{$tx("Bonus")}</dt><dd>×{formatNumber(current)}</dd></div>
+    <div><dt>{$tx("Rituale")}</dt><dd>{ritual.performed}</dd></div>
   </dl>
-  <p class="hint">Jede Asche erhöht die Produktion von Gold, Eisen, Seelen und Glauben um {formatPercent(ASH_BONUS)}.</p>
+  <p class="hint">{$tx("Jede Asche erhöht die Produktion von Gold, Eisen, Seelen und Glauben um")} {formatPercent(ASH_BONUS)}.</p>
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Das Feuer</h3>
+  <h3 class="section-title">{$tx("Das Feuer")}</h3>
   <div class="lists">
     <div>
-      <h4 class="burns">Was verbrennt</h4>
-      <ul>{#each BURNS as item (item)}<li>{item}</li>{/each}</ul>
+      <h4 class="burns">{$tx("Was verbrennt")}</h4>
+      <ul>{#each BURNS as item (item)}<li>{$tx(item)}</li>{/each}</ul>
     </div>
     <div>
-      <h4 class="stays">Was bleibt</h4>
-      <ul>{#each STAYS as item (item)}<li>{item}</li>{/each}</ul>
+      <h4 class="stays">{$tx("Was bleibt")}</h4>
+      <ul>{#each STAYS as item (item)}<li>{$tx(item)}</li>{/each}</ul>
     </div>
   </div>
 
   <div class="ritual">
     <p class="gain num">
-      Das Ritual bringt jetzt <strong>{formatNumber(gain)}</strong> Asche{gain > 0
-        ? ` (Bonus danach ×${formatNumber(after)})`
+      {$tx("Das Ritual bringt jetzt")} <strong>{formatNumber(gain)}</strong> {$tx("Asche")}{gain > 0
+        ? ` (${$tx("Bonus danach")} ×${formatNumber(after)})`
         : ""}.
-      <span class="next">Nächste Asche ab {formatNumber(nextAt)} Gold in diesem Lauf (bisher {formatNumber(snap.state.runTotals.gold)}).</span>
+      <span class="next">{$tx("Nächste Asche ab")} {formatNumber(nextAt)} {$tx("Gold in diesem Lauf (bisher")} {formatNumber(snap.state.runTotals.gold)}).</span>
     </p>
     {#if confirming}
       <div class="row">
-        <span class="warn">Vhal wird bis auf die Grundmauern niederbrennen.</span>
-        <button class="btn btn-danger" onclick={perform}>Entzünden</button>
-        <button class="btn" onclick={() => (confirming = false)}>Abbrechen</button>
+        <span class="warn">{$tx("Vhal wird bis auf die Grundmauern niederbrennen.")}</span>
+        <button class="btn btn-danger" onclick={perform}>{$tx("Entzünden")}</button>
+        <button class="btn" onclick={() => (confirming = false)}>{$tx("Abbrechen")}</button>
       </div>
     {:else}
-      <button class="btn btn-danger fire" disabled={gain < 1} onclick={() => (confirming = true)}>Das Ritual der Asche vollziehen</button>
+      <button class="btn btn-danger fire" disabled={gain < 1} onclick={() => (confirming = true)}>{$tx("Das Ritual der Asche vollziehen")}</button>
     {/if}
   </div>
 </section>
 
 {#if snap.state.flags.act5Complete || snap.state.meta.ngPlus > 0}
   <section class="panel-section">
-    <h3 class="section-title">Neues Spiel+</h3>
+    <h3 class="section-title">{$tx("Neues Spiel+")}</h3>
     <p class="hint">
-      Erinnerungen: <strong class="num">{snap.state.meta.memories}</strong> (+{formatPercent(snap.state.meta.memories * MEMORY_BONUS)} Produktion).
-      {#if snap.state.meta.challenge}Aktive Herausforderung: <strong>{CHALLENGES[snap.state.meta.challenge].name}</strong>.{/if}
+      {$tx("Erinnerungen:")} <strong class="num">{snap.state.meta.memories}</strong> (+{formatPercent(snap.state.meta.memories * MEMORY_BONUS)} {$tx("Produktion")}).
+      {#if snap.state.meta.challenge}{$tx("Aktive Herausforderung:")} <strong>{$loc.challenge(snap.state.meta.challenge).name}</strong>.{/if}
     </p>
     <ul class="challenges">
       <li>
-        <label><input type="radio" bind:group={ngChallenge} value="none" /> Ohne Herausforderung</label>
+        <label><input type="radio" bind:group={ngChallenge} value="none" /> {$tx("Ohne Herausforderung")}</label>
       </li>
       {#each CHALLENGE_IDS as id (id)}
         <li class:done={snap.state.meta.challengesDone[id]}>
           <label>
             <input type="radio" bind:group={ngChallenge} value={id} />
-            <strong>{CHALLENGES[id].name}</strong> – {CHALLENGES[id].description} Belohnung: {CHALLENGES[id].rewardText}{snap.state.meta.challengesDone[id] ? " ✓" : ""}
+            <strong>{$loc.challenge(id).name}</strong> – {$loc.challenge(id).description} {$tx("Belohnung:")} {$loc.challenge(id).rewardText}{snap.state.meta.challengesDone[id] ? " ✓" : ""}
           </label>
         </li>
       {/each}
@@ -99,15 +101,15 @@
     {#if snap.state.flags.act5Complete}
       {#if ngConfirm}
         <div class="row">
-          <span class="warn">Alles beginnt von vorn – nur Erinnerungen, Erfolge und Herausforderungen bleiben.</span>
-          <button class="btn btn-danger" onclick={startNewGamePlus}>Neu beginnen</button>
-          <button class="btn" onclick={() => (ngConfirm = false)}>Abbrechen</button>
+          <span class="warn">{$tx("Alles beginnt von vorn – nur Erinnerungen, Erfolge und Herausforderungen bleiben.")}</span>
+          <button class="btn btn-danger" onclick={startNewGamePlus}>{$tx("Neu beginnen")}</button>
+          <button class="btn" onclick={() => (ngConfirm = false)}>{$tx("Abbrechen")}</button>
         </div>
       {:else}
-        <button class="btn" onclick={() => (ngConfirm = true)}>Neues Spiel+ beginnen (+1 Erinnerung)</button>
+        <button class="btn" onclick={() => (ngConfirm = true)}>{$tx("Neues Spiel+ beginnen (+1 Erinnerung)")}</button>
       {/if}
     {:else}
-      <p class="hint">Eine Herausforderung gilt als bestanden, wenn du mit ihr ein Ende erreichst.</p>
+      <p class="hint">{$tx("Eine Herausforderung gilt als bestanden, wenn du mit ihr ein Ende erreichst.")}</p>
     {/if}
   </section>
 {/if}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { audio } from "../../app/audio";
-  import { LOCALES, type Locale, locale, t } from "../../i18n";
+  import { LOCALES, type Locale, locale, t, tx } from "../../i18n";
   import { type Notation, settings, updateSettings } from "../../app/settings";
 
   const AUTOSAVE = [15, 30, 60] as const;
@@ -28,7 +28,7 @@
         value={String($settings.autosaveSeconds)}
         onchange={(e) => updateSettings({ autosaveSeconds: Number(e.currentTarget.value) as 15 | 30 | 60 })}
       >
-        {#each AUTOSAVE as s (s)}<option value={String(s)}>alle {s} s</option>{/each}
+        {#each AUTOSAVE as s (s)}<option value={String(s)}>{$tx("alle")} {s} s</option>{/each}
       </select>
     </label>
     <label class="check">
@@ -59,7 +59,7 @@
       />
     </label>
   </div>
-  <p class="hint">Tastatur: <kbd>1</kbd>–<kbd>9</kbd> wählt einen Ort, <kbd>Leertaste</kbd> treibt Steuern ein.</p>
+  <p class="hint">{$tx("Tastatur:")} <kbd>1</kbd>–<kbd>9</kbd> {$tx("wählt einen Ort,")} <kbd>{$tx("Leertaste")}</kbd> {$tx("treibt Steuern ein.")}</p>
 </section>
 
 <style>

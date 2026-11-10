@@ -7,10 +7,21 @@ export const setNotation = (value: "suffix" | "scientific"): void => {
   notation = value;
 };
 
-const SUFFIXES = ["", " Tsd.", " Mio.", " Mrd.", " Bio.", " Brd.", " Trill.", " Trd."] as const;
+const SUFFIXES_BY_LANG = {
+  de: ["", " Tsd.", " Mio.", " Mrd.", " Bio.", " Brd.", " Trill.", " Trd."],
+  en: ["", "K", "M", "B", "T", "Qa", "Qi", "Sx"],
+} as const;
+let numberLocale: keyof typeof SUFFIXES_BY_LANG = "de";
+let SUFFIXES: readonly string[] = SUFFIXES_BY_LANG.de;
+
+/** Zahlen- und Suffixformat der Sprache; wird von der Sprachwahl gesetzt. */
+export const setNumberLocale = (lang: "de" | "en"): void => {
+  numberLocale = lang;
+  SUFFIXES = SUFFIXES_BY_LANG[lang];
+};
 
 const fixed = (value: number, digits: number): string =>
-  value.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  value.toLocaleString(numberLocale === "de" ? "de-DE" : "en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 /** 1234 → „1,23 Tsd.“, 5e30 → „5,00e30“. Werte unter 1 mit zwei, sonst höchstens einer Nachkommastelle. */
 export function formatNumber(source: DecimalSource): string {
@@ -41,5 +52,5 @@ export function formatDuration(totalSeconds: number): string {
 export function formatPercent(fraction: number): string {
   const percent = fraction * 100;
   const digits = Math.abs(percent) < 10 && !Number.isInteger(percent) ? 1 : 0;
-  return `${percent.toLocaleString("de-DE", { maximumFractionDigits: digits })} %`;
+  return `${percent.toLocaleString(numberLocale === "de" ? "de-DE" : "en-US", { maximumFractionDigits: digits })} %`;
 }

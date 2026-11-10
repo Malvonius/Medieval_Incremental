@@ -5,7 +5,7 @@
   import { siegeActive } from "../game/siege";
   import { aliveSoldiers } from "../game/state";
   import { formatNumber, formatPercent } from "./format";
-  import { t } from "../i18n";
+  import { t, tx } from "../i18n";
 
   let { snap }: { snap: Snapshot } = $props();
 
@@ -25,25 +25,25 @@
     </div>
     <div class="res swords">
       <dt>{$t("res.swords")}</dt>
-      <dd class="num">{formatNumber(snap.state.resources.swords)} <small>+{formatPercent(bonus)} Gold</small></dd>
+      <dd class="num">{formatNumber(snap.state.resources.swords)} <small>+{formatPercent(bonus)} {$tx("Gold")}</small></dd>
     </div>
   {/if}
   {#if snap.state.tiles.warroom}
     <div class="res soldiers">
       <dt>{$t("res.soldiers")}</dt>
-      <dd class="num">{formatNumber(soldiers)} <small>{formatNumber(snap.state.warroom.soldiers)} bereit</small></dd>
+      <dd class="num">{formatNumber(soldiers)} <small>{formatNumber(snap.state.warroom.soldiers)} {$tx("bereit")}</small></dd>
     </div>
   {/if}
   {#if snap.state.tiles.dungeon}
     <div class="res prisoners">
       <dt>{$t("res.prisoners")}</dt>
-      <dd class="num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} Hinweise</small></dd>
+      <dd class="num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} {$tx("Hinweise")}</small></dd>
     </div>
   {/if}
   {#if siegeActive(snap.state)}
     <div class="res defense">
       <dt>{$t("res.defense")}</dt>
-      <dd class="num">{formatNumber(defense(snap.state))} <small>Welle {snap.state.siege.wave + 1}/{WAVES.length}</small></dd>
+      <dd class="num">{formatNumber(defense(snap.state))} <small>{$tx("Welle")} {snap.state.siege.wave + 1}/{WAVES.length}</small></dd>
     </div>
   {/if}
   {#if snap.state.tiles.crypt}

@@ -16,13 +16,15 @@
     "verify": "npm run check && npm run lint && npm run test && npm run build",
     "e2e": "playwright test",
     "tauri:dev": "npx --yes @tauri-apps/cli@2 dev",
-    "tauri:build": "npx --yes @tauri-apps/cli@2 build"
+    "tauri:build": "npx --yes @tauri-apps/cli@2 build",
+    "cloud-server": "tsx server/main.ts"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
     "break_infinity.js": "^2.2.0",
+    "inkjs": "^2.3.2",
     "lz-string": "^1.5.0",
     "pixi.js": "^8.21.0"
   },

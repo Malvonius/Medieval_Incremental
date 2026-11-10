@@ -27,6 +27,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          # Optional: Repository-Variable mit der Adresse des Cloud-Servers; leer = Cloud-Funktion aus.
+          VITE_CLOUD_SAVE_URL: ${{ vars.VITE_CLOUD_SAVE_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

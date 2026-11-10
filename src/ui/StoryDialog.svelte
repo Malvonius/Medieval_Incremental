@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tx } from "../i18n";
+  import { loc } from "../i18n/content";
   import type { GameController } from "../app/controller";
 
   let { game }: { game: GameController } = $props();
@@ -26,14 +28,14 @@
 {#if node}
   <div class="backdrop">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="story-title">
-      <p class="act">Akt {ACT_NUMERALS[node.act - 1]}</p>
-      <h2 id="story-title">{node.title}</h2>
-      {#each node.text as paragraph, i (i)}
+      <p class="act">{$tx("Akt")} {ACT_NUMERALS[node.act - 1]}</p>
+      <h2 id="story-title">{$loc.story(node).title}</h2>
+      {#each $loc.story(node).text as paragraph, i (i)}
         <p class="text">{paragraph}</p>
       {/each}
       <div class="actions">
         <button class="btn" bind:this={button} onclick={() => game.dismissStory()}>
-          {remaining > 0 ? `Weiter (${remaining})` : "Weiter"}
+          {remaining > 0 ? `${$tx("Weiter")} (${remaining})` : $tx("Weiter")}
         </button>
       </div>
     </div>

@@ -6,3 +6,4 @@ coverage/
 sim-report.csv
 playwright-report/
 test-results/
+cloud-data/

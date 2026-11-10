@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tx } from "../i18n";
   import type { GameController } from "../app/controller";
   import type { TileId } from "../content/ids";
   import NoticeToast from "./NoticeToast.svelte";
@@ -36,8 +37,8 @@
   const actLabel = $derived.by(() => {
     const { flags } = $snapshot.state;
     const ng = $snapshot.state.meta.ngPlus;
-    const suffix = ng > 0 ? ` · Neues Spiel+ ${ng}` : "";
-    return label(flags) + suffix;
+    const suffix = ng > 0 ? ` · ${$tx("Neues Spiel+")} ${ng}` : "";
+    return $tx(label(flags)) + suffix;
   });
 
   function label(flags: typeof $snapshot.state.flags): string {
@@ -57,7 +58,7 @@
 <div class="shell">
   <header class="top">
     <div class="brand">
-      <h1>Die Asche von Vhal</h1>
+      <h1>{$tx("Die Asche von Vhal")}</h1>
       <p class="act">{actLabel}</p>
     </div>
     <ResourceBar snap={$snapshot} />
@@ -66,7 +67,7 @@
   <Scene {game} />
 
   <main class="layout">
-    <nav class="menu" aria-label="Orte der Burg">
+    <nav class="menu" aria-label={$tx("Orte der Burg")}>
       <TileMenu snap={$snapshot} {active} onselect={(id) => (active = id)} />
     </nav>
 
@@ -76,8 +77,8 @@
         <h2 id="panel-title" class="panel-title"><span aria-hidden="true">{activeTile.glyph}</span> {$t(`tile.${activeTile.id}`)}</h2>
         <Panel {game} />
       {:else}
-        <h2 id="panel-title" class="panel-title">Versiegelt</h2>
-        <p class="muted">Dieser Ort öffnet sich erst später in der Geschichte.</p>
+        <h2 id="panel-title" class="panel-title">{$tx("Versiegelt")}</h2>
+        <p class="muted">{$tx("Dieser Ort öffnet sich erst später in der Geschichte.")}</p>
       {/if}
     </section>
   </main>

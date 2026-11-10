@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
   import type { GameController } from "../../app/controller";
   import {
     INTEL_FOR_KOMTUREI,
@@ -22,46 +23,46 @@
 
   const leads = $derived([
     {
-      label: `${INTEL_FOR_OUTPOST} Hinweise`,
-      text: snap.state.flags.outpostKnown ? "Die Lage des Vorpostens" : "Wo zahlt der Orden seine Söldner aus?",
+      label: `${INTEL_FOR_OUTPOST} ${$tx("Hinweise")}`,
+      text: $tx(snap.state.flags.outpostKnown ? "Die Lage des Vorpostens" : "Wo zahlt der Orden seine Söldner aus?"),
       known: snap.state.flags.outpostKnown,
     },
     {
-      label: `${INTEL_FOR_KOMTUREI} Hinweise · ${SEALS_FOR_KOMTUREI} Ordenssiegel`,
-      text: snap.state.flags.komtureiKnown ? "Der Weg nach Grauweiler" : "Wer verrät dich an den Orden?",
+      label: `${INTEL_FOR_KOMTUREI} ${$tx("Hinweise")} · ${SEALS_FOR_KOMTUREI} ${$tx("Ordenssiegel")}`,
+      text: $tx(snap.state.flags.komtureiKnown ? "Der Weg nach Grauweiler" : "Wer verrät dich an den Orden?"),
       known: snap.state.flags.komtureiKnown,
     },
   ]);
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Zellen</h3>
-  <p class="count"><span class="num big">{formatNumber(dungeon.prisoners)}</span> Gefangene in Ketten</p>
+  <h3 class="section-title">{$tx("Zellen")}</h3>
+  <p class="count"><span class="num big">{formatNumber(dungeon.prisoners)}</span> {$tx("Gefangene in Ketten")}</p>
   <div class="choices">
     <div class="choice">
-      <h4>Verhören</h4>
-      <p>Jedes Verhör bringt <strong class="num">{perInterrogation}</strong> {perInterrogation === 1 ? "Hinweis" : "Hinweise"}. Der Gefangene überlebt es nicht.</p>
+      <h4>{$tx("Verhören")}</h4>
+      <p>{$tx("Jedes Verhör bringt")} <strong class="num">{perInterrogation}</strong> {$tx(perInterrogation === 1 ? "Hinweis" : "Hinweise")}. {$tx("Der Gefangene überlebt es nicht.")}</p>
       <div class="row">
         <button class="btn" disabled={dungeon.prisoners < 1} onclick={() => game.dispatch({ type: "interrogate", amount: 1 })}>×1</button>
         <button
           class="btn"
           disabled={dungeon.prisoners < 2}
-          onclick={() => game.dispatch({ type: "interrogate", amount: dungeon.prisoners })}>Alle</button
+          onclick={() => game.dispatch({ type: "interrogate", amount: dungeon.prisoners })}>{$tx("Alle")}</button
         >
       </div>
     </div>
     <div class="choice">
-      <h4>Zur Fron zwingen</h4>
+      <h4>{$tx("Zur Fron zwingen")}</h4>
       <p>
-        Jeder Fronarbeiter: <strong class="num">+{formatPercent(LABOR_IRON_BONUS * laborMult)}</strong> Eisen,
-        <strong class="num">+{formatPercent(LABOR_GOLD_BONUS * laborMult)}</strong> Gold. Für immer.
+        {$tx("Jeder Fronarbeiter:")} <strong class="num">+{formatPercent(LABOR_IRON_BONUS * laborMult)}</strong> {$tx("Eisen")},
+        <strong class="num">+{formatPercent(LABOR_GOLD_BONUS * laborMult)}</strong> {$tx("Gold")}. {$tx("Für immer.")}
       </p>
       <div class="row">
         <button class="btn" disabled={dungeon.prisoners < 1} onclick={() => game.dispatch({ type: "forceLabor", amount: 1 })}>×1</button>
         <button
           class="btn"
           disabled={dungeon.prisoners < 2}
-          onclick={() => game.dispatch({ type: "forceLabor", amount: dungeon.prisoners })}>Alle</button
+          onclick={() => game.dispatch({ type: "forceLabor", amount: dungeon.prisoners })}>{$tx("Alle")}</button
         >
       </div>
     </div>
@@ -69,7 +70,7 @@
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Hinweise <small class="num">{formatNumber(dungeon.intel)} gesammelt</small></h3>
+  <h3 class="section-title">{$tx("Hinweise")} <small class="num">{formatNumber(dungeon.intel)} {$tx("gesammelt")}</small></h3>
   <ul class="leads">
     {#each leads as lead (lead.label)}
       <li class:known={lead.known}>
@@ -82,11 +83,11 @@
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Fronarbeit</h3>
+  <h3 class="section-title">{$tx("Fronarbeit")}</h3>
   <p class="labor num">
-    {formatNumber(dungeon.laborers)} Arbeiter in Stollen und Feldern:
-    +{formatPercent(dungeon.laborers * LABOR_IRON_BONUS * laborMult)} Eisen,
-    +{formatPercent(dungeon.laborers * LABOR_GOLD_BONUS * laborMult)} Gold
+    {formatNumber(dungeon.laborers)} {$tx("Arbeiter in Stollen und Feldern:")}
+    +{formatPercent(dungeon.laborers * LABOR_IRON_BONUS * laborMult)} {$tx("Eisen")},
+    +{formatPercent(dungeon.laborers * LABOR_GOLD_BONUS * laborMult)} {$tx("Gold")}
   </p>
 </section>
 
