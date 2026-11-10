@@ -14,7 +14,10 @@
   const activeTile = $derived(TILES.find((t) => t.id === active));
   const actLabel = $derived.by(() => {
     const { flags } = $snapshot.state;
-    if (flags.act4Complete) return "Akt IV abgeschlossen · Fortsetzung folgt";
+    if (flags.act5Complete) {
+      return $snapshot.state.siege.ending === "ash" ? "Ende · Die Asche von Vhal" : "Ende · Das Licht von Vhal";
+    }
+    if (flags.act4Complete) return "Akt V · Die letzte Glocke";
     if (flags.act3Complete) return "Akt IV · Glaube und Verrat";
     if (flags.act2Complete) return "Akt III · Was unter der Erde liegt";
     if (flags.act1Complete) return "Akt II · Der Graue Orden";

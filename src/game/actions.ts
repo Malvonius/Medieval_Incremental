@@ -3,7 +3,9 @@ import { maxAffordable } from "../core/economy";
 import {
   BUILDINGS,
   type BuildingId,
+  type EndingId,
   type ExpeditionId,
+  type FortificationId,
   type RecipeId,
   type ResearchId,
   UPGRADES,
@@ -12,6 +14,7 @@ import {
 } from "../content/balance";
 import { breakVow, swearVow } from "./chapel";
 import { performRitual } from "./ritual";
+import { buildFortification, chooseEnding, startBattle } from "./siege";
 import type { ResourceId } from "../content/ids";
 import { startResearch } from "./alchemy";
 import { forceLabor, interrogate } from "./dungeon";
@@ -44,7 +47,10 @@ export type Action =
   | { readonly type: "research"; readonly research: ResearchId }
   | { readonly type: "swearVow"; readonly vow: VowId }
   | { readonly type: "breakVow"; readonly vow: VowId }
-  | { readonly type: "ritual" };
+  | { readonly type: "ritual" }
+  | { readonly type: "buildFortification"; readonly fortification: FortificationId; readonly amount: number }
+  | { readonly type: "battle" }
+  | { readonly type: "chooseEnding"; readonly ending: EndingId };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   if (amount !== "max") return amount;
@@ -110,6 +116,12 @@ export function applyAction(state: GameState, action: Action): Result {
       return breakVow(state, action.vow);
     case "ritual":
       return performRitual(state);
+    case "buildFortification":
+      return buildFortification(state, action.fortification, action.amount);
+    case "battle":
+      return startBattle(state);
+    case "chooseEnding":
+      return chooseEnding(state, action.ending);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);

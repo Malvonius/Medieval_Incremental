@@ -7,6 +7,7 @@
   import { LAUNCH_BLOCKER_TEXT, launchBlocker, maxRecruitable } from "../../game/warroom";
   import { formatDuration, formatNumber, formatPercent } from "../format";
   import BuyAmountToggle from "./BuyAmountToggle.svelte";
+  import SiegeSection from "./SiegeSection.svelte";
   import UpgradeList from "./UpgradeList.svelte";
 
   let { game }: { game: GameController } = $props();
@@ -23,6 +24,10 @@
   const alive = $derived(aliveSoldiers(snap.state));
   const slots = $derived(expeditionSlots(snap.state));
 </script>
+
+{#if snap.state.flags.act4Complete}
+  <SiegeSection {game} {snap} />
+{/if}
 
 <section class="panel-section">
   <div class="bar">

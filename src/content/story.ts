@@ -7,6 +7,7 @@ import {
   REBIRTH_RUN_GOLD,
   SEALS_FOR_KOMTUREI,
   VOW_IDS,
+  WAVES,
 } from "./balance";
 import { completedResearchCount } from "../game/alchemy";
 
@@ -363,5 +364,112 @@ export const STORY: readonly StoryNode[] = [
     requires: ["a4_ashes"],
     trigger: (s) => s.ritual.performed >= 1 && s.runTotals.gold.gte(REBIRTH_RUN_GOLD),
     effects: [{ kind: "setFlag", flag: "act4Complete" }],
+  },
+
+  // ── Akt V – Die letzte Glocke ───────────────────────────────────────────────
+  {
+    id: "a5_siege",
+    act: 5,
+    title: "Das Heer der Toten",
+    text: [
+      "Sie kommen bei Nacht. Kein Trommelschlag, kein Hornsignal – nur das Knirschen von Knochen auf gefrorenem Boden.",
+      "Sera steht auf dem Wehrgang und zählt die Fackeln. Dann hört sie auf. „Es sind keine Fackeln“, sagt sie. „Es sind ihre Augen.“",
+      "Der Kriegsrat tagt bis zum Morgen. Vhal muss halten – Welle um Welle, bis der Bischof selbst vor dem Tor steht.",
+    ],
+    requires: ["a4_rebirth"],
+    trigger: () => true,
+    effects: [],
+  },
+  {
+    id: "a5_first_wave",
+    act: 5,
+    title: "Die erste Nacht",
+    text: [
+      "Die Vorhut zerbricht an den Palisaden wie Glas. Aus den Trümmern steigen Lichter auf und ziehen hinab in die Krypta.",
+      "Deine Gefallenen kämpfen weiter – auf der anderen Seite. Die Seelen der Feinde gehören jetzt dir.",
+    ],
+    requires: ["a5_siege"],
+    trigger: (s) => s.siege.wave >= 1,
+    effects: [],
+  },
+  {
+    id: "a5_brannoc",
+    act: 5,
+    title: "Brannocs letzte Klinge",
+    text: [
+      "Als die Ritter ohne Gesicht das Tor durchbrechen, steht Brannoc allein im Torbogen. Er hat die Esse verlassen, zum ersten Mal seit Jahren.",
+      "Er hält sie lange genug auf. Danach findet ihr ihn zwischen den Rüstungen, den Hammer noch in der Hand.",
+      "In der Krypta brennt in dieser Nacht ein neues Licht. Es ist heller als die anderen.",
+    ],
+    requires: ["a5_first_wave"],
+    trigger: (s) => s.siege.wave >= 3,
+    effects: [],
+  },
+  {
+    id: "a5_ilse",
+    act: 5,
+    title: "Die Rückkehr der Schülerin",
+    text: [
+      "Am Morgen nach den Pestreitern steht eine verhüllte Gestalt am Nordtor. Ilse Varn. Ihre grünen Finger sind schwarz geworden.",
+      "„Er hat mich belogen“, sagt sie. „Der Stein macht ihn nicht unsterblich. Er bindet ihn. Wer den Stein hält, wenn er fällt, bekommt alles – seine Macht, seine Toten, seinen Hunger.“",
+      "„Oder man zerschlägt ihn“, sagt Sera. Ilse nickt langsam. „Mit der letzten Glocke. Wenn genug Menschen glauben, dass es hilft.“",
+    ],
+    requires: ["a5_brannoc"],
+    trigger: (s) => s.siege.wave >= 5,
+    effects: [],
+  },
+  {
+    id: "a5_bishop",
+    act: 5,
+    title: "Der Hirte vor dem Tor",
+    text: [
+      "Als der auferstandene Orden fällt, wird es still. Dann teilt sich das Heer der Toten, und durch die Gasse reitet ein alter Mann in weißem Ornat.",
+      "Er hebt den Hirtenstab, und an seiner Spitze glüht der Stein der Weisen. „Mein Sohn“, ruft er, „öffne das Tor. Ich habe deinen Onkel geliebt. Ich werde auch dich lieben.“",
+      "Hinter dir läuten die Gläubigen von Vhal die Glocken. Alle, bis auf eine.",
+    ],
+    requires: ["a5_ilse"],
+    trigger: (s) => s.siege.wave >= WAVES.length - 1,
+    effects: [],
+  },
+  {
+    id: "a5_fall",
+    act: 5,
+    title: "Der Fall des Bischofs",
+    text: [
+      "Er stirbt nicht wie ein Mensch. Er zerfällt, Schicht um Schicht, bis nur noch Ornat, Staub und ein glühender Stein im Schnee liegen.",
+      "Die Toten vor den Mauern stehen still. Sie warten. Auf ihn – oder auf den, der den Stein aufhebt.",
+      "Sera sieht dich an. Ilse sieht den Stein an. Im Glockenturm hängt die letzte Glocke, und noch hat sie niemand geläutet.",
+    ],
+    requires: ["a5_bishop"],
+    trigger: (s) => s.siege.wave >= WAVES.length,
+    effects: [],
+  },
+  {
+    id: "a5_end_light",
+    act: 5,
+    title: "Ende: Das Licht von Vhal",
+    text: [
+      "Die letzte Glocke klingt anders als die anderen. Tiefer. Als sie zum dritten Mal schlägt, springt der Stein in deiner Hand entzwei.",
+      "Draußen fallen die Toten. Nicht wie Krieger, sondern wie Schlafende, die endlich gehen dürfen. Aus der Krypta steigen tausend Lichter auf – eines davon heller als die anderen.",
+      "Vhal ist arm, verbrannt und frei. Im Frühling pflügen die Bauern Felder, in denen niemand mehr flüstert.",
+      "— Ende —",
+    ],
+    requires: ["a5_fall"],
+    trigger: (s) => s.siege.ending === "light",
+    effects: [{ kind: "setFlag", flag: "act5Complete" }],
+  },
+  {
+    id: "a5_end_ash",
+    act: 5,
+    title: "Ende: Die Asche von Vhal",
+    text: [
+      "Der Stein ist warm in deiner Hand. Er pocht wie ein zweites Herz, und vor den Mauern senken zehntausend Tote die Köpfe.",
+      "Sera geht noch in derselben Nacht. Ilse bleibt. Sie nennt dich jetzt „Meister“, und du korrigierst sie nicht.",
+      "Vhal wird mächtig, reicher als je zuvor und niemals mehr hell. Und tief unter der Kapelle beginnt ein neues Licht zu flüstern. Es kennt deinen Namen.",
+      "— Ende —",
+    ],
+    requires: ["a5_fall"],
+    trigger: (s) => s.siege.ending === "ash",
+    effects: [{ kind: "setFlag", flag: "act5Complete" }],
   },
 ];

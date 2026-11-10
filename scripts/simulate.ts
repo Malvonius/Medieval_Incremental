@@ -29,13 +29,22 @@ const TARGET_HUMAN_MINUTES: Readonly<Record<string, number>> = {
   a4_betrayal: 330,
   a4_ashes: 345,
   a4_rebirth: 390,
+  a5_siege: 390,
+  a5_first_wave: 395,
+  a5_brannoc: 415,
+  a5_ilse: 435,
+  a5_bishop: 455,
+  a5_fall: 470,
+  a5_end_light: 480,
+  a5_end_ash: 480,
 };
 const BOT_SPEED_FACTOR = 0.72;
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-const stopAtNode = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length) ?? "a4_rebirth";
-const result = runBot({ maxSeconds: 10 * 3600, stopAtNode });
+const until = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length);
+const stopAtNode = until ?? ["a5_end_light", "a5_end_ash"];
+const result = runBot({ maxSeconds: 12 * 3600, stopAtNode });
 const rows = result.milestones.map((m) => {
   const target = TARGET_HUMAN_MINUTES[m.id];
   const targetBot = target === undefined ? null : target * 60 * BOT_SPEED_FACTOR;
@@ -55,13 +64,14 @@ for (const r of rows) {
   );
 }
 const v = result.sim.view;
-console.log(`\n${stopAtNode} ${result.reachedStop ? "erreicht" : "NICHT erreicht"} nach ${fmt(result.seconds)} (Bot).`);
+console.log(`\n${String(stopAtNode)} ${result.reachedStop ? "erreicht" : "NICHT erreicht"} nach ${fmt(result.seconds)} (Bot).`);
 console.log("Gebäude:", JSON.stringify(v.buildings));
 console.log("Upgrades:", Object.entries(v.upgrades).filter(([, b]) => b).map(([k]) => k).join(", "));
 console.log(`Schwerter: ${v.resources.swords.toString()}, Gold/s: ${result.sim.rates.gold.toExponential(2)}`);
 console.log("Kriegsrat:", JSON.stringify(v.warroom));
 console.log("Kerker:", JSON.stringify(v.dungeon));
 console.log("Kapelle:", JSON.stringify(v.chapel), "Ritual:", JSON.stringify(v.ritual), "Glaube/s:", result.sim.rates.faith.toExponential(2));
+console.log("Belagerung:", JSON.stringify(v.siege), "Glaube:", v.resources.faith.toExponential(2), "Seelen:", v.resources.souls.toExponential(2));
 console.log("Alchemie:", JSON.stringify(v.alchemy), "Seelen/s:", result.sim.rates.souls.toExponential(2));
 
 if (process.argv.includes("--csv")) {

@@ -1,7 +1,7 @@
 # Die Asche von Vhal
 
-Ein Dark-Medieval Incremental Game für den Browser. Ziel-Spielzeit: ca. 8 Stunden, aufgeteilt in fünf Akte.
-Aktuell spielbar: Akt I bis Akt IV (zusammen ca. 6,5 h) – von der Ruine bis zum Ritual der Asche.
+Ein Dark-Medieval Incremental Game für den Browser. Spielzeit: ca. 8 Stunden, aufgeteilt in fünf Akte
+mit zwei Enden. Vollständig spielbar – von der Ruine bis zur letzten Glocke.
 
 ## Entwicklung
 
@@ -38,7 +38,7 @@ src/
 
 | Was | Wo |
 |---|---|
-| Gebäude / Upgrade / Rezept / Expedition / Forschung | `src/content/balance.ts` |
+| Gebäude / Upgrade / Rezept / Expedition / Forschung / Gelübde / Welle | `src/content/balance.ts` |
 | Story-Knoten | `src/content/story.ts` (Trigger = reine Funktion über den Spielstand) |
 | Neue Kachel | Panel unter `src/ui/tiles/`, Eintrag in `src/ui/tiles/registry.ts`, Freischaltung per Story-Effekt `unlockTile` |
 | Schemaänderung am Spielstand | `SAVE_VERSION` in `src/game/state.ts` erhöhen und Migration in `src/game/migrations.ts` anhängen |
@@ -48,7 +48,8 @@ src/
 Nach jeder Änderung an `balance.ts` oder Story-Triggern `npm run sim` ausführen
 (`npm run sim -- --until=a1_grey_banner` stoppt früher). Der Bot spielt etwa 28 % schneller als ein Mensch.
 Der Test `src/sim/bot.test.ts` schlägt fehl, wenn der Bot Akt I nicht in 32–54 min, Akt II nicht
-in 88–128 min, Akt III nicht in 158–232 min oder Akt IV nicht in 228–336 min (jeweils Gesamtzeit) abschließt.
+in 88–128 min, Akt III nicht in 158–232 min, Akt IV nicht in 228–336 min oder das Spiel nicht in 292–400 min
+(jeweils Gesamtzeit) abschließt. Ein Bot-Ende bei ≈ 361 min entspricht ≈ 8 h für Menschen.
 
 ## Roadmap
 
@@ -58,4 +59,4 @@ in 88–128 min, Akt III nicht in 158–232 min oder Akt IV nicht in 228–336 m
 | II – Der Graue Orden ✅ | Soldaten, Expeditionen, Verhöre & Fronarbeit, Sturm auf die Komturei | Kriegsrat, Kerker |
 | III – Was unter der Erde liegt ✅ | Seelen als zweite Währung, Pakte, Forschungsbaum, Stein der Weisen | Krypta, Alchemistenturm |
 | IV – Glaube und Verrat ✅ | Glaube, Gelübde (Segen + Fluch), Verrat, Ritual der Asche (Prestige) | Kapelle, Ritual der Asche |
-| V – Die letzte Glocke | Belagerung, zwei Enden | – |
+| V – Die letzte Glocke ✅ | Belagerung in 8 Wellen, Befestigungen, Wehrkraft, zwei Enden | (im Kriegsrat) |
