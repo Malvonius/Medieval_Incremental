@@ -4,7 +4,11 @@ import {
   BUILDING_IDS,
   type BuildingId,
   EXPEDITIONS,
+  ENDING_IDS,
   EXPEDITION_IDS,
+  FORTIFICATIONS,
+  FORTIFICATION_IDS,
+  SEAL_BONUS,
   INTEL_FOR_KOMTUREI,
   type ExpeditionId,
   RECIPES,
@@ -21,13 +25,17 @@ import type { Action } from "../game/actions";
 import { researchStatus } from "../game/alchemy";
 import { vowBlocker } from "../game/chapel";
 import { ashGain } from "../game/ritual";
+import { battleBlocker, endingBlocker, siegeActive } from "../game/siege";
 import { canAffordRecipe } from "../game/forge";
 import {
   buildingCost,
   buildingMultiplier,
   clickValue,
   craftDuration,
+  defense,
+  defenseMultiplier,
   forgeCapacity,
+  fortificationCost,
   isBuildingVisible,
   isUpgradeVisible,
   recruitCost,
@@ -42,8 +50,8 @@ export interface BotOptions {
   readonly maxSeconds: number;
   /** Klicks pro Sekunde auf „Steuern eintreiben“. Menschen klicken anfangs, später kaum noch. */
   readonly clicksPerSecond?: number;
-  /** Simulation endet, sobald dieser Story-Knoten erreicht ist. */
-  readonly stopAtNode?: string;
+  /** Simulation endet, sobald einer dieser Story-Knoten erreicht ist. */
+  readonly stopAtNode?: string | readonly string[];
 }
 
 export interface Milestone {
@@ -71,6 +79,8 @@ const FAITH_BUDGET_SECONDS = 60;
 const FIRST_RITUAL_ASH = 15;
 /** Gelübde in der Reihenfolge, in der der Bot sie ablegt. */
 const VOW_PREFERENCE: readonly VowId[] = ["penance", "silence", "sword", "poverty"];
+/** Befestigungen dürfen höchstens so viele Sekunden Goldeinkommen kosten. */
+const FORT_BUDGET_SECONDS = 120;
 /** Sold für einen Rekruten darf höchstens so viele Sekunden Goldeinkommen kosten – sonst verhungert die Wirtschaft. */
 const RECRUIT_BUDGET_SECONDS = 25;
 
@@ -143,9 +153,8 @@ class GreedyBot {
       const def = UPGRADES[id];
       const effect: UpgradeEffect = def.effect;
       if (def.costResource !== "souls" || !isUpgradeVisible(s, id)) continue;
-      if (effect.kind === "resourceMult" && effect.resource !== "souls" && souls.gte(def.cost)) {
-        return { type: "buyUpgrade", upgrade: id };
-      }
+      const isSoulGrowth = effect.kind === "resourceMult" && effect.resource === "souls";
+      if (!isSoulGrowth && souls.gte(def.cost)) return { type: "buyUpgrade", upgrade: id };
     }
 
     const income = this.sim.rates.souls;
@@ -235,7 +244,8 @@ class GreedyBot {
 
   private launchAction(): Action | null {
     const s = this.sim.view;
-    if (!s.tiles.warroom) return null;
+    // Während der Belagerung bleiben die Truppen in der Burg.
+    if (!s.tiles.warroom || siegeActive(s)) return null;
     // Ist ein einmaliges Hauptziel bekannt, hält der Bot seine Truppen dafür zusammen.
     const mainTarget = EXPEDITIONS_BY_SIZE.find((id) => !EXPEDITIONS[id].repeatable && launchBlocker(s, id) === "soldiers");
     for (const id of EXPEDITIONS_BY_SIZE) {
@@ -276,10 +286,47 @@ class GreedyBot {
     return vow === undefined ? null : { type: "swearVow", vow };
   }
 
+  /** Erstes Ritual ab FIRST_RITUAL_ASH; während der Belagerung erneut, sobald es die Asche verdoppelt. */
   private ritualAction(): Action | null {
     const s = this.sim.view;
-    if (!s.tiles.ritual || s.ritual.performed > 0) return null;
-    return ashGain(s) >= FIRST_RITUAL_ASH ? { type: "ritual" } : null;
+    if (!s.tiles.ritual) return null;
+    const gain = ashGain(s);
+    if (s.ritual.performed === 0) return gain >= FIRST_RITUAL_ASH ? { type: "ritual" } : null;
+    if (siegeActive(s) && s.siege.battle === null && gain >= s.ritual.ash) return { type: "ritual" };
+    return null;
+  }
+
+  private siegeAction(): Action | null {
+    const s = this.sim.view;
+    if (!siegeActive(s)) return null;
+    if (battleBlocker(s) === null) return { type: "battle" };
+    const budget = this.sim.rates.gold.mul(FORT_BUDGET_SECONDS);
+    const current = defense(s);
+    let best: { action: Action; value: number } | null = null;
+    const consider = (action: Action, cost: Decimal, gain: number): void => {
+      if (cost.gt(s.resources.gold) || cost.gt(budget)) return;
+      const value = gain / cost.toNumber();
+      if (best === null || value > best.value) best = { action, value };
+    };
+    for (const id of FORTIFICATION_IDS) {
+      const gain = FORTIFICATIONS[id].defense * defenseMultiplier(s) * (1 + s.warroom.seals * SEAL_BONUS);
+      consider({ type: "buildFortification", fortification: id, amount: 1 }, fortificationCost(s, id, 1), gain);
+    }
+    for (const id of UPGRADE_IDS) {
+      const def = UPGRADES[id];
+      const effect: UpgradeEffect = def.effect;
+      if (effect.kind !== "defenseMult" || def.costResource !== "gold" || !isUpgradeVisible(s, id)) continue;
+      consider({ type: "buyUpgrade", upgrade: id }, new Decimal(def.cost), current * (effect.factor - 1));
+    }
+    const chosen = best as { action: Action } | null;
+    return chosen?.action ?? null;
+  }
+
+  /** Bevorzugt das Licht-Ende; nimmt den Stein nur, wenn der Glaube nicht reicht, die Seelen aber schon. */
+  private endingAction(): Action | null {
+    const s = this.sim.view;
+    const ending = ENDING_IDS.find((id) => endingBlocker(s, id) === null);
+    return ending === undefined ? null : { type: "chooseEnding", ending };
   }
 
   private dungeonAction(): Action | null {
@@ -306,7 +353,7 @@ class GreedyBot {
   }
 
   private nextAction(): Action | null {
-    const ritual = this.ritualAction() ?? this.vowAction();
+    const ritual = this.endingAction() ?? this.ritualAction() ?? this.vowAction();
     if (ritual) return ritual;
     const research = this.researchAction();
     if (research) return research;
@@ -315,6 +362,7 @@ class GreedyBot {
     const goldSpending = this.saving.gold
       ? null
       : (this.recruitAction() ??
+        this.siegeAction() ??
         this.supportUpgrade() ??
         this.forgeAction() ??
         this.chapelAction() ??
@@ -334,7 +382,10 @@ class GreedyBot {
 }
 
 export function runBot(options: BotOptions): BotResult {
-  const { maxSeconds, clicksPerSecond = 3, stopAtNode } = options;
+  const { maxSeconds, clicksPerSecond = 3 } = options;
+  const stopAt: ReadonlySet<string> = new Set(
+    options.stopAtNode === undefined ? [] : typeof options.stopAtNode === "string" ? [options.stopAtNode] : options.stopAtNode,
+  );
   if (!(maxSeconds > 0)) throw new RangeError("maxSeconds muss > 0 sein");
   if (!Number.isSafeInteger(clicksPerSecond) || clicksPerSecond < 0) throw new RangeError("clicksPerSecond muss eine Ganzzahl ≥ 0 sein");
 
@@ -344,7 +395,7 @@ export function runBot(options: BotOptions): BotResult {
   let seconds = 0;
   sim.events.on("story", (node) => {
     milestones.push({ id: node.id, title: node.title, act: node.act, seconds });
-    if (node.id === stopAtNode) reachedStop = true;
+    if (stopAt.has(node.id)) reachedStop = true;
   });
 
   const bot = new GreedyBot(sim, clicksPerSecond);

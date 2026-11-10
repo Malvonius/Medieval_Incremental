@@ -40,6 +40,9 @@ export const FAITH_FOR_SERMON = 20_000;
 export const FAITH_FOR_BETRAYAL = 300_000;
 export const REBIRTH_RUN_GOLD = 1e15;
 
+/** Belagerung: Wehrkraft je Soldat in der Burg (vor Multiplikatoren). */
+export const SOLDIER_DEFENSE = 10;
+
 /** Rekrutierung: Gold geometrisch nach Anzahl lebender Soldaten, dazu ein Schwert je Soldat. */
 export const RECRUIT_COST: GeometricCost = { base: 5_000, growth: 1.04 };
 export const RECRUIT_SWORDS = 1;
@@ -253,7 +256,8 @@ export type UpgradeEffect =
   | { readonly kind: "intelYield"; readonly add: number }
   | { readonly kind: "laborBonus"; readonly factor: number }
   | { readonly kind: "resourceMult"; readonly resource: ResourceId; readonly factor: number }
-  | { readonly kind: "vowSlots"; readonly add: number };
+  | { readonly kind: "vowSlots"; readonly add: number }
+  | { readonly kind: "defenseMult"; readonly factor: number };
 
 export interface UpgradeDef {
   readonly name: string;
@@ -548,6 +552,36 @@ export const UPGRADES = {
     requiresFlag: null,
     effect: { kind: "vowSlots", add: 1 },
   },
+  blessed_arrows: {
+    name: "Geweihte Pfeile",
+    description: "In Weihwasser getaucht. Die Toten fürchten sie. Wehrkraft ×2.",
+    tile: "warroom",
+    costResource: "gold",
+    cost: 5e12,
+    requires: null,
+    requiresFlag: "act4Complete",
+    effect: { kind: "defenseMult", factor: 2 },
+  },
+  boiling_pitch: {
+    name: "Pechnasen",
+    description: "Kochendes Pech über dem Tor. Auch Tote brennen. Wehrkraft ×2.",
+    tile: "warroom",
+    costResource: "gold",
+    cost: 1e14,
+    requires: null,
+    requiresFlag: "act4Complete",
+    effect: { kind: "defenseMult", factor: 2 },
+  },
+  bone_wards: {
+    name: "Knochenbann",
+    description: "Ilse Varns letzte Formel, mit Seelen in die Mauern geschrieben. Wehrkraft ×3.",
+    tile: "warroom",
+    costResource: "souls",
+    cost: 1e8,
+    requires: null,
+    requiresFlag: "act4Complete",
+    effect: { kind: "defenseMult", factor: 3 },
+  },
 } as const satisfies Record<string, UpgradeDef>;
 
 export type UpgradeId = keyof typeof UPGRADES;
@@ -774,3 +808,82 @@ export const VOWS: Readonly<Record<VowKey, VowDef>> = {
 
 export type VowId = VowKey;
 export const VOW_IDS = Object.keys(VOWS) as VowId[];
+
+export interface FortificationDef {
+  readonly name: string;
+  readonly description: string;
+  readonly cost: GeometricCost;
+  /** Feste Wehrkraft je Bauwerk (vor Multiplikatoren). */
+  readonly defense: number;
+}
+
+type FortificationKey = "palisade" | "tower" | "gatehouse";
+
+export const FORTIFICATIONS: Readonly<Record<FortificationKey, FortificationDef>> = {
+  palisade: {
+    name: "Palisade",
+    description: "Angespitzte Pfähle aus dem Schwarzforst. Sie halten Lebende auf – und manchmal Tote.",
+    cost: { base: 2e12, growth: 1.18 },
+    defense: 150,
+  },
+  tower: {
+    name: "Wehrturm",
+    description: "Stein auf Asche. Von oben sieht man das Heer kommen.",
+    cost: { base: 1e14, growth: 1.18 },
+    defense: 2_000,
+  },
+  gatehouse: {
+    name: "Torhaus",
+    description: "Zwei Fallgitter, drei Mordlöcher und ein Tor aus Schwarzeisen.",
+    cost: { base: 5e15, growth: 1.18 },
+    defense: 25_000,
+  },
+};
+
+export type FortificationId = FortificationKey;
+export const FORTIFICATION_IDS = Object.keys(FORTIFICATIONS) as FortificationId[];
+
+export interface WaveDef {
+  readonly name: string;
+  readonly strength: number;
+  readonly durationSeconds: number;
+  /** Anteil der Soldaten in der Burg, der in dieser Schlacht fällt (abgerundet). */
+  readonly lossRate: number;
+}
+
+/** Die Belagerung: Wellen in fester Reihenfolge, die letzte ist der Bischof selbst. */
+export const WAVES: readonly WaveDef[] = [
+  { name: "Die Vorhut der Gebeine", strength: 1_500, durationSeconds: 120, lossRate: 0.05 },
+  { name: "Die Ertrunkenen aus der Furt", strength: 4_000, durationSeconds: 150, lossRate: 0.08 },
+  { name: "Die Ritter ohne Gesicht", strength: 10_000, durationSeconds: 180, lossRate: 0.1 },
+  { name: "Der Leichenzug von Grauweiler", strength: 25_000, durationSeconds: 210, lossRate: 0.12 },
+  { name: "Die Pestreiter", strength: 60_000, durationSeconds: 240, lossRate: 0.15 },
+  { name: "Die Gefallenen von Vhal", strength: 100_000, durationSeconds: 270, lossRate: 0.18 },
+  { name: "Der Graue Orden, auferstanden", strength: 170_000, durationSeconds: 300, lossRate: 0.2 },
+  { name: "Der Bischof von Vhal", strength: 180_000, durationSeconds: 600, lossRate: 0.3 },
+];
+
+export type EndingId = "light" | "ash";
+
+export interface EndingDef {
+  readonly name: string;
+  readonly description: string;
+  readonly costResource: ResourceId;
+  readonly cost: number;
+}
+
+export const ENDINGS: Readonly<Record<EndingId, EndingDef>> = {
+  light: {
+    name: "Die letzte Glocke läuten",
+    description: "Ruf die Gemeinde zusammen, läute die Glocke und zerschlage den Stein. Was er gibt, verlierst du mit ihm.",
+    costResource: "faith",
+    cost: 1_500_000,
+  },
+  ash: {
+    name: "Den Stein nehmen",
+    description: "Halte ihn fest. Die Toten gehorchen jetzt dir. Jemand muss sie ja führen.",
+    costResource: "souls",
+    cost: 2e8,
+  },
+};
+export const ENDING_IDS = Object.keys(ENDINGS) as EndingId[];

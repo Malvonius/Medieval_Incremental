@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snapshot } from "../app/controller";
-  import { SEAL_BONUS } from "../content/balance";
-  import { armedBonus, ashMultiplier } from "../game/rates";
+  import { SEAL_BONUS, WAVES } from "../content/balance";
+  import { armedBonus, ashMultiplier, defense } from "../game/rates";
+  import { siegeActive } from "../game/siege";
   import { aliveSoldiers } from "../game/state";
   import { formatNumber, formatPercent } from "./format";
 
@@ -36,6 +37,12 @@
     <div class="res prisoners">
       <dt>Gefangene</dt>
       <dd class="num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} Hinweise</small></dd>
+    </div>
+  {/if}
+  {#if siegeActive(snap.state)}
+    <div class="res defense">
+      <dt>Wehrkraft</dt>
+      <dd class="num">{formatNumber(defense(snap.state))} <small>Welle {snap.state.siege.wave + 1}/{WAVES.length}</small></dd>
     </div>
   {/if}
   {#if snap.state.tiles.crypt}
@@ -114,6 +121,9 @@
   }
   .souls dd {
     color: var(--soul);
+  }
+  .defense dd {
+    color: var(--blood-bright);
   }
   .faith dd {
     color: #e8d9a8;

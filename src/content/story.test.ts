@@ -21,9 +21,15 @@ describe("Story-Graph", () => {
     expect(STORY.filter((n) => n.requires.length === 0).length).toBeGreaterThan(0);
   });
 
-  it.each(["act1Complete", "act2Complete", "act3Complete", "act4Complete"] as const)("hat genau einen Knoten, der %s setzt", (flag) => {
+  it.each([
+    ["act1Complete", 1],
+    ["act2Complete", 1],
+    ["act3Complete", 1],
+    ["act4Complete", 1],
+    ["act5Complete", 2],
+  ] as const)("%s wird von genau %i Knoten gesetzt", (flag, count) => {
     const enders = STORY.filter((n) => n.effects.some((e) => e.kind === "setFlag" && e.flag === flag));
-    expect(enders).toHaveLength(1);
+    expect(enders).toHaveLength(count);
   });
 
   it("schaltet jede Kachel höchstens einmal frei", () => {

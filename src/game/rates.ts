@@ -17,11 +17,15 @@ import {
   RECIPES,
   ASH_BONUS,
   FALLEN_SOUL_RATE,
+  FORTIFICATIONS,
+  FORTIFICATION_IDS,
+  type FortificationId,
   RECRUIT_COST,
   RESEARCH,
   RESEARCH_IDS,
   type RecipeId,
   SEAL_BONUS,
+  SOLDIER_DEFENSE,
   SWORD_GOLD_BONUS,
   UPGRADES,
   UPGRADE_IDS,
@@ -152,6 +156,18 @@ export const expeditionSlots = (state: View): number => EXPEDITION_SLOTS + sumOf
 /** Gefallene einer Expedition: abgerundet, damit kleine Trupps verlustfrei bleiben können. */
 export const expeditionLosses = (state: View, id: ExpeditionId, sent: number): number =>
   Math.floor(sent * EXPEDITIONS[id].lossRate * productOf(state, "expeditionLosses", (e) => e.factor));
+
+export const defenseMultiplier = (state: View): number => productOf(state, "defenseMult", (e) => e.factor);
+
+/** Wehrkraft: Soldaten in der Burg plus Befestigungen, mal Upgrades und Ordenssiegel. */
+export function defense(state: View): number {
+  let base = state.warroom.soldiers * SOLDIER_DEFENSE;
+  for (const id of FORTIFICATION_IDS) base += state.siege.fortifications[id] * FORTIFICATIONS[id].defense;
+  return base * defenseMultiplier(state) * (1 + state.warroom.seals * SEAL_BONUS);
+}
+
+export const fortificationCost = (state: View, id: FortificationId, amount: number): Decimal =>
+  bulkCost(FORTIFICATIONS[id].cost, state.siege.fortifications[id], amount);
 
 export const vowSlots = (state: View): number => VOW_SLOTS + sumOf(state, "vowSlots", (e) => e.add);
 

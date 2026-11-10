@@ -112,7 +112,7 @@ describe("Ritual der Asche", () => {
     expect(v.buildings.mill).toBe(0);
     expect(v.buildings.candle).toBe(0);
     expect(v.upgrades.waterwheel).toBe(false);
-    expect(v.warroom).toMatchObject({ soldiers: 0, fallen: 0, active: [], seals: 10 });
+    expect(v.warroom).toMatchObject({ soldiers: 0, fallen: 80, active: [], seals: 10 });
     expect(v.warroom.completed.komturei).toBe(1);
     expect(v.dungeon).toMatchObject({ laborers: 0, intel: 24 });
     expect(v.forge.queue).toHaveLength(0);

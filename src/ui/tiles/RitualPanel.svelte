@@ -17,8 +17,8 @@
   const after = $derived(1 + (ritual.ash + gain) * ASH_BONUS);
   let confirming = $state(false);
 
-  const BURNS = ["Gold, Eisen, Schwerter und Seelen", "Alle Gebäude und Verbesserungen", "Soldaten, Gefallene, Gefangene und Fronarbeiter", "Laufende Expeditionen, Forschung und Schmiedeaufträge"];
-  const STAYS = ["Geschichte, Kacheln und Ordenssiegel", "Erforschtes Wissen und gesammelte Hinweise", "Glauben und abgelegte Gelübde", "Alle bisher gesammelte Asche"];
+  const BURNS = ["Gold, Eisen, Schwerter und Seelen", "Alle Gebäude und Verbesserungen", "Soldaten, Gefangene, Fronarbeiter und Befestigungen", "Laufende Expeditionen, Forschung, Schmiedeaufträge und Schlachten"];
+  const STAYS = ["Geschichte, Kacheln, Ordenssiegel und abgewehrte Wellen", "Erforschtes Wissen, Hinweise und die Gefallenen in der Krypta", "Glauben und abgelegte Gelübde", "Alle bisher gesammelte Asche"];
 
   function perform(): void {
     confirming = false;

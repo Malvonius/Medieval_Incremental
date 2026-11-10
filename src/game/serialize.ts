@@ -2,14 +2,16 @@ import { Decimal, isFiniteDecimal } from "../core/decimal";
 import { SaveError } from "../core/save";
 import type { DeepReadonly } from "../core/types";
 import {
+  ENDING_IDS,
   EXPEDITION_IDS,
+  WAVES,
   type ExpeditionId,
   RECIPE_IDS,
   RESEARCH_IDS,
   type RecipeId,
   type ResearchId,
 } from "../content/balance";
-import { type ActiveExpedition, type AlchemyState, type GameState, createInitialState } from "./state";
+import { type ActiveExpedition, type AlchemyState, type GameState, type SiegeState, createInitialState } from "./state";
 
 /** JSON-taugliche Form des Spielstands (Decimal → String). */
 export type PlainState = ReturnType<typeof toPlain>;
@@ -44,6 +46,12 @@ export function toPlain(state: DeepReadonly<GameState>) {
     },
     chapel: { vows: { ...state.chapel.vows } },
     ritual: { ...state.ritual },
+    siege: {
+      wave: state.siege.wave,
+      battle: state.siege.battle === null ? null : { ...state.siege.battle },
+      fortifications: { ...state.siege.fortifications },
+      ending: state.siege.ending,
+    },
     story: { completed: [...state.story.completed] },
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
@@ -103,6 +111,31 @@ function readRecord<K extends string, V>(
 const RECIPE_SET: ReadonlySet<string> = new Set(RECIPE_IDS);
 const EXPEDITION_SET: ReadonlySet<string> = new Set(EXPEDITION_IDS);
 const RESEARCH_SET: ReadonlySet<string> = new Set(RESEARCH_IDS);
+
+const ENDING_SET: ReadonlySet<string> = new Set(ENDING_IDS);
+
+function readSiege(source: Record<string, unknown>, defaults: SiegeState): SiegeState {
+  const wave = readNumber(source["wave"], "siege.wave", 0, { integer: true });
+  if (wave > WAVES.length) throw new SaveError('Feld "siege.wave" ist zu groß.');
+  const rawBattle = source["battle"];
+  let battle: SiegeState["battle"] = null;
+  if (rawBattle !== undefined && rawBattle !== null) {
+    if (!isObject(rawBattle)) throw new SaveError('Feld "siege.battle" muss ein Objekt sein.');
+    battle = { remaining: readNumber(rawBattle["remaining"], "siege.battle.remaining", 0) };
+  }
+  const rawEnding = source["ending"];
+  if (rawEnding !== undefined && rawEnding !== null && (typeof rawEnding !== "string" || !ENDING_SET.has(rawEnding))) {
+    throw new SaveError('Feld "siege.ending" ist kein gültiges Ende.');
+  }
+  return {
+    wave,
+    battle,
+    fortifications: readRecord(section(source, "fortifications"), defaults.fortifications, "siege.fortifications", (v, p, f) =>
+      readNumber(v, p, f, { integer: true }),
+    ),
+    ending: (rawEnding ?? null) as SiegeState["ending"],
+  };
+}
 
 function readActiveResearch(value: unknown): AlchemyState["active"] {
   if (value === undefined || value === null) return null;
@@ -180,6 +213,7 @@ export function fromPlain(data: unknown, now: number): GameState {
     },
     chapel: { vows: readRecord(section(chapel, "vows"), d.chapel.vows, "chapel.vows", readBoolean) },
     ritual: readRecord(section(data, "ritual"), d.ritual, "ritual", readCount),
+    siege: readSiege(section(data, "siege"), d.siege),
     story: { completed: [...new Set(rawCompleted)] },
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),

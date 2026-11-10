@@ -3,8 +3,11 @@ import { recordFrom } from "../core/types";
 import {
   BUILDING_IDS,
   type BuildingId,
+  type EndingId,
   EXPEDITION_IDS,
   type ExpeditionId,
+  FORTIFICATION_IDS,
+  type FortificationId,
   RESEARCH_IDS,
   type RecipeId,
   type ResearchId,
@@ -62,6 +65,14 @@ export interface RitualState {
   performed: number;
 }
 
+export interface SiegeState {
+  /** Anzahl abgewehrter Wellen (Index der nächsten Welle). */
+  wave: number;
+  battle: { remaining: number } | null;
+  fortifications: Record<FortificationId, number>;
+  ending: EndingId | null;
+}
+
 export interface GameState {
   resources: Record<ResourceId, Decimal>;
   /** Lebenslang erhaltene Mengen – Grundlage für Story-Trigger. */
@@ -78,6 +89,7 @@ export interface GameState {
   alchemy: AlchemyState;
   chapel: ChapelState;
   ritual: RitualState;
+  siege: SiegeState;
   story: { completed: string[] };
   stats: { playSeconds: number; clicks: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
@@ -99,6 +111,7 @@ export function createInitialState(now: number): GameState {
     alchemy: { active: null, completed: recordFrom(RESEARCH_IDS, () => false) },
     chapel: { vows: recordFrom(VOW_IDS, () => false) },
     ritual: { ash: 0, performed: 0 },
+    siege: { wave: 0, battle: null, fortifications: recordFrom(FORTIFICATION_IDS, () => 0), ending: null },
     story: { completed: [] },
     stats: { playSeconds: 0, clicks: 0 },
     lastSeen: now,
