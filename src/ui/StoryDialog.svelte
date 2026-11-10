@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tx } from "../i18n";
   import { loc } from "../i18n/content";
+  import { PORTRAITS, portraitFor } from "./portraits";
   import type { GameController } from "../app/controller";
 
   let { game }: { game: GameController } = $props();
@@ -8,6 +9,14 @@
   const queue = $derived(game.storyQueue);
   const node = $derived($queue[0]);
   const remaining = $derived($queue.length - 1);
+  const portrait = $derived(node ? portraitFor(node.id) : null);
+  const PORTRAIT_NAMES = {
+    brannoc: "Brannoc, der Schmied",
+    sera: "Sera von Dornach",
+    ilse: "Magistra Ilse Varn",
+    bishop: "Der Bischof von Vhal",
+    seal: "Ein gebrochenes Siegel",
+  } as const;
   const ACT_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
 
   let button = $state<HTMLButtonElement | null>(null);
@@ -30,6 +39,9 @@
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="story-title">
       <p class="act">{$tx("Akt")} {ACT_NUMERALS[node.act - 1]}</p>
       <h2 id="story-title">{$loc.story(node).title}</h2>
+      {#if portrait}
+        <img class="portrait" src={PORTRAITS[portrait]} alt={$tx(PORTRAIT_NAMES[portrait])} width="112" height="112" />
+      {/if}
       {#each $loc.story(node).text as paragraph, i (i)}
         <p class="text" class:lead={i === 0}>{paragraph}</p>
       {/each}
@@ -92,6 +104,21 @@
     margin: 4px 8px 0 0;
     color: var(--gold);
     text-shadow: 0 2px 0 #000;
+  }
+
+  .portrait {
+    float: right;
+    width: 112px;
+    height: 112px;
+    margin: -6px 0 8px 16px;
+    filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.6));
+  }
+
+  @media (max-width: 480px) {
+    .portrait {
+      width: 72px;
+      height: 72px;
+    }
   }
 
   .text {

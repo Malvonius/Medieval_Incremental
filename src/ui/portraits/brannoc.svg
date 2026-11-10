@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Brannoc, der Schmied">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#5a2a14"/><stop offset="1" stop-color="#160c07"/></radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c98a62"/><stop offset="1" stop-color="#8a5638"/></linearGradient>
+    <clipPath id="c"><circle cx="60" cy="60" r="54"/></clipPath>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="#d4a54a"/><circle cx="60" cy="60" r="55" fill="#2a1e14"/>
+  <g clip-path="url(#c)">
+    <rect width="120" height="120" fill="url(#bg)"/>
+    <circle cx="96" cy="88" r="16" fill="#e07b39" opacity=".35"/>
+    <path d="M14 120c4-26 20-36 46-36s42 10 46 36z" fill="#4a2f1c"/>
+    <path d="M38 120l6-30h32l6 30z" fill="#6b4426"/>
+    <path d="M44 92h32" stroke="#2a1a0e" stroke-width="2"/>
+    <rect x="52" y="70" width="16" height="16" fill="url(#skin)"/>
+    <ellipse cx="60" cy="50" rx="22" ry="25" fill="url(#skin)"/>
+    <path d="M38 46c0-16 10-24 22-24s22 8 22 24c-4-8-12-10-22-10s-18 2-22 10z" fill="#a8744e"/>
+    <path d="M40 58c2 18 10 34 20 34s18-16 20-34c-4 6-10 8-20 8s-16-2-20-8z" fill="#7a3a1c"/>
+    <path d="M48 66c4 3 20 3 24 0" stroke="#4a200c" stroke-width="2" fill="none"/>
+    <path d="M44 46l9-2M67 44l9 2" stroke="#4a2a18" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="51" cy="50" r="2.2" fill="#1a0f08"/><circle cx="69" cy="50" r="2.2" fill="#1a0f08"/>
+    <path d="M58 52l-2 8h6" stroke="#7a4a30" stroke-width="1.6" fill="none"/>
+    <path d="M70 78l6 18M74 76l4 3" stroke="#e8b070" stroke-width="1.2" opacity=".6"/>
+  </g>
+</svg>

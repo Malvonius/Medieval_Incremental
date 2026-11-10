@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "../core/decimal";
-import { formatDuration, formatNumber, formatPercent, setNotation, setNumberLocale } from "./format";
+import { formatDuration, formatFactor, formatNumber, formatPercent, setNotation, setNumberLocale } from "./format";
 
 describe("formatNumber", () => {
   it.each([
@@ -47,6 +47,14 @@ describe("englisches Zahlenformat", () => {
     expect(formatNumber(5_600_000)).toBe("5.60M");
     setNumberLocale("de");
     expect(formatNumber(1_234)).toBe("1,23 Tsd.");
+  });
+});
+
+describe("formatFactor", () => {
+  it("zeigt kleine Faktoren genau", () => {
+    expect(formatFactor(1.01)).toBe("1,01");
+    expect(formatFactor(2.5)).toBe("2,5");
+    expect(formatFactor(1234)).toBe("1,23 Tsd.");
   });
 });
 
