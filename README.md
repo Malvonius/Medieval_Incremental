@@ -3,6 +3,8 @@
 Ein Dark-Medieval Incremental Game für den Browser. Spielzeit: ca. 8 Stunden, aufgeteilt in fünf Akte
 mit zwei Enden. Vollständig spielbar – von der Ruine bis zur letzten Glocke.
 
+**Spielen:** https://malvonius.github.io/Medieval_Incremental/
+
 ## Entwicklung
 
 Voraussetzung: Node.js 22 oder neuer.
@@ -60,3 +62,13 @@ in 88–128 min, Akt III nicht in 158–232 min, Akt IV nicht in 228–336 min o
 | III – Was unter der Erde liegt ✅ | Seelen als zweite Währung, Pakte, Forschungsbaum, Stein der Weisen | Krypta, Alchemistenturm |
 | IV – Glaube und Verrat ✅ | Glaube, Gelübde (Segen + Fluch), Verrat, Ritual der Asche (Prestige) | Kapelle, Ritual der Asche |
 | V – Die letzte Glocke ✅ | Belagerung in 8 Wellen, Befestigungen, Wehrkraft, zwei Enden | (im Kriegsrat) |
+
+## Deployment
+
+Jeder Push auf `main` baut das Spiel und veröffentlicht es über `.github/workflows/deploy.yml` auf
+GitHub Pages (vorher laufen die Tests). Einmalig nötig: unter **Settings → Pages → Build and deployment**
+als Quelle **GitHub Actions** wählen. Für private Repositories setzt GitHub Pages einen kostenpflichtigen
+Plan voraus, sonst muss das Repository öffentlich sein. Manuell auslösen: **Actions → Deploy auf GitHub
+Pages → Run workflow**.
+
+Vite baut mit relativen Pfaden (`base: "./"`), daher läuft das Spiel unter jedem Unterpfad.
