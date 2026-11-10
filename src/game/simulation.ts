@@ -16,6 +16,8 @@ import { type StoryNode, StoryDirector } from "./story";
 export interface SimulationEvents extends Record<string, unknown> {
   story: StoryNode;
   achievement: AchievementId;
+  /** Erfolgreich ausgeführte Spieleraktion – z. B. für Sound. */
+  action: Action["type"];
 }
 
 /**
@@ -64,6 +66,7 @@ export class Simulation {
   dispatch(action: Action): Result {
     const result = applyAction(this.state, action);
     if (result.ok) {
+      this.events.emit("action", action.type);
       this.invalidate();
       this.advanceStory();
     }

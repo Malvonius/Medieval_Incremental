@@ -5,13 +5,16 @@
   import ResourceBar from "./ResourceBar.svelte";
   import StoryDialog from "./StoryDialog.svelte";
   import TileMenu from "./TileMenu.svelte";
+  import { audio } from "../app/audio";
   import { TILES } from "./tiles/registry";
+  import Scene from "./Scene.svelte";
 
   let { game }: { game: GameController } = $props();
 
   const snapshot = $derived(game.snapshot);
   let active = $state<TileId>("keep");
   const activeTile = $derived(TILES.find((t) => t.id === active));
+  $effect(() => audio.setMuffled(active === "crypt"));
 
   /** 1–9 wählt eine Kachel, Leertaste treibt Steuern ein. Nicht in Eingabefeldern oder auf Knöpfen. */
   function onkeydown(event: KeyboardEvent): void {
@@ -51,6 +54,8 @@
     </div>
     <ResourceBar snap={$snapshot} />
   </header>
+
+  <Scene {game} />
 
   <main class="layout">
     <nav class="menu" aria-label="Orte der Burg">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { audio } from "../../app/audio";
   import { type Notation, settings, updateSettings } from "../../app/settings";
 
   const AUTOSAVE = [15, 30, 60] as const;
@@ -26,6 +27,29 @@
     <label class="check">
       <input type="checkbox" checked={$settings.reduceMotion} onchange={(e) => updateSettings({ reduceMotion: e.currentTarget.checked })} />
       <span>Animationen reduzieren</span>
+    </label>
+    <label class="check">
+      <input
+        type="checkbox"
+        checked={$settings.sound}
+        onchange={(e) => {
+          updateSettings({ sound: e.currentTarget.checked });
+          audio.unlock();
+        }}
+      />
+      <span>Ton</span>
+    </label>
+    <label>
+      <span>Lautstärke</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        value={$settings.volume}
+        disabled={!$settings.sound}
+        oninput={(e) => updateSettings({ volume: Number(e.currentTarget.value) })}
+      />
     </label>
   </div>
   <p class="hint">Tastatur: <kbd>1</kbd>–<kbd>9</kbd> wählt einen Ort, <kbd>Leertaste</kbd> treibt Steuern ein.</p>
