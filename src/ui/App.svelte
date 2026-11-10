@@ -109,10 +109,14 @@
   h1 {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-size: clamp(1.7rem, 4.5vw, 2.5rem);
+    letter-spacing: 0.04em;
     margin: 0;
-    color: var(--gold);
-    text-shadow: 0 0 18px rgb(212 165 74 / 0.25);
+    background: linear-gradient(180deg, #f0d48a 0%, #c08a35 60%, #8a5a20 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 6px rgb(212 165 74 / 0.25));
   }
 
   .act {
@@ -130,20 +134,52 @@
   }
 
   .panel {
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
+    position: relative;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgb(212 165 74 / 0.06), transparent 60%),
+      linear-gradient(180deg, #1c1610 0%, #130f0b 100%);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius);
-    padding: 16px 18px 20px;
+    outline: 1px solid rgb(212 165 74 / 0.12);
+    outline-offset: -5px;
+    box-shadow: inset 0 0 40px rgb(0 0 0 / 0.55), 0 10px 30px rgb(0 0 0 / 0.45);
+    padding: 18px 20px 22px;
     min-height: 420px;
     min-width: 0;
+  }
+
+  /* Eckbeschläge aus Messing */
+  .panel::before,
+  .panel::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgb(212 165 74 / 0.45);
+    pointer-events: none;
+  }
+
+  .panel::before {
+    top: 8px;
+    left: 8px;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .panel::after {
+    bottom: 8px;
+    right: 8px;
+    border-left: none;
+    border-top: none;
   }
 
   .panel-title {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: 1.5rem;
-    margin: 0 0 14px;
-    color: var(--text);
+    font-size: 1.6rem;
+    margin: 0 0 16px;
+    color: #f0e2c4;
+    text-shadow: 0 1px 0 #000;
   }
 
   .muted {

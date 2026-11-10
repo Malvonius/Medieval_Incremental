@@ -51,9 +51,12 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    background: linear-gradient(160deg, var(--surface) 0%, var(--bg-sunken) 100%);
+    background:
+      radial-gradient(ellipse at 50% 30%, rgb(255 230 180 / 0.06), transparent 65%),
+      linear-gradient(160deg, #2c241c 0%, #15110d 100%);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius);
+    box-shadow: inset 0 1px 0 rgb(255 230 180 / 0.08), inset 0 -3px 6px rgb(0 0 0 / 0.5), 0 3px 8px rgb(0 0 0 / 0.45);
     padding: 6px;
     transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
@@ -69,9 +72,10 @@
   }
 
   .glyph {
-    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
     line-height: 1;
     color: var(--gold);
+    text-shadow: 0 1px 0 #000, 0 0 12px rgb(212 165 74 / 0.3);
   }
 
   .label {
@@ -96,7 +100,8 @@
   }
 
   .tile.sealed {
-    background: var(--bg-sunken);
+    background: repeating-linear-gradient(135deg, #0f0c0a 0 6px, #14100c 6px 12px);
+    box-shadow: inset 0 2px 8px rgb(0 0 0 / 0.7);
     border-style: dashed;
     border-color: var(--border);
     opacity: 0.7;

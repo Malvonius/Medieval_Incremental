@@ -38,7 +38,13 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: radial-gradient(ellipse at top, #1d1712 0%, var(--bg) 60%) fixed, var(--bg);
+  /* Vignette + feines Rauschen statt Bilddatei: wirkt wie grober Stein, kostet keine Ladezeit. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% -10%, #2a2018 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 120%, #000 0%, transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-ui);
   font-size: 15px;
@@ -65,17 +71,25 @@ button:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/* Knöpfe wie gebeiztes Leder mit Messingrand */
 .btn {
-  background: var(--surface);
+  background: linear-gradient(180deg, #2e241b 0%, #1c1611 100%);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 6px 12px;
-  transition: background 120ms ease, border-color 120ms ease;
+  box-shadow: inset 0 1px 0 rgb(255 230 180 / 0.07), 0 1px 2px rgb(0 0 0 / 0.5);
+  transition: background 120ms ease, border-color 120ms ease, transform 60ms ease, color 120ms ease;
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--surface-hover);
+  background: linear-gradient(180deg, #3a2d20 0%, #241b13 100%);
   border-color: var(--gold);
+  color: #f3e4c4;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.6);
 }
 
 .btn:disabled {
@@ -91,14 +105,45 @@ button:disabled {
   margin-top: 20px;
 }
 
+/* Abschnittstitel mit Fleuron und auslaufender Goldlinie */
 .section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-family: var(--font-display);
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  margin: 0 0 8px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
+  font-weight: 400;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  color: #c9b48a;
+  margin: 0 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, rgb(212 165 74 / 0.55), rgb(212 165 74 / 0.05) 70%, transparent) 1;
+}
+
+.section-title::before {
+  content: "❧";
+  color: var(--gold);
+  font-size: 0.95em;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a2f25;
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::selection {
+  background: rgb(212 165 74 / 0.35);
 }
 
 @media (prefers-reduced-motion: reduce) {
