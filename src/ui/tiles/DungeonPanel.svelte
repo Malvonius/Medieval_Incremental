@@ -15,7 +15,8 @@
 
   const snapshot = $derived(game.snapshot);
   const snap = $derived($snapshot);
-  const dungeon = $derived(snap.state.dungeon);
+  // Flache Kopie: Der Spielstand wird intern verändert; ein $derived auf dasselbe Objekt würde nie neu auslösen.
+  const dungeon = $derived({ ...snap.state.dungeon });
   const perInterrogation = $derived(intelPerInterrogation(snap.state));
   const laborMult = $derived(laborMultiplier(snap.state));
 

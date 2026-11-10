@@ -22,13 +22,20 @@ const TARGET_HUMAN_MINUTES: Readonly<Record<string, number>> = {
   a3_voice: 200,
   a3_glass: 225,
   a3_stone: 270,
+  a4_mass: 270,
+  a4_first_faith: 273,
+  a4_vow: 275,
+  a4_sermon: 300,
+  a4_betrayal: 330,
+  a4_ashes: 345,
+  a4_rebirth: 390,
 };
 const BOT_SPEED_FACTOR = 0.72;
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-const stopAtNode = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length) ?? "a3_stone";
-const result = runBot({ maxSeconds: 8 * 3600, stopAtNode });
+const stopAtNode = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length) ?? "a4_rebirth";
+const result = runBot({ maxSeconds: 10 * 3600, stopAtNode });
 const rows = result.milestones.map((m) => {
   const target = TARGET_HUMAN_MINUTES[m.id];
   const targetBot = target === undefined ? null : target * 60 * BOT_SPEED_FACTOR;
@@ -54,6 +61,7 @@ console.log("Upgrades:", Object.entries(v.upgrades).filter(([, b]) => b).map(([k
 console.log(`Schwerter: ${v.resources.swords.toString()}, Gold/s: ${result.sim.rates.gold.toExponential(2)}`);
 console.log("Kriegsrat:", JSON.stringify(v.warroom));
 console.log("Kerker:", JSON.stringify(v.dungeon));
+console.log("Kapelle:", JSON.stringify(v.chapel), "Ritual:", JSON.stringify(v.ritual), "Glaube/s:", result.sim.rates.faith.toExponential(2));
 console.log("Alchemie:", JSON.stringify(v.alchemy), "Seelen/s:", result.sim.rates.souls.toExponential(2));
 
 if (process.argv.includes("--csv")) {

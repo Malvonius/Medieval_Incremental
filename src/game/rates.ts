@@ -15,6 +15,7 @@ import {
   LABOR_GOLD_BONUS,
   LABOR_IRON_BONUS,
   RECIPES,
+  ASH_BONUS,
   FALLEN_SOUL_RATE,
   RECRUIT_COST,
   RESEARCH,
@@ -26,6 +27,9 @@ import {
   UPGRADE_IDS,
   type UpgradeEffect,
   type UpgradeId,
+  VOWS,
+  VOW_IDS,
+  VOW_SLOTS,
 } from "../content/balance";
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
 import { type GameState, aliveSoldiers } from "./state";
@@ -53,6 +57,7 @@ const EFFECTS_BY_KIND: ReadonlyMap<EffectKind, readonly EffectSource[]> = (() =>
   };
   for (const id of UPGRADE_IDS) add({ owned: (s) => s.upgrades[id], effect: UPGRADES[id].effect });
   for (const id of RESEARCH_IDS) add({ owned: (s) => s.alchemy.completed[id], effect: RESEARCH[id].effect });
+  for (const id of VOW_IDS) for (const effect of VOWS[id].effects) add({ owned: (s) => s.chapel.vows[id], effect });
   return map;
 })();
 
@@ -87,11 +92,13 @@ export const armedBonus = (state: View): number =>
 export const pactMultiplier = (state: View, resource: ResourceId): number =>
   productOf(state, "resourceMult", (e) => (e.resource === resource ? e.factor : null));
 
-/** Globale Multiplikatoren je Ressource: Waffen & Soldaten, Ordenssiegel, Fronarbeit, Pakte & Forschung. */
+export const ashMultiplier = (state: View): number => 1 + state.ritual.ash * ASH_BONUS;
+
+/** Globale Multiplikatoren je Ressource: Waffen & Soldaten, Siegel, Fronarbeit, Pakte, Forschung, Gelübde, Asche. */
 export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
   const seals = 1 + state.warroom.seals * SEAL_BONUS;
   const labor = state.dungeon.laborers * laborMultiplier(state);
-  const pacts = pactMultiplier(state, resource);
+  const pacts = pactMultiplier(state, resource) * (resource === "swords" ? 1 : ashMultiplier(state));
   switch (resource) {
     case "gold": {
       const armed = state.resources.swords.add(aliveSoldiers(state)).mul(SWORD_GOLD_BONUS).add(1);
@@ -100,6 +107,7 @@ export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
     case "iron":
       return new Decimal(seals * (1 + labor * LABOR_IRON_BONUS) * pacts);
     case "souls":
+    case "faith":
     case "swords":
       return new Decimal(pacts);
   }
@@ -144,6 +152,8 @@ export const expeditionSlots = (state: View): number => EXPEDITION_SLOTS + sumOf
 /** Gefallene einer Expedition: abgerundet, damit kleine Trupps verlustfrei bleiben können. */
 export const expeditionLosses = (state: View, id: ExpeditionId, sent: number): number =>
   Math.floor(sent * EXPEDITIONS[id].lossRate * productOf(state, "expeditionLosses", (e) => e.factor));
+
+export const vowSlots = (state: View): number => VOW_SLOTS + sumOf(state, "vowSlots", (e) => e.add);
 
 export const intelPerInterrogation = (state: View): number =>
   INTEL_PER_INTERROGATION + sumOf(state, "intelYield", (e) => e.add);

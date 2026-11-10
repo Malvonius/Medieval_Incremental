@@ -27,7 +27,8 @@
     ready: "Erforschen",
   };
 
-  const active = $derived(snap.state.alchemy.active);
+  // Flache Kopie: Der Spielstand wird intern verändert; ein $derived auf dasselbe Objekt würde nie neu auslösen.
+  const active = $derived(snap.state.alchemy.active === null ? null : { ...snap.state.alchemy.active });
   const done = $derived(completedResearchCount(snap.state));
 </script>
 

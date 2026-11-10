@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snapshot } from "../app/controller";
   import { SEAL_BONUS } from "../content/balance";
-  import { armedBonus } from "../game/rates";
+  import { armedBonus, ashMultiplier } from "../game/rates";
   import { aliveSoldiers } from "../game/state";
   import { formatNumber, formatPercent } from "./format";
 
@@ -42,6 +42,18 @@
     <div class="res souls">
       <dt>Seelen</dt>
       <dd class="num">{formatNumber(snap.state.resources.souls)} <small>+{formatNumber(snap.rates.souls)}/s</small></dd>
+    </div>
+  {/if}
+  {#if snap.state.tiles.chapel}
+    <div class="res faith">
+      <dt>Glauben</dt>
+      <dd class="num">{formatNumber(snap.state.resources.faith)} <small>+{formatNumber(snap.rates.faith)}/s</small></dd>
+    </div>
+  {/if}
+  {#if snap.state.ritual.ash > 0}
+    <div class="res ash">
+      <dt>Asche</dt>
+      <dd class="num">{formatNumber(snap.state.ritual.ash)} <small>×{formatNumber(ashMultiplier(snap.state))}</small></dd>
     </div>
   {/if}
   {#if snap.state.warroom.seals > 0}
@@ -102,6 +114,12 @@
   }
   .souls dd {
     color: var(--soul);
+  }
+  .faith dd {
+    color: #e8d9a8;
+  }
+  .ash dd {
+    color: var(--ember);
   }
   .seals dd {
     color: var(--iron);

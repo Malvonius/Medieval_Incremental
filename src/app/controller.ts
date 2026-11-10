@@ -10,6 +10,11 @@ import { Simulation } from "../game/simulation";
 import { type GameState, createInitialState } from "../game/state";
 import type { StoryNode } from "../game/story";
 
+/**
+ * Pro Frame neu erzeugt, damit Svelte Änderungen erkennt. Achtung: `state` ist dieselbe, intern
+ * veränderte Instanz. In Komponenten daher nie `$derived(snap.state.x)` auf ein Objekt bilden,
+ * sondern Werte direkt lesen oder flach kopieren.
+ */
 export interface Snapshot {
   readonly state: DeepReadonly<GameState>;
   readonly rates: Rates;
