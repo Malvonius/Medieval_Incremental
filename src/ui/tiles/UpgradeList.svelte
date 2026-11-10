@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
+  import { t } from "../../i18n";
   import type { GameController, Snapshot } from "../../app/controller";
     import { UPGRADES, UPGRADE_IDS } from "../../content/balance";
   import type { TileId } from "../../content/ids";
   import { isUpgradeVisible } from "../../game/rates";
     import { formatNumber } from "../format";
-  import { RESOURCE_LABELS } from "../labels";
 
   let {
     game,
@@ -19,9 +21,9 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">{title} <small class="num">{owned}/{ofTile.length}</small></h3>
+  <h3 class="section-title">{$tx(title)} <small class="num">{owned}/{ofTile.length}</small></h3>
   {#if visible.length === 0}
-    <p class="empty">Noch nichts verfügbar.</p>
+    <p class="empty">{$tx("Noch nichts verfügbar.")}</p>
   {:else}
     <ul>
       {#each visible as id (id)}
@@ -32,9 +34,9 @@
             disabled={snap.state.resources[def.costResource].lt(def.cost)}
             onclick={() => game.dispatch({ type: "buyUpgrade", upgrade: id })}
           >
-            <span class="name">{def.name}</span>
-            <span class="desc">{def.description}</span>
-            <span class="cost num">{formatNumber(def.cost)} {RESOURCE_LABELS[def.costResource]}</span>
+            <span class="name">{$loc.upgrade(id).name}</span>
+            <span class="desc">{$loc.upgrade(id).description}</span>
+            <span class="cost num">{formatNumber(def.cost)} {$t(`res.${def.costResource}`)}</span>
           </button>
         </li>
       {/each}

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
   import { RESEARCH, RESEARCH_IDS, type ResearchId } from "../../content/balance";
   import { type ResearchStatus, completedResearchCount, researchStatus } from "../../game/alchemy";
@@ -33,46 +35,46 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Das große Werk <small class="num">{done}/{RESEARCH_IDS.length}</small></h3>
+  <h3 class="section-title">{$tx("Das große Werk")} <small class="num">{done}/{RESEARCH_IDS.length}</small></h3>
   {#if active}
     {@const def = RESEARCH[active.id]}
     <div class="current">
-      <span class="name">{def.name}</span>
+      <span class="name">{$loc.research(active.id).name}</span>
       <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round((1 - active.remaining / def.durationSeconds) * 100)}>
         <span class="fill" style:width="{Math.min(100, (1 - active.remaining / def.durationSeconds) * 100)}%"></span>
       </div>
-      <span class="num muted">Noch {formatDuration(active.remaining)}</span>
+      <span class="num muted">{$tx("Noch")} {formatDuration(active.remaining)}</span>
     </div>
   {:else}
-    <p class="muted">Der Kessel ist kalt. Wähle das nächste Werk.</p>
+    <p class="muted">{$tx("Der Kessel ist kalt. Wähle das nächste Werk.")}</p>
   {/if}
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Forschungsbaum</h3>
+  <h3 class="section-title">{$tx("Forschungsbaum")}</h3>
   <ol class="tiers">
     {#each TIERS as tier, depth (depth)}
       <li class="tier">
-        <span class="tier-label">Stufe {depth + 1}</span>
+        <span class="tier-label">{$tx("Stufe")} {depth + 1}</span>
         <ul class="nodes">
           {#each tier as id (id)}
             {@const def = RESEARCH[id]}
             {@const status = researchStatus(snap.state, id)}
             <li class="node {status}">
-              <span class="name">{def.name}</span>
-              <span class="desc">{def.description}</span>
+              <span class="name">{$loc.research(id).name}</span>
+              <span class="desc">{$loc.research(id).description}</span>
               {#if def.requires.length > 0 && status === "locked"}
-                <span class="requires">Benötigt: {def.requires.map((r) => RESEARCH[r].name).join(", ")}</span>
+                <span class="requires">{$tx("Benötigt:")} {def.requires.map((r) => $loc.research(r).name).join(", ")}</span>
               {/if}
               {#if status !== "done"}
                 <span class="cost num">
-                  {formatNumber(def.gold)} Gold{def.souls > 0 ? ` · ${formatNumber(def.souls)} Seelen` : ""} · {formatDuration(def.durationSeconds)}
+                  {formatNumber(def.gold)} {$tx("Gold")}{def.souls > 0 ? ` · ${formatNumber(def.souls)} ${$tx("Seelen")}` : ""} · {formatDuration(def.durationSeconds)}
                 </span>
               {/if}
               <button
                 class="btn"
                 disabled={status !== "ready"}
-                onclick={() => game.dispatch({ type: "research", research: id })}>{STATUS_LABEL[status]}</button
+                onclick={() => game.dispatch({ type: "research", research: id })}>{$tx(STATUS_LABEL[status])}</button
               >
             </li>
           {/each}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
   import type { GameController } from "../../app/controller";
   import { BUILDINGS, BUILDING_IDS, FALLEN_SOUL_RATE } from "../../content/balance";
   import type { BuyAmount } from "../../game/actions";
@@ -19,18 +20,18 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Die Gefallenen</h3>
+  <h3 class="section-title">{$tx("Die Gefallenen")}</h3>
   <p class="fallen">
-    <span class="num big">{formatNumber(snap.state.warroom.fallen)}</span> Gefallene ruhen in der Krypta. Jeder gibt
-    <span class="num">{formatNumber(FALLEN_SOUL_RATE)}</span> Seelen/s ab – zusammen
+    <span class="num big">{formatNumber(snap.state.warroom.fallen)}</span> {$tx("Gefallene ruhen in der Krypta. Jeder gibt")}
+    <span class="num">{formatNumber(FALLEN_SOUL_RATE)}</span> {$tx("Seelen/s ab – zusammen")}
     <span class="num souls">+{formatNumber(fromFallen)}/s</span>.
   </p>
-  <p class="hint">Jede Expedition, die Opfer fordert, füllt die Krypta weiter.</p>
+  <p class="hint">{$tx("Jede Expedition, die Opfer fordert, füllt die Krypta weiter.")}</p>
 </section>
 
 <section class="panel-section">
   <div class="bar">
-    <h3 class="section-title">Gebeine und Lichter</h3>
+    <h3 class="section-title">{$tx("Gebeine und Lichter")}</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
   {#each CRYPT_BUILDINGS.filter((id) => isBuildingVisible(snap.state, id)) as id (id)}

@@ -11,6 +11,7 @@ export class AudioEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private filter: BiquadFilterNode | null = null;
+  private analyser: AnalyserNode | null = null;
   private drone: OscillatorNode[] = [];
   private enabled = false;
   private volume = 0.5;
@@ -34,11 +35,29 @@ export class AudioEngine {
     const filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
     filter.frequency.value = 2_000;
-    filter.connect(master).connect(ctx.destination);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    filter.connect(master).connect(analyser).connect(ctx.destination);
+    this.analyser = analyser;
     this.ctx = ctx;
     this.master = master;
     this.filter = filter;
     this.startDrone();
+  }
+
+  /** Effektivwert (RMS) des aktuellen Ausgangssignals, 0 = Stille. Für Tests und Pegelanzeige. */
+  level(): number {
+    const analyser = this.analyser;
+    if (!analyser) return 0;
+    const samples = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(samples);
+    let sum = 0;
+    for (const s of samples) sum += s * s;
+    return Math.sqrt(sum / samples.length);
+  }
+
+  get running(): boolean {
+    return this.ctx?.state === "running";
   }
 
   setAct(act: number): void {

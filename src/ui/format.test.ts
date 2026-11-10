@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "../core/decimal";
-import { formatDuration, formatNumber, formatPercent, setNotation } from "./format";
+import { formatDuration, formatNumber, formatPercent, setNotation, setNumberLocale } from "./format";
 
 describe("formatNumber", () => {
   it.each([
@@ -36,6 +36,16 @@ describe("wissenschaftliche Notation", () => {
     setNotation("scientific");
     expect(formatNumber(1_234)).toBe("1,23e3");
     setNotation("suffix");
+    expect(formatNumber(1_234)).toBe("1,23 Tsd.");
+  });
+});
+
+describe("englisches Zahlenformat", () => {
+  it("nutzt K/M und Punkt als Dezimaltrenner", () => {
+    setNumberLocale("en");
+    expect(formatNumber(1_234)).toBe("1.23K");
+    expect(formatNumber(5_600_000)).toBe("5.60M");
+    setNumberLocale("de");
     expect(formatNumber(1_234)).toBe("1,23 Tsd.");
   });
 });

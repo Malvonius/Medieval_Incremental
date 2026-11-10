@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
+  import { loc } from "../../i18n/content";
   import type { GameController, Snapshot } from "../../app/controller";
   import { ACHIEVEMENTS, ACHIEVEMENT_BONUS, ACHIEVEMENT_IDS, type AchievementDef } from "../../content/achievements";
   import { achievementCount } from "../../game/achievements";
@@ -44,26 +46,26 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Verlauf</h3>
+  <h3 class="section-title">{$tx("Verlauf")}</h3>
   {#if path}
-    <svg viewBox="0 0 {W} {H}" class="spark" role="img" aria-label="Goldproduktion pro Minute, logarithmisch">
+    <svg viewBox="0 0 {W} {H}" class="spark" role="img" aria-label={$tx("Goldproduktion pro Minute, logarithmisch")}>
       <path d={path} />
     </svg>
-    <p class="hint">Goldproduktion je Spielminute (logarithmisch), seit dem Laden dieser Seite.</p>
+    <p class="hint">{$tx("Goldproduktion je Spielminute (logarithmisch), seit dem Laden dieser Seite.")}</p>
   {:else}
-    <p class="hint">Der Verlauf füllt sich mit jeder Spielminute.</p>
+    <p class="hint">{$tx("Der Verlauf füllt sich mit jeder Spielminute.")}</p>
   {/if}
   {#if actTimes.length > 0}
     <dl class="acts num">
       {#each actTimes as row (row.act)}
-        <div><dt>Akt {row.act}</dt><dd>{formatDuration(row.duration)}</dd></div>
+        <div><dt>{$tx("Akt")} {row.act}</dt><dd>{formatDuration(row.duration)}</dd></div>
       {/each}
     </dl>
   {/if}
 </section>
 
 <section class="panel-section">
-  <h3 class="section-title">Erfolge <small class="num">{earned}/{ACHIEVEMENT_IDS.length} · +{formatPercent(earned * ACHIEVEMENT_BONUS)} Produktion</small></h3>
+  <h3 class="section-title">{$tx("Erfolge")} <small class="num">{earned}/{ACHIEVEMENT_IDS.length} · +{formatPercent(earned * ACHIEVEMENT_BONUS)} {$tx("Produktion")}</small></h3>
   <ul class="achievements">
     {#each ACHIEVEMENT_IDS as id (id)}
       {@const done = snap.state.achievements[id]}
@@ -71,8 +73,8 @@
       {@const hidden = !done && def.secret === true}
       <li class:done>
         <span class="mark" aria-hidden="true">{done ? "✦" : "·"}</span>
-        <span class="name">{hidden ? "???" : def.name}</span>
-        <span class="desc">{hidden ? "Ein Geheimnis von Vhal." : def.description}</span>
+        <span class="name">{hidden ? "???" : $loc.achievement(id).name}</span>
+        <span class="desc">{hidden ? $tx("Ein Geheimnis von Vhal.") : $loc.achievement(id).description}</span>
       </li>
     {/each}
   </ul>

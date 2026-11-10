@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
   import type { GameController } from "../../app/controller";
   import { BUILDINGS, BUILDING_IDS } from "../../content/balance";
   import type { BuyAmount } from "../../game/actions";
@@ -31,7 +32,7 @@
 <section class="panel-section">
   <button class="collect" onclick={collect}>
     {#each floaters as f (f.id)}<span class="floater num" style:left="{f.x}px" aria-hidden="true">{f.text}</span>{/each}
-    <span class="label">Steuern eintreiben</span>
+    <span class="label">{$tx("Steuern eintreiben")}</span>
     <span class="value num">+{formatNumber(clickValue(snap.state))} Gold</span>
   </button>
 </section>
@@ -43,13 +44,13 @@
       checked={snap.state.automation.enabled}
       onchange={(e) => game.dispatch({ type: "setAutomation", enabled: e.currentTarget.checked })}
     />
-    <span>Der Verwalter kauft Gold-Gebäude mit der kürzesten Amortisation</span>
+    <span>{$tx("Der Verwalter kauft Gold-Gebäude mit der kürzesten Amortisation")}</span>
   </label>
 {/if}
 
 <section class="panel-section">
   <div class="bar">
-    <h3 class="section-title">Ländereien</h3>
+    <h3 class="section-title">{$tx("Ländereien")}</h3>
     <BuyAmountToggle bind:value={amount} />
   </div>
   {#each KEEP_BUILDINGS.filter((id) => isBuildingVisible(snap.state, id)) as id (id)}

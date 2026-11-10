@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tx } from "../../i18n";
   import type { BuyAmount } from "../../game/actions";
 
   let { value = $bindable() }: { value: BuyAmount } = $props();
@@ -10,7 +11,7 @@
   ];
 </script>
 
-<div class="toggle" role="radiogroup" aria-label="Kaufmenge">
+<div class="toggle" role="radiogroup" aria-label={$tx("Kaufmenge")}>
   {#each OPTIONS as option (option.value)}
     <button
       role="radio"

@@ -3,7 +3,7 @@
   import type { TileId } from "../content/ids";
     import { hasAffordable } from "../game/affordable";
   import { TILES } from "./tiles/registry";
-  import { t } from "../i18n";
+  import { t, tx } from "../i18n";
 
   let {
     snap,
@@ -23,7 +23,7 @@
         class:ready={unlocked && active !== tile.id && hasAffordable(snap.state, tile.id)}
         disabled={!unlocked}
         aria-current={active === tile.id ? "page" : undefined}
-        title={unlocked ? $t(`tile.${tile.id}`) : tile.sealedHint}
+        title={unlocked ? $t(`tile.${tile.id}`) : $tx(tile.sealedHint)}
         onclick={() => onselect(tile.id)}
       >
         <span class="glyph" aria-hidden="true">{unlocked ? tile.glyph : "?"}</span>

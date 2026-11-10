@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { tx } from "../i18n";
   import type { GameController } from "../app/controller";
-  import { DECISIONS, EVENTS } from "../content/depth";
+  import { loc } from "../i18n/content";
   import { decisionOpen } from "../game/depth";
 
   let { game }: { game: GameController } = $props();
@@ -12,13 +13,13 @@
     if ($queue.length > 0) return null;
     const s = $snapshot.state;
     if (decisionOpen(s, "trust")) {
-      const d = DECISIONS.trust;
-      return { kind: "decision" as const, title: d.title, text: d.text, choices: d.options.map((o) => o.label) };
+      const d = $loc.trust();
+      return { kind: "decision" as const, title: d.title, text: d.text, choices: d.options };
     }
     const id = s.events.pending;
     if (id === null) return null;
-    const e = EVENTS[id];
-    return { kind: "event" as const, title: e.title, text: e.text, choices: e.choices.map((c) => c.label) };
+    const e = $loc.event(id);
+    return { kind: "event" as const, title: e.title, text: e.text, choices: e.choices };
   });
 
   function choose(index: number): void {
@@ -31,7 +32,7 @@
 {#if view}
   <div class="backdrop">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="choice-title">
-      <p class="kind">{view.kind === "event" ? "Ereignis" : "Entscheidung"}</p>
+      <p class="kind">{$tx(view.kind === "event" ? "Ereignis" : "Entscheidung")}</p>
       <h2 id="choice-title">{view.title}</h2>
       <p class="text">{view.text}</p>
       <div class="choices">

@@ -1,4 +1,5 @@
 import { derived, writable } from "svelte/store";
+import { UI_EN } from "./ui.en";
 
 /**
  * Übersetzung der Bedienoberfläche (Kacheln, Ressourcen, Einstellungen).
@@ -96,3 +97,20 @@ export const translate = (lang: Locale, key: MessageKey): string => DICTIONARIES
 
 /** Im Template: {$t("tile.keep")} */
 export const t = derived(locale, (lang) => (key: MessageKey): string => translate(lang, key));
+
+/**
+ * Übersetzt einen deutschen Oberflächentext; der deutsche Text ist zugleich der Schlüssel.
+ * Fehlt eine Übersetzung, bleibt der deutsche Text stehen. Im Template: {$tx("Weiter")}
+ */
+export function translateText(lang: Locale, de: string, vars?: Readonly<Record<string, string>>): string {
+  const text = lang === "en" ? (UI_EN[de] ?? de) : de;
+  return vars ? text.replace(/\{(\w+)\}/g, (match, name: string) => vars[name] ?? match) : text;
+}
+
+/** Platzhalter wie {time} werden aus `vars` ersetzt – so bleiben ganze Sätze übersetzbar. */
+export const tx = derived(
+  locale,
+  (lang) =>
+    (de: string, vars?: Readonly<Record<string, string>>): string =>
+      translateText(lang, de, vars),
+);
