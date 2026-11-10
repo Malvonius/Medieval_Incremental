@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "../core/decimal";
-import { formatDuration, formatNumber } from "./format";
+import { formatDuration, formatNumber, formatPercent } from "./format";
 
 describe("formatNumber", () => {
   it.each([
@@ -16,6 +16,17 @@ describe("formatNumber", () => {
 
   it("nutzt wissenschaftliche Notation für sehr große Zahlen", () => {
     expect(formatNumber(new Decimal("4.2e40"))).toBe("4,20e40");
+  });
+});
+
+describe("formatPercent", () => {
+  it.each([
+    [0.005, "0,5 %"],
+    [0.03, "3 %"],
+    [0.2, "20 %"],
+    [8.444, "844 %"],
+  ])("%d → %s", (input, expected) => {
+    expect(formatPercent(input)).toBe(expected);
   });
 });
 

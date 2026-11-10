@@ -15,5 +15,5 @@ export const TILE_IDS = [
 ] as const;
 export type TileId = (typeof TILE_IDS)[number];
 
-export const FLAG_IDS = ["act1Complete"] as const;
+export const FLAG_IDS = ["act1Complete", "outpostKnown", "komtureiKnown", "act2Complete"] as const;
 export type FlagId = (typeof FLAG_IDS)[number];

@@ -1,7 +1,8 @@
 import type { StoryNode } from "../game/story";
+import { INTEL_FOR_KOMTUREI, INTEL_FOR_OUTPOST, SEALS_FOR_KOMTUREI } from "./balance";
 
 /**
- * Akt I – „Die Ruine“. Reine Daten: Trigger lesen den Spielstand, Effekte verändern ihn.
+ * Story-Graph aller Akte. Reine Daten: Trigger lesen den Spielstand, Effekte verändern ihn.
  * Neue Akte werden hier angehängt; `story.test.ts` prüft den Graphen auf Konsistenz.
  */
 export const STORY: readonly StoryNode[] = [
@@ -93,5 +94,84 @@ export const STORY: readonly StoryNode[] = [
     requires: ["a1_ledger", "a1_armory"],
     trigger: (s) => s.totals.gold.gte(25_000_000) && s.totals.swords.gte(120),
     effects: [{ kind: "setFlag", flag: "act1Complete" }],
+  },
+
+  // ── Akt II – Der Graue Orden ────────────────────────────────────────────────
+  {
+    id: "a2_council",
+    act: 2,
+    title: "Der Kriegsrat",
+    text: [
+      "In der Nacht nach dem Ultimatum kommt eine Frau durch das Nordtor. Ihr Mantel ist nass vom Fluss, ihre Klinge trocken.",
+      "„Ich bin Sera von Dornach“, sagt sie. „Der Orden hat meine Burg verbrannt, wie die deines Onkels. Gib mir Männer, und ich zeige dir, wo er blutet.“",
+      "Ihr räumt den alten Kartentisch frei. Der Staub darauf ist so dick wie Schnee.",
+    ],
+    requires: ["a1_grey_banner"],
+    trigger: () => true,
+    effects: [{ kind: "unlockTile", tile: "warroom" }],
+  },
+  {
+    id: "a2_first_blood",
+    act: 2,
+    title: "Erstes Blut",
+    text: [
+      "Sera kehrt mit Gefangenen zurück, die Hände mit Weidenruten gebunden. Unter den Banditen trägt einer ein graues Tuch im Stiefel.",
+      "„Der Orden bezahlt sie“, sagt Sera. „Sie sollen dein Land ausbluten, bevor er es nimmt.“",
+      "Die Treppe zum Kerker ist seit dem Feuer nicht mehr benutzt worden. Jetzt hallen dort wieder Schritte.",
+    ],
+    requires: ["a2_council"],
+    trigger: (s) => s.warroom.completed.bandits >= 1,
+    effects: [{ kind: "unlockTile", tile: "dungeon" }],
+  },
+  {
+    id: "a2_confession",
+    act: 2,
+    title: "Ein Geständnis",
+    text: [
+      "Der Mann mit dem grauen Tuch hält drei Tage durch. Am vierten zeichnet er mit blutigem Finger einen Turm in den Staub.",
+      "„Der Vorposten“, flüstert er. „Dort zahlen sie uns aus. Dort liegen die Siegel.“",
+    ],
+    requires: ["a2_first_blood"],
+    trigger: (s) => s.dungeon.intel >= INTEL_FOR_OUTPOST,
+    effects: [{ kind: "setFlag", flag: "outpostKnown" }],
+  },
+  {
+    id: "a2_seal",
+    act: 2,
+    title: "Das Siegel",
+    text: [
+      "Im Vorposten findet ihr eine Kiste voller Wachssiegel. Grau, ohne Wappen – bis auf eines.",
+      "Es zeigt einen Hirtenstab, gekreuzt mit einem Schlüssel. Das Zeichen des Bischofs von Vhal.",
+      "Du steckst es ein und sagst niemandem davon. Nicht einmal Sera.",
+    ],
+    requires: ["a2_confession"],
+    trigger: (s) => s.warroom.seals >= 1,
+    effects: [],
+  },
+  {
+    id: "a2_traitor",
+    act: 2,
+    title: "Der Verräter",
+    text: [
+      "Die Gefangenen erzählen alle dieselbe Geschichte: Der Orden wusste immer, wann deine Wachen wechselten.",
+      "Brannoc findet die Antwort. Der alte Kämmerer deines Onkels schickte jede Woche Tauben nach Grauweiler.",
+      "Er gesteht, bevor man ihn fragt. „Die Komturei“, sagt er. „Dort befiehlt der Graue Meister. Aber du wirst ihn nicht töten. Niemand tötet ihn.“",
+    ],
+    requires: ["a2_seal"],
+    trigger: (s) => s.dungeon.intel >= INTEL_FOR_KOMTUREI && s.warroom.seals >= SEALS_FOR_KOMTUREI,
+    effects: [{ kind: "setFlag", flag: "komtureiKnown" }],
+  },
+  {
+    id: "a2_komturei",
+    act: 2,
+    title: "Die Komturei fällt",
+    text: [
+      "Grauweiler brennt die ganze Nacht. Am Morgen steht Sera vor dem Thron des Grauen Meisters – und der Thron ist leer.",
+      "Unter der Komturei führt eine Treppe in die Tiefe. Von unten weht kalte Luft herauf, und mit ihr ein Flüstern, das deinen Namen kennt.",
+      "„Er ist nicht geflohen“, sagt Sera leise. „Er ist hinabgestiegen.“ Ihr Blick wandert nach Westen. Nach Vhal. Zu der verriegelten Tür unter deiner eigenen Kapelle.",
+    ],
+    requires: ["a2_traitor"],
+    trigger: (s) => s.warroom.completed.komturei >= 1,
+    effects: [{ kind: "setFlag", flag: "act2Complete" }],
   },
 ];

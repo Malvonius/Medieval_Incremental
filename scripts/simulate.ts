@@ -9,12 +9,19 @@ const TARGET_HUMAN_MINUTES: Readonly<Record<string, number>> = {
   a1_armory: 30,
   a1_ledger: 38,
   a1_grey_banner: 60,
+  a2_council: 60,
+  a2_first_blood: 64,
+  a2_confession: 75,
+  a2_seal: 88,
+  a2_traitor: 120,
+  a2_komturei: 150,
 };
 const BOT_SPEED_FACTOR = 0.72;
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-const result = runBot({ maxSeconds: 4 * 3600, stopAtNode: "a1_grey_banner" });
+const stopAtNode = process.argv.find((a) => a.startsWith("--until="))?.slice("--until=".length) ?? "a2_komturei";
+const result = runBot({ maxSeconds: 6 * 3600, stopAtNode });
 const rows = result.milestones.map((m) => {
   const target = TARGET_HUMAN_MINUTES[m.id];
   const targetBot = target === undefined ? null : target * 60 * BOT_SPEED_FACTOR;
@@ -34,10 +41,12 @@ for (const r of rows) {
   );
 }
 const v = result.sim.view;
-console.log(`\nAkt I ${result.reachedStop ? "abgeschlossen" : "NICHT abgeschlossen"} nach ${fmt(result.seconds)} (Bot).`);
+console.log(`\n${stopAtNode} ${result.reachedStop ? "erreicht" : "NICHT erreicht"} nach ${fmt(result.seconds)} (Bot).`);
 console.log("Gebäude:", JSON.stringify(v.buildings));
 console.log("Upgrades:", Object.entries(v.upgrades).filter(([, b]) => b).map(([k]) => k).join(", "));
-console.log(`Schwerter: ${v.resources.swords.toString()}, Gold/s: ${result.sim.rates.gold.toNumber().toFixed(0)}`);
+console.log(`Schwerter: ${v.resources.swords.toString()}, Gold/s: ${result.sim.rates.gold.toExponential(2)}`);
+console.log("Kriegsrat:", JSON.stringify(v.warroom));
+console.log("Kerker:", JSON.stringify(v.dungeon));
 
 if (process.argv.includes("--csv")) {
   const csv = ["id,act,title,bot_seconds,target_bot_seconds"]

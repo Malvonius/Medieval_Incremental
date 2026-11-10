@@ -29,4 +29,9 @@ export function formatDuration(totalSeconds: number): string {
   return `${sec} s`;
 }
 
-export const formatPercent = (fraction: number): string => `${fixed(fraction * 100, 0)} %`;
+/** Unter 10 % mit einer Nachkommastelle, damit kleine Boni (z. B. 0,5 %) nicht zu „1 %“ werden. */
+export function formatPercent(fraction: number): string {
+  const percent = fraction * 100;
+  const digits = Math.abs(percent) < 10 && !Number.isInteger(percent) ? 1 : 0;
+  return `${percent.toLocaleString("de-DE", { maximumFractionDigits: digits })} %`;
+}

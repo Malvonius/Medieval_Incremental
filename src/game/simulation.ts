@@ -6,6 +6,7 @@ import { type Action, applyAction } from "./actions";
 import { tickForge } from "./forge";
 import { type Rates, computeRates } from "./rates";
 import { type GameState, gain } from "./state";
+import { tickWarroom } from "./warroom";
 import { type StoryNode, StoryDirector } from "./story";
 
 export interface SimulationEvents extends Record<string, unknown> {
@@ -49,6 +50,7 @@ export class Simulation {
     this.state.stats.playSeconds += dt;
 
     if (tickForge(this.state, dt)) this.invalidate();
+    if (tickWarroom(this.state, dt, rates.gold)) this.invalidate();
     this.advanceStory();
   }
 

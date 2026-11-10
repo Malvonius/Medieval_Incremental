@@ -1,8 +1,8 @@
 import { Decimal } from "../core/decimal";
 import { type DeepReadonly, type Result, OK, fail } from "../core/types";
-import { FORGE_QUEUE_CAPACITY, RECIPES, type RecipeId } from "../content/balance";
+import { RECIPES, type RecipeId } from "../content/balance";
 import type { ResourceId } from "../content/ids";
-import { craftDuration } from "./rates";
+import { craftDuration, forgeCapacity } from "./rates";
 import { type GameState, gain, spend } from "./state";
 
 const ONE = new Decimal(1);
@@ -19,7 +19,7 @@ export function enqueueCraft(state: GameState, recipe: RecipeId, amount: number)
   if (!Number.isSafeInteger(amount) || amount < 1) return fail(`Ungültige Menge: ${amount}`);
   const def = RECIPES[recipe];
   if (!state.tiles[def.tile]) return fail("Die Schmiede ist noch nicht zugänglich.");
-  if (state.forge.queue.length + amount > FORGE_QUEUE_CAPACITY) return fail("Die Warteschlange der Schmiede ist voll.");
+  if (state.forge.queue.length + amount > forgeCapacity(state)) return fail("Die Warteschlange der Schmiede ist voll.");
   if (!canAffordRecipe(state, recipe, amount)) return fail(`Nicht genug Rohstoffe für ${def.name}.`);
 
   for (const [res, cost] of inputEntries(recipe)) spend(state, res, new Decimal(cost * amount));

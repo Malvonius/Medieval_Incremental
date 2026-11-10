@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { Snapshot } from "../app/controller";
-  import { SWORD_GOLD_BONUS } from "../content/balance";
-      import { formatNumber, formatPercent } from "./format";
+  import { SEAL_BONUS } from "../content/balance";
+  import { armedBonus } from "../game/rates";
+  import { aliveSoldiers } from "../game/state";
+  import { formatNumber, formatPercent } from "./format";
 
   let { snap }: { snap: Snapshot } = $props();
 
-  const swordBonus = $derived(snap.state.resources.swords.toNumber() * SWORD_GOLD_BONUS);
+  const bonus = $derived(armedBonus(snap.state));
+  const soldiers = $derived(aliveSoldiers(snap.state));
 </script>
 
 <dl class="resources">
@@ -20,7 +23,25 @@
     </div>
     <div class="res swords">
       <dt>Schwerter</dt>
-      <dd class="num">{formatNumber(snap.state.resources.swords)} <small>+{formatPercent(swordBonus)} Gold</small></dd>
+      <dd class="num">{formatNumber(snap.state.resources.swords)} <small>+{formatPercent(bonus)} Gold</small></dd>
+    </div>
+  {/if}
+  {#if snap.state.tiles.warroom}
+    <div class="res soldiers">
+      <dt>Soldaten</dt>
+      <dd class="num">{formatNumber(soldiers)} <small>{formatNumber(snap.state.warroom.soldiers)} bereit</small></dd>
+    </div>
+  {/if}
+  {#if snap.state.tiles.dungeon}
+    <div class="res prisoners">
+      <dt>Gefangene</dt>
+      <dd class="num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} Hinweise</small></dd>
+    </div>
+  {/if}
+  {#if snap.state.warroom.seals > 0}
+    <div class="res seals">
+      <dt>Ordenssiegel</dt>
+      <dd class="num">{snap.state.warroom.seals} <small>+{formatPercent(snap.state.warroom.seals * SEAL_BONUS)}</small></dd>
     </div>
   {/if}
 </dl>
@@ -38,7 +59,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 6px 12px;
-    min-width: 130px;
+    min-width: 118px;
   }
 
   dt {
@@ -66,5 +87,14 @@
   }
   .swords dd {
     color: var(--blood-bright);
+  }
+  .soldiers dd {
+    color: var(--text);
+  }
+  .prisoners dd {
+    color: var(--moss);
+  }
+  .seals dd {
+    color: var(--iron);
   }
 </style>

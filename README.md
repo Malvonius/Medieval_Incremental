@@ -1,7 +1,7 @@
 # Die Asche von Vhal
 
 Ein Dark-Medieval Incremental Game für den Browser. Ziel-Spielzeit: ca. 8 Stunden, aufgeteilt in fünf Akte.
-Aktuell spielbar: **Akt I – Die Ruine** (ca. 60 min).
+Aktuell spielbar: **Akt I – Die Ruine** und **Akt II – Der Graue Orden** (zusammen ca. 2,5 h).
 
 ## Entwicklung
 
@@ -44,16 +44,17 @@ src/
 
 ### Balancing
 
-Nach jeder Änderung an `balance.ts` oder Story-Triggern `npm run sim` ausführen. Der Bot spielt etwa
-28 % schneller als ein Mensch. Der Test `src/sim/bot.test.ts` schlägt fehl, wenn Akt I für den Bot
-außerhalb von 32–54 Minuten liegt.
+Nach jeder Änderung an `balance.ts` oder Story-Triggern `npm run sim` ausführen
+(`npm run sim -- --until=a1_grey_banner` stoppt früher). Der Bot spielt etwa 28 % schneller als ein Mensch.
+Der Test `src/sim/bot.test.ts` schlägt fehl, wenn der Bot Akt I nicht in 32–54 min oder Akt II nicht
+in 88–128 min (Gesamtzeit) abschließt.
 
 ## Roadmap
 
 | Akt | Inhalt | Kacheln |
 |---|---|---|
 | I – Die Ruine ✅ | Burg aufbauen, Schmiede, der Graue Orden erscheint | Burgfried, Schmiede, Chronik |
-| II – Der Graue Orden | Expeditionen, Gefangene | Kriegsrat, Kerker |
+| II – Der Graue Orden ✅ | Soldaten, Expeditionen, Verhöre & Fronarbeit, Sturm auf die Komturei | Kriegsrat, Kerker |
 | III – Was unter der Erde liegt | Seelen als zweite Währung, Forschung | Krypta, Alchemistenturm |
 | IV – Glaube und Verrat | Segen/Flüche, erstes Prestige | Kapelle, Ritual der Asche |
 | V – Die letzte Glocke | Belagerung, zwei Enden | – |

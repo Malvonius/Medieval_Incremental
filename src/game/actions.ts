@@ -1,8 +1,10 @@
 import { type DeepReadonly, type Result, OK, fail } from "../core/types";
 import { maxAffordable } from "../core/economy";
-import { BUILDINGS, type BuildingId, type RecipeId, UPGRADES, type UpgradeId } from "../content/balance";
+import { BUILDINGS, type BuildingId, type ExpeditionId, type RecipeId, UPGRADES, type UpgradeId } from "../content/balance";
+import { forceLabor, interrogate } from "./dungeon";
+import { launchExpedition, recruit } from "./warroom";
 import { enqueueCraft } from "./forge";
-import { buildingCost, clickValue, isUpgradeVisible } from "./rates";
+import { buildingCost, clickValue, isBuildingVisible, isUpgradeVisible } from "./rates";
 import { type GameState, gain, spend } from "./state";
 import { Decimal } from "../core/decimal";
 
@@ -12,7 +14,11 @@ export type Action =
   | { readonly type: "collect" }
   | { readonly type: "buyBuilding"; readonly building: BuildingId; readonly amount: BuyAmount }
   | { readonly type: "buyUpgrade"; readonly upgrade: UpgradeId }
-  | { readonly type: "craft"; readonly recipe: RecipeId; readonly amount: number };
+  | { readonly type: "craft"; readonly recipe: RecipeId; readonly amount: number }
+  | { readonly type: "recruit"; readonly amount: number }
+  | { readonly type: "launchExpedition"; readonly expedition: ExpeditionId }
+  | { readonly type: "interrogate"; readonly amount: number }
+  | { readonly type: "forceLabor"; readonly amount: number };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   if (amount !== "max") return amount;
@@ -22,7 +28,7 @@ export function resolveBuyAmount(state: DeepReadonly<GameState>, building: Build
 
 function buyBuilding(state: GameState, building: BuildingId, requested: BuyAmount): Result {
   const def = BUILDINGS[building];
-  if (!state.tiles[def.tile]) return fail(`${def.name} ist noch nicht verfügbar.`);
+  if (!isBuildingVisible(state, building)) return fail(`${def.name} ist noch nicht verfügbar.`);
   const amount = resolveBuyAmount(state, building, requested);
   if (!Number.isSafeInteger(amount) || amount < 1) {
     return requested === "max" ? fail("Nicht genug Gold.") : fail(`Ungültige Menge: ${amount}`);
@@ -62,6 +68,14 @@ export function applyAction(state: GameState, action: Action): Result {
       return buyUpgrade(state, action.upgrade);
     case "craft":
       return enqueueCraft(state, action.recipe, action.amount);
+    case "recruit":
+      return recruit(state, action.amount);
+    case "launchExpedition":
+      return launchExpedition(state, action.expedition);
+    case "interrogate":
+      return interrogate(state, action.amount);
+    case "forceLabor":
+      return forceLabor(state, action.amount);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);
