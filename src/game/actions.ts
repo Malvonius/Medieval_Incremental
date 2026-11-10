@@ -1,6 +1,16 @@
 import { type DeepReadonly, type Result, OK, fail } from "../core/types";
 import { maxAffordable } from "../core/economy";
-import { BUILDINGS, type BuildingId, type ExpeditionId, type RecipeId, UPGRADES, type UpgradeId } from "../content/balance";
+import {
+  BUILDINGS,
+  type BuildingId,
+  type ExpeditionId,
+  type RecipeId,
+  type ResearchId,
+  UPGRADES,
+  type UpgradeId,
+} from "../content/balance";
+import type { ResourceId } from "../content/ids";
+import { startResearch } from "./alchemy";
 import { forceLabor, interrogate } from "./dungeon";
 import { launchExpedition, recruit } from "./warroom";
 import { enqueueCraft } from "./forge";
@@ -10,6 +20,14 @@ import { Decimal } from "../core/decimal";
 
 export type BuyAmount = number | "max";
 
+const NOT_ENOUGH: Readonly<Record<ResourceId, string>> = {
+  gold: "Nicht genug Gold.",
+  iron: "Nicht genug Eisen.",
+  swords: "Nicht genug Schwerter.",
+  souls: "Nicht genug Seelen.",
+};
+const notEnough = (resource: ResourceId): string => NOT_ENOUGH[resource];
+
 export type Action =
   | { readonly type: "collect" }
   | { readonly type: "buyBuilding"; readonly building: BuildingId; readonly amount: BuyAmount }
@@ -18,7 +36,8 @@ export type Action =
   | { readonly type: "recruit"; readonly amount: number }
   | { readonly type: "launchExpedition"; readonly expedition: ExpeditionId }
   | { readonly type: "interrogate"; readonly amount: number }
-  | { readonly type: "forceLabor"; readonly amount: number };
+  | { readonly type: "forceLabor"; readonly amount: number }
+  | { readonly type: "research"; readonly research: ResearchId };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   if (amount !== "max") return amount;
@@ -31,10 +50,10 @@ function buyBuilding(state: GameState, building: BuildingId, requested: BuyAmoun
   if (!isBuildingVisible(state, building)) return fail(`${def.name} ist noch nicht verfügbar.`);
   const amount = resolveBuyAmount(state, building, requested);
   if (!Number.isSafeInteger(amount) || amount < 1) {
-    return requested === "max" ? fail("Nicht genug Gold.") : fail(`Ungültige Menge: ${amount}`);
+    return requested === "max" ? fail(notEnough(def.costResource)) : fail(`Ungültige Menge: ${amount}`);
   }
   const cost = buildingCost(state, building, amount);
-  if (state.resources[def.costResource].lt(cost)) return fail("Nicht genug Gold.");
+  if (state.resources[def.costResource].lt(cost)) return fail(notEnough(def.costResource));
   spend(state, def.costResource, cost);
   state.buildings[building] += amount;
   return OK;
@@ -45,7 +64,7 @@ function buyUpgrade(state: GameState, upgrade: UpgradeId): Result {
   if (state.upgrades[upgrade]) return fail(`${def.name} ist bereits erworben.`);
   if (!isUpgradeVisible(state, upgrade)) return fail(`${def.name} ist noch nicht verfügbar.`);
   const cost = new Decimal(def.cost);
-  if (state.resources[def.costResource].lt(cost)) return fail("Nicht genug Gold.");
+  if (state.resources[def.costResource].lt(cost)) return fail(notEnough(def.costResource));
   spend(state, def.costResource, cost);
   state.upgrades[upgrade] = true;
   return OK;
@@ -76,6 +95,8 @@ export function applyAction(state: GameState, action: Action): Result {
       return interrogate(state, action.amount);
     case "forceLabor":
       return forceLabor(state, action.amount);
+    case "research":
+      return startResearch(state, action.research);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);

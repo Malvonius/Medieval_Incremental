@@ -26,6 +26,9 @@ export const INTEL_FOR_OUTPOST = 5;
 export const INTEL_FOR_KOMTUREI = 24;
 export const SEALS_FOR_KOMTUREI = 4;
 
+/** Jeder Gefallene in der Krypta liefert so viele Seelen pro Sekunde (vor Multiplikatoren). */
+export const FALLEN_SOUL_RATE = 0.05;
+
 /** Rekrutierung: Gold geometrisch nach Anzahl lebender Soldaten, dazu ein Schwert je Soldat. */
 export const RECRUIT_COST: GeometricCost = { base: 5_000, growth: 1.04 };
 export const RECRUIT_SWORDS = 1;
@@ -120,6 +123,46 @@ export const BUILDINGS = {
     baseRate: 15_000,
     requiresFlag: "act1Complete",
   },
+  bank: {
+    name: "Bankhaus",
+    description: "Lombarden leihen dir Gold gegen Zinsen. Niemand leiht dir Gold gegen die Toten – noch nicht.",
+    tile: "keep",
+    costResource: "gold",
+    cost: { base: 1_500_000_000, growth: 1.15 },
+    produces: "gold",
+    baseRate: 100_000,
+    requiresFlag: "act2Complete",
+  },
+  candle: {
+    name: "Totenlicht",
+    description: "Eine Kerze aus Talg und Asche. Die Seelen drängen sich an ihre Flamme.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: { base: 25, growth: 1.15 },
+    produces: "souls",
+    baseRate: 0.4,
+    requiresFlag: null,
+  },
+  ossuary: {
+    name: "Beinhaus",
+    description: "Schädel, sauber gestapelt. Jeder trägt noch einen Namen, den niemand mehr kennt.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: { base: 600, growth: 1.15 },
+    produces: "souls",
+    baseRate: 6,
+    requiresFlag: null,
+  },
+  soul_cage: {
+    name: "Seelenkäfig",
+    description: "Ein Käfig aus Knochen und kaltem Eisen. Was darin flackert, will hinaus.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: { base: 50_000, growth: 1.15 },
+    produces: "souls",
+    baseRate: 90,
+    requiresFlag: null,
+  },
   mine: {
     name: "Erzstollen",
     description: "Tief im Berg schürfen Gefangene nach Eisen.",
@@ -167,7 +210,8 @@ export type UpgradeEffect =
   | { readonly kind: "expeditionSlots"; readonly add: number }
   | { readonly kind: "expeditionLosses"; readonly factor: number }
   | { readonly kind: "intelYield"; readonly add: number }
-  | { readonly kind: "laborBonus"; readonly factor: number };
+  | { readonly kind: "laborBonus"; readonly factor: number }
+  | { readonly kind: "resourceMult"; readonly resource: ResourceId; readonly factor: number };
 
 export interface UpgradeDef {
   readonly name: string;
@@ -372,6 +416,66 @@ export const UPGRADES = {
     requiresFlag: null,
     effect: { kind: "laborBonus", factor: 2 },
   },
+  pact_hunger: {
+    name: "Pakt des Hungers",
+    description: "Die Toten wollen gefüttert werden. Im Gegenzug füllen sie deine Truhen: Gold ×2.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: 400,
+    requires: { building: "candle", count: 5 },
+    requiresFlag: null,
+    effect: { kind: "resourceMult", resource: "gold", factor: 2 },
+  },
+  pact_iron: {
+    name: "Pakt des Eisens",
+    description: "Die Stollen werden nicht mehr einstürzen. Niemand fragt, wer sie stützt: Eisen ×2.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: 1_500,
+    requires: { building: "candle", count: 10 },
+    requiresFlag: null,
+    effect: { kind: "resourceMult", resource: "iron", factor: 2 },
+  },
+  pact_lament: {
+    name: "Pakt der Klage",
+    description: "Wer klagt, bleibt. Seelen ×2.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: 4_000,
+    requires: { building: "ossuary", count: 5 },
+    requiresFlag: null,
+    effect: { kind: "resourceMult", resource: "souls", factor: 2 },
+  },
+  pact_harvest: {
+    name: "Pakt der Ernte",
+    description: "Jede Ähre auf deinen Feldern wurzelt in einem Grab: Gold ×3.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: 150_000,
+    requires: { building: "soul_cage", count: 5 },
+    requiresFlag: null,
+    effect: { kind: "resourceMult", resource: "gold", factor: 3 },
+  },
+  pact_silence: {
+    name: "Pakt der Stille",
+    description: "Sie flüstern nicht mehr. Sie gehorchen. Seelen ×2.",
+    tile: "crypt",
+    costResource: "souls",
+    cost: 600_000,
+    requires: { building: "soul_cage", count: 10 },
+    requiresFlag: null,
+    effect: { kind: "resourceMult", resource: "souls", factor: 2 },
+  },
+  bank_charter: {
+    name: "Wechselbrief",
+    description: "Bankhäuser produzieren doppelt so viel.",
+    tile: "keep",
+    costResource: "gold",
+    cost: 50_000_000_000,
+    requires: { building: "bank", count: 10 },
+    requiresFlag: null,
+    effect: { kind: "buildingMult", building: "bank", factor: 2 },
+  },
 } as const satisfies Record<string, UpgradeDef>;
 
 export type UpgradeId = keyof typeof UPGRADES;
@@ -442,3 +546,102 @@ export const EXPEDITIONS = {
 
 export type ExpeditionId = keyof typeof EXPEDITIONS;
 export const EXPEDITION_IDS = Object.keys(EXPEDITIONS) as ExpeditionId[];
+
+export interface ResearchDef {
+  readonly name: string;
+  readonly description: string;
+  readonly gold: number;
+  readonly souls: number;
+  readonly durationSeconds: number;
+  /** Vorgänger im Forschungsbaum (DAG, von `research.test.ts` geprüft). */
+  readonly requires: readonly ResearchId[];
+  readonly effect: UpgradeEffect;
+}
+
+type ResearchKey =
+  | "mercury"
+  | "distillate"
+  | "black_iron"
+  | "homunculus"
+  | "soul_glass"
+  | "transmutation"
+  | "elixir"
+  | "philosophers_stone";
+
+export const RESEARCH: Readonly<Record<ResearchKey, ResearchDef>> = {
+  mercury: {
+    name: "Quecksilberlehre",
+    description: "Lebendiges Silber, das jedes Metall verschlingt. Gold ×2.",
+    gold: 2e9,
+    souls: 0,
+    durationSeconds: 180,
+    requires: [],
+    effect: { kind: "resourceMult", resource: "gold", factor: 2 },
+  },
+  distillate: {
+    name: "Destillat der Toten",
+    description: "Was bleibt, wenn man einen Leichnam lange genug kocht. Seelen ×2.",
+    gold: 5e8,
+    souls: 1_500,
+    durationSeconds: 240,
+    requires: [],
+    effect: { kind: "resourceMult", resource: "souls", factor: 2 },
+  },
+  black_iron: {
+    name: "Schwarzeisen",
+    description: "Mit Quecksilber gehärtet, mit Seelen abgeschreckt. Eisen ×3.",
+    gold: 5e9,
+    souls: 3_000,
+    durationSeconds: 300,
+    requires: ["mercury"],
+    effect: { kind: "resourceMult", resource: "iron", factor: 3 },
+  },
+  homunculus: {
+    name: "Homunculus",
+    description: "Ein Wesen aus Wurzel und Blut, das Wunden schließt. Expeditionsverluste halbiert.",
+    gold: 1e10,
+    souls: 8_000,
+    durationSeconds: 360,
+    requires: ["distillate"],
+    effect: { kind: "expeditionLosses", factor: 0.5 },
+  },
+  soul_glass: {
+    name: "Seelenglas",
+    description: "Glas, in dem man die Toten sehen kann. Und sie dich. Seelen ×3.",
+    gold: 2e10,
+    souls: 20_000,
+    durationSeconds: 480,
+    requires: ["distillate"],
+    effect: { kind: "resourceMult", resource: "souls", factor: 3 },
+  },
+  transmutation: {
+    name: "Transmutation",
+    description: "Blei zu Gold. Der Preis ist nicht Blei. Gold ×3.",
+    gold: 5e10,
+    souls: 50_000,
+    durationSeconds: 720,
+    requires: ["mercury", "black_iron"],
+    effect: { kind: "resourceMult", resource: "gold", factor: 3 },
+  },
+  elixir: {
+    name: "Elixier des Lebens",
+    description: "Deine Soldaten marschieren ohne Schlaf. Expeditionen doppelt so schnell.",
+    gold: 1e11,
+    souls: 100_000,
+    durationSeconds: 780,
+    requires: ["homunculus", "soul_glass"],
+    effect: { kind: "expeditionSpeed", factor: 2 },
+  },
+  philosophers_stone: {
+    name: "Der Stein der Weisen",
+    description: "Das Ziel aller Alchemie. Er zeigt die Wahrheit – ob du willst oder nicht. Gold ×2.",
+    gold: 5e11,
+    souls: 500_000,
+    durationSeconds: 1_200,
+    requires: ["transmutation", "elixir"],
+    effect: { kind: "resourceMult", resource: "gold", factor: 2 },
+  },
+};
+
+export type ResearchId = ResearchKey;
+export const RESEARCH_IDS = Object.keys(RESEARCH) as ResearchId[];

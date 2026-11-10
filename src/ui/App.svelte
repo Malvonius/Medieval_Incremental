@@ -14,7 +14,8 @@
   const activeTile = $derived(TILES.find((t) => t.id === active));
   const actLabel = $derived.by(() => {
     const { flags } = $snapshot.state;
-    if (flags.act2Complete) return "Akt II abgeschlossen · Fortsetzung folgt";
+    if (flags.act3Complete) return "Akt III abgeschlossen · Fortsetzung folgt";
+    if (flags.act2Complete) return "Akt III · Was unter der Erde liegt";
     if (flags.act1Complete) return "Akt II · Der Graue Orden";
     return "Akt I · Die Ruine";
   });

@@ -6,7 +6,12 @@
     import { formatNumber } from "../format";
   import { RESOURCE_LABELS } from "../labels";
 
-  let { game, snap, tile }: { game: GameController; snap: Snapshot; tile: TileId } = $props();
+  let {
+    game,
+    snap,
+    tile,
+    title = "Verbesserungen",
+  }: { game: GameController; snap: Snapshot; tile: TileId; title?: string } = $props();
 
   const ofTile = $derived(UPGRADE_IDS.filter((id) => UPGRADES[id].tile === tile));
   const visible = $derived(ofTile.filter((id) => isUpgradeVisible(snap.state, id)));
@@ -14,9 +19,9 @@
 </script>
 
 <section class="panel-section">
-  <h3 class="section-title">Verbesserungen <small class="num">{owned}/{ofTile.length}</small></h3>
+  <h3 class="section-title">{title} <small class="num">{owned}/{ofTile.length}</small></h3>
   {#if visible.length === 0}
-    <p class="empty">Noch keine Verbesserungen verfügbar.</p>
+    <p class="empty">Noch nichts verfügbar.</p>
   {:else}
     <ul>
       {#each visible as id (id)}
