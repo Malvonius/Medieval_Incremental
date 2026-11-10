@@ -5,6 +5,7 @@
   import type { StoryNode } from "../../game/story";
   import { formatDuration, formatNumber } from "../format";
   import ProgressSection from "./ProgressSection.svelte";
+  import SlotSection from "./SlotSection.svelte";
   import EpilogueDialog from "../EpilogueDialog.svelte";
   import { CLOUD_URL, downloadSave, isValidSyncCode, syncCode, uploadSave } from "../../app/cloud";
   import SettingsSection from "./SettingsSection.svelte";
@@ -93,6 +94,7 @@
 {/if}
 {#if showEpilogue}<EpilogueDialog {game} onclose={() => (showEpilogue = false)} />{/if}
 
+<SlotSection {game} {snap} />
 <ProgressSection {game} {snap} />
 <SettingsSection />
 

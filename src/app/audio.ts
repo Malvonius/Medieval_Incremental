@@ -1,3 +1,4 @@
+import { MusicPlayer } from "./music";
 import type { Settings } from "./settings";
 
 export type Cue = "buy" | "collect" | "battle" | "story" | "ritual";
@@ -14,12 +15,17 @@ export class AudioEngine {
   private analyser: AnalyserNode | null = null;
   private drone: OscillatorNode[] = [];
   private enabled = false;
+  private musicOn = true;
+  private music: MusicPlayer | null = null;
+  private droneGain: GainNode | null = null;
   private volume = 0.5;
   private act = 1;
 
   apply(settings: Settings): void {
     this.enabled = settings.sound;
     this.volume = settings.volume;
+    this.musicOn = settings.music;
+    this.updateMusic();
     if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.enabled ? this.volume * 0.4 : 0, this.ctx.currentTime, 0.2);
   }
 
@@ -43,6 +49,18 @@ export class AudioEngine {
     this.master = master;
     this.filter = filter;
     this.startDrone();
+    this.updateMusic();
+  }
+
+  /** Musik läuft nur bei eingeschaltetem Ton; der Drone tritt dann in den Hintergrund. */
+  private updateMusic(): void {
+    if (!this.ctx || !this.filter) return;
+    if (this.enabled && this.musicOn) {
+      this.music ??= new MusicPlayer(this.ctx, this.filter);
+      this.music.setAct(this.act);
+      this.music.start();
+    } else this.music?.stop();
+    this.droneGain?.gain.setTargetAtTime(this.musicOn ? 0.35 : 1, this.ctx.currentTime, 0.5);
   }
 
   /** Effektivwert (RMS) des aktuellen Ausgangssignals, 0 = Stille. Für Tests und Pegelanzeige. */
@@ -63,6 +81,7 @@ export class AudioEngine {
   setAct(act: number): void {
     if (act === this.act) return;
     this.act = act;
+    this.music?.setAct(act);
     this.startDrone();
   }
 
@@ -75,6 +94,9 @@ export class AudioEngine {
     const { ctx, filter } = this;
     if (!ctx || !filter) return;
     for (const osc of this.drone) osc.stop();
+    this.droneGain ??= ctx.createGain();
+    this.droneGain.connect(filter);
+    const droneOut = this.droneGain;
     // Jeder Akt sinkt um einen Ganzton: die Stimmung wird düsterer.
     const base = 55 * 2 ** (-(this.act - 1) * (2 / 12));
     this.drone = [base, base * 1.005, base * 1.5].map((freq, i) => {
@@ -83,7 +105,7 @@ export class AudioEngine {
       osc.type = i === 2 ? "sine" : "sawtooth";
       osc.frequency.value = freq;
       gain.gain.value = i === 2 ? 0.05 : 0.03;
-      osc.connect(gain).connect(filter);
+      osc.connect(gain).connect(droneOut);
       osc.start();
       return osc;
     });

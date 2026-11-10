@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Sera von Dornach">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="65%"><stop offset="0" stop-color="#2c3a4a"/><stop offset="1" stop-color="#0c1016"/></radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0b394"/><stop offset="1" stop-color="#a87a5e"/></linearGradient>
+    <linearGradient id="mail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a96a2"/><stop offset="1" stop-color="#4a525c"/></linearGradient>
+    <pattern id="rings" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="none" stroke="#2a3038" stroke-width=".6"/></pattern>
+    <clipPath id="c"><circle cx="60" cy="60" r="54"/></clipPath>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="#d4a54a"/><circle cx="60" cy="60" r="55" fill="#2a1e14"/>
+  <g clip-path="url(#c)">
+    <rect width="120" height="120" fill="url(#bg)"/>
+    <path d="M18 120c4-24 18-34 42-34s38 10 42 34z" fill="url(#mail)"/>
+    <path d="M18 120c4-24 18-34 42-34s38 10 42 34z" fill="url(#rings)"/>
+    <path d="M30 96c10-6 50-6 60 0l-4 8c-12-4-40-4-52 0z" fill="#5a1e1a"/>
+    <rect x="53" y="70" width="14" height="14" fill="url(#skin)"/>
+    <path d="M34 54c0-20 12-32 26-32s26 12 26 32c0 10-2 20-6 26l-6-30-28 0-6 30c-4-6-6-16-6-26z" fill="#3a2418"/>
+    <ellipse cx="60" cy="52" rx="18" ry="22" fill="url(#skin)"/>
+    <path d="M42 44c4-12 12-16 18-16s14 4 18 16c-6-6-12-8-18-8s-12 2-18 8z" fill="#3a2418"/>
+    <path d="M48 47l8 1M64 48l8-1" stroke="#2a1810" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="52" cy="52" r="2" fill="#1a1410"/><circle cx="68" cy="52" r="2" fill="#1a1410"/>
+    <path d="M70 40l-6 22" stroke="#b05a4a" stroke-width="1.4" opacity=".8"/>
+    <path d="M54 64c4 2 8 2 12 0" stroke="#7a4434" stroke-width="1.6" fill="none"/>
+    <path d="M86 120V40" stroke="#c8ced4" stroke-width="3"/><path d="M80 46h12" stroke="#d4a54a" stroke-width="3"/>
+  </g>
+</svg>

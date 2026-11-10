@@ -22,6 +22,12 @@
     return { kind: "event" as const, title: e.title, text: e.text, choices: e.choices };
   });
 
+  let box = $state<HTMLDivElement | null>(null);
+  // Fokus auf die erste Wahl, sobald der Dialog erscheint (Tastatur und Screenreader).
+  $effect(() => {
+    if (view) box?.querySelector("button")?.focus();
+  });
+
   function choose(index: number): void {
     if (!view) return;
     if (view.kind === "event") game.dispatch({ type: "resolveEvent", choice: index });
@@ -31,7 +37,7 @@
 
 {#if view}
   <div class="backdrop">
-    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="choice-title">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="choice-title" bind:this={box}>
       <p class="kind">{$tx(view.kind === "event" ? "Ereignis" : "Entscheidung")}</p>
       <h2 id="choice-title">{view.title}</h2>
       <p class="text">{view.text}</p>

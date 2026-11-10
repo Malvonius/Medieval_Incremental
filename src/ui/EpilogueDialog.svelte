@@ -28,6 +28,11 @@
     })
     .catch((e: unknown) => (error = e instanceof Error ? e.message : String(e)));
 
+  let box = $state<HTMLDivElement | null>(null);
+  $effect(() => {
+    if (choices.length > 0 || done) box?.querySelector("button")?.focus();
+  });
+
   function choose(index: number): void {
     if (!epilogue) return;
     lines = [...lines, `› ${choices[index] ?? ""}`];
@@ -35,8 +40,10 @@
   }
 </script>
 
+<svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />
+
 <div class="backdrop">
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="epilogue-title">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="epilogue-title" bind:this={box}>
     <h2 id="epilogue-title">{$tx("Epilog")}</h2>
     {#if error}<p class="error">{error}</p>{/if}
     {#each lines as line, i (i)}

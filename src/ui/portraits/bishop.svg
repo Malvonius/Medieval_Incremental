@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Der Bischof von Vhal">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#3a1418"/><stop offset="1" stop-color="#0e0507"/></radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8c4b0"/><stop offset="1" stop-color="#9a8676"/></linearGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0ece4"/><stop offset="1" stop-color="#a8a49a"/></linearGradient>
+    <clipPath id="c"><circle cx="60" cy="60" r="54"/></clipPath>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="#d4a54a"/><circle cx="60" cy="60" r="55" fill="#2a1e14"/>
+  <g clip-path="url(#c)">
+    <rect width="120" height="120" fill="url(#bg)"/>
+    <path d="M14 120c4-26 20-34 46-34s42 8 46 34z" fill="url(#robe)"/>
+    <path d="M54 86h12v34H54z" fill="#d4a54a"/><path d="M48 98h24v6H48z" fill="#d4a54a"/>
+    <path d="M40 40l20-26 20 26v8H40z" fill="url(#robe)"/>
+    <path d="M60 14v34M52 24h16" stroke="#d4a54a" stroke-width="2.5"/>
+    <ellipse cx="60" cy="58" rx="17" ry="20" fill="url(#skin)"/>
+    <path d="M43 62c2 20 8 32 17 32s15-12 17-32c-4 6-10 8-17 8s-13-2-17-8z" fill="#e8e4dc"/>
+    <path d="M48 52l8 2M64 54l8-2" stroke="#7a6a5a" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="52" cy="57" r="2" fill="#a8302a"/><circle cx="68" cy="57" r="2" fill="#a8302a"/>
+    <path d="M53 70c4 3 10 3 14 0" stroke="#6a5a4a" stroke-width="1.6" fill="none"/>
+    <path d="M96 120V30c0-10 10-12 12-4" stroke="#d4a54a" stroke-width="3" fill="none"/>
+    <circle cx="104" cy="28" r="5" fill="#e04a3a"/><circle cx="104" cy="28" r="9" fill="#e04a3a" opacity=".25"/>
+  </g>
+</svg>

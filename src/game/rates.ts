@@ -109,27 +109,57 @@ export const memoryMultiplier = (state: View): number => 1 + state.meta.memories
 export const ashMultiplier = (state: View): number => 1 + state.ritual.ash * ASH_BONUS;
 
 /** Globale Multiplikatoren je Ressource: Waffen & Soldaten, Siegel, Fronarbeit, Pakte, Forschung, Gelübde, Asche. */
-export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
-  const seals = 1 + state.warroom.seals * SEAL_BONUS;
+export interface RateFactor {
+  /** Deutscher Anzeigename (zugleich Übersetzungsschlüssel). */
+  readonly label: string;
+  readonly value: Decimal;
+  /** Bei Gebäude-Quellen: das Gebäude, damit die Oberfläche den übersetzten Namen zeigt. */
+  readonly building?: BuildingId;
+}
+
+/**
+ * Alle globalen Faktoren einer Ressource, in fester Reihenfolge. Einzige Quelle für
+ * `resourceMultiplier` und den Tooltip – die Aufschlüsselung kann nie von der Rechnung abweichen.
+ * Faktoren von genau 1 werden weggelassen.
+ */
+export function resourceFactors(state: View, resource: ResourceId): RateFactor[] {
+  const factors: RateFactor[] = [];
+  const push = (label: string, value: number | Decimal): void => {
+    const d = value instanceof Decimal ? value : new Decimal(value);
+    if (!d.eq(1)) factors.push({ label, value: d });
+  };
   const labor = state.dungeon.laborers * laborMultiplier(state);
-  const buff = state.events.buff;
-  const temporary = buff !== null && buff.resource === resource ? buff.factor : 1;
-  const pacts =
-    pactMultiplier(state, resource) *
-    temporary *
-    (resource === "swords" ? 1 : ashMultiplier(state) * achievementMultiplier(state) * memoryMultiplier(state));
-  switch (resource) {
-    case "gold": {
-      const armed = state.resources.swords.add(aliveSoldiers(state)).mul(SWORD_GOLD_BONUS).add(1);
-      return armed.mul(seals * (1 + labor * LABOR_GOLD_BONUS) * pacts);
-    }
-    case "iron":
-      return new Decimal(seals * (1 + labor * LABOR_IRON_BONUS) * pacts);
-    case "souls":
-    case "faith":
-    case "swords":
-      return new Decimal(pacts);
+  if (resource === "gold") push("Bewaffnung", state.resources.swords.add(aliveSoldiers(state)).mul(SWORD_GOLD_BONUS).add(1));
+  if (resource === "gold" || resource === "iron") {
+    push("Ordenssiegel", 1 + state.warroom.seals * SEAL_BONUS);
+    push("Fronarbeit", 1 + labor * (resource === "gold" ? LABOR_GOLD_BONUS : LABOR_IRON_BONUS));
   }
+  push("Pakte, Forschung & Gelübde", pactMultiplier(state, resource));
+  const buff = state.events.buff;
+  if (buff !== null && buff.resource === resource) push("Ereignis", buff.factor);
+  if (resource !== "swords") {
+    push("Asche", ashMultiplier(state));
+    push("Erfolge", achievementMultiplier(state));
+    push("Erinnerungen", memoryMultiplier(state));
+  }
+  return factors;
+}
+
+export function resourceMultiplier(state: View, resource: ResourceId): Decimal {
+  return resourceFactors(state, resource).reduce((product, f) => product.mul(f.value), new Decimal(1));
+}
+
+/** Grundproduktion vor globalen Faktoren, je Quelle (Gebäude inkl. eigener Upgrades, Gefallene). */
+export function baseSources(state: View, resource: ResourceId): RateFactor[] {
+  const sources: RateFactor[] = [];
+  if (resource === "souls" && fallenSoulBase(state) > 0) sources.push({ label: "Gefallene", value: new Decimal(fallenSoulBase(state)) });
+  for (const id of BUILDING_IDS) {
+    const def = BUILDINGS[id];
+    const count = state.buildings[id];
+    if (def.produces !== resource || count === 0) continue;
+    sources.push({ label: def.name, value: new Decimal(def.baseRate * count * buildingMultiplier(state, id)), building: id });
+  }
+  return sources;
 }
 
 /** Seelen, die von den Gefallenen in die Krypta strömen (vor Multiplikatoren). */
