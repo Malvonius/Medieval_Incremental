@@ -105,7 +105,8 @@ function autoUpgrades(state: GameState): boolean {
 
 /**
  * Kauft je Durchlauf das relativ günstigste Gebäude, bis nichts mehr unter die Schwelle fällt.
- * `all` = Aschenbaumeister aktiv (alle Gebäude), sonst nur die einzeln ausgewählten.
+ * `all` = Aschenbaumeister aktiv (alle Gebäude, mit Schwelle), sonst nur die einzeln ausgewählten
+ * (ohne Schwelle: gekauft wird, sobald der Vorrat reicht).
  */
 function autoBuildings(state: GameState, all: boolean): boolean {
   let bought = false;
@@ -115,7 +116,8 @@ function autoBuildings(state: GameState, all: boolean): boolean {
       if (!(all || state.autobuy.picks[id]) || !isBuildingVisible(state, id)) continue;
       const stock = state.resources[BUILDINGS[id].costResource];
       const cost = buildingCost(state, id, 1);
-      if (!withinThreshold(state, cost, stock)) continue;
+      // Einzeln ausgewählte Gebäude kauft Vhal, sobald das Geld reicht; der Aschenbaumeister achtet auf die Schwelle.
+      if (state.autobuy.picks[id] ? cost.gt(stock) : !withinThreshold(state, cost, stock)) continue;
       const share = cost.div(stock).toNumber();
       if (best === null || share < best.share) best = { id, share, cost };
     }

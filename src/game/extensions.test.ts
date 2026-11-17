@@ -42,6 +42,18 @@ describe("Aschen-Automaten", () => {
     expect(s.view.buildings.serf).toBeGreaterThan(0);
   });
 
+  it("kaufen ausgewählte Gebäude, sobald das Geld reicht – unabhängig von der Schwelle", () => {
+    const s = sim((st) => {
+      st.autobuy.threshold = 0.01;
+      st.autobuy.picks.serf = true;
+      // 11 Gold: der erste Leibeigene kostet 10, der zweite 11,5 – genau einer ist bezahlbar.
+      st.resources.gold = new Decimal(11);
+    });
+    s.tick(1);
+    expect(s.view.buildings.serf).toBe(1);
+    expect(s.view.resources.gold.toNumber()).toBeCloseTo(1);
+  });
+
   it("kaufen einzeln ausgewählte Gebäude auch ohne Ritual – und nur diese", () => {
     const s = sim((st) => {
       st.tiles.forge = true;

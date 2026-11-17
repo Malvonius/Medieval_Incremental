@@ -11,7 +11,6 @@
   import StatsSection from "./StatsSection.svelte";
   import CodexSection from "./CodexSection.svelte";
   import HeraldrySection from "./HeraldrySection.svelte";
-  import AutoThreshold from "./AutoThreshold.svelte";
   import { downloadText, qrDataUrls, readFileText, scanQr, scanSupported } from "../saveTransfer";
 
   let { game }: { game: GameController } = $props();
@@ -121,11 +120,6 @@
 
 <SlotSection {game} {snap} />
 <ProgressSection {game} {snap} />
-<section class="panel-section">
-  <h3 class="section-title">{$tx("Automatischer Kauf")}</h3>
-  <p class="hint">{$tx("Setz bei einem Gebäude das Häkchen „Auto“, dann kauft Vhal es selbst, sobald es günstig genug ist.")}</p>
-  <AutoThreshold {game} {snap} />
-</section>
 <HeraldrySection {snap} />
 <SettingsSection />
 
