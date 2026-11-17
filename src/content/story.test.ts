@@ -26,7 +26,7 @@ describe("Story-Graph", () => {
     ["act2Complete", 1],
     ["act3Complete", 1],
     ["act4Complete", 1],
-    ["act5Complete", 2],
+    ["act5Complete", 4],
   ] as const)("%s wird von genau %i Knoten gesetzt", (flag, count) => {
     const enders = STORY.filter((n) => n.effects.some((e) => e.kind === "setFlag" && e.flag === flag));
     expect(enders).toHaveLength(count);

@@ -1,4 +1,5 @@
-import { compressToBase64, decompressFromBase64 } from "lz-string";
+// Default-Import: lz-string ist CommonJS; so funktioniert es in Vite und in reinem Node-ESM (tsx, Playwright).
+import LZString from "lz-string";
 
 export class SaveError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -30,11 +31,11 @@ export function encodeSave(data: unknown, version: number): string {
   if (!Number.isSafeInteger(version) || version < 1) throw new RangeError(`Ungültige Version ${version}`);
   const payload = JSON.stringify(data);
   const envelope: SaveEnvelope = { version, checksum: fnv1a(payload), payload };
-  return compressToBase64(JSON.stringify(envelope));
+  return LZString.compressToBase64(JSON.stringify(envelope));
 }
 
 function parseEnvelope(text: string): SaveEnvelope {
-  const json = decompressFromBase64(text.trim());
+  const json = LZString.decompressFromBase64(text.trim());
   if (!json) throw new SaveError("Spielstand ist nicht lesbar (Dekompression fehlgeschlagen).");
 
   let raw: unknown;

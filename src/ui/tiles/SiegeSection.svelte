@@ -4,7 +4,7 @@
   import { t } from "../../i18n";
   import type { GameController, Snapshot } from "../../app/controller";
   import { maxAffordable } from "../../core/economy";
-  import { ENDINGS, ENDING_IDS, FORTIFICATIONS, FORTIFICATION_IDS, WAVES } from "../../content/balance";
+  import { ENDINGS, ENDING_IDS, type EndingId, FORTIFICATIONS, FORTIFICATION_IDS, WAVES } from "../../content/balance";
   import { type BuyAmount, resolveAmount } from "../../game/actions";
   import { defense, defenseMultiplier, fortificationCost } from "../../game/rates";
   import { BATTLE_BLOCKER_TEXT, ENDING_BLOCKER_TEXT, battleBlocker, endingBlocker } from "../../game/siege";
@@ -20,6 +20,12 @@
   const blocker = $derived(battleBlocker(snap.state));
   const battleRemaining = $derived(snap.state.siege.battle?.remaining ?? null);
   const ending = $derived(snap.state.siege.ending);
+  const ENDING_SUMMARY: Readonly<Record<EndingId, string>> = {
+    light: "Die letzte Glocke hat geläutet. Vhal ist frei.",
+    ash: "Der Stein gehört dir. Die Toten gehorchen.",
+    concord: "Kirche, Adel und Volk teilen sich einen Brunnen. Vhal hat Frieden.",
+    awakening: "Der Kreis ist gebrochen. Vhal muss nie wieder brennen.",
+  };
 
   function fortCount(id: (typeof FORTIFICATION_IDS)[number]): number {
     const owned = snap.state.siege.fortifications[id];
@@ -95,9 +101,10 @@
       {#each ENDING_IDS as id (id)}
         {@const def = ENDINGS[id]}
         {@const reason = endingBlocker(snap.state, id)}
+        {@const hidden = reason === "locked"}
         <li class="ending {id}">
-          <span class="name">{$loc.ending(id).name}</span>
-          <span class="desc">{$loc.ending(id).description}</span>
+          <span class="name">{hidden ? $tx("Ein verborgenes Ende") : $loc.ending(id).name}</span>
+          <span class="desc">{hidden ? $tx(id === "concord" ? "Vielleicht, wenn alle Mächte von Vhal dir wohlgesonnen wären …" : "Nur wer alle anderen Enden gesehen hat, findet diesen Weg.") : $loc.ending(id).description}</span>
           <span class="cost num">{formatNumber(def.cost)} {$t(`res.${def.costResource}`)}</span>
           <button class="btn" disabled={reason !== null} onclick={() => game.dispatch({ type: "chooseEnding", ending: id })}>{$tx("Wählen")}</button>
           {#if reason !== null}<span class="hint">{$tx(ENDING_BLOCKER_TEXT[reason])}</span>{/if}
@@ -105,7 +112,7 @@
       {/each}
     </ul>
   {:else}
-    <p class="story">{$tx(ending === "light" ? "Die letzte Glocke hat geläutet. Vhal ist frei." : "Der Stein gehört dir. Die Toten gehorchen.")}</p>
+    <p class="story">{$tx(ENDING_SUMMARY[ending])}</p>
   {/if}
 </section>
 

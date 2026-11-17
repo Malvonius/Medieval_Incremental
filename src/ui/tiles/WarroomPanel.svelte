@@ -1,4 +1,5 @@
 <script lang="ts">
+  import MapSection from "./MapSection.svelte";
   import { tx } from "../../i18n";
   import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
@@ -102,6 +103,8 @@
 </section>
 
 <UpgradeList {game} {snap} tile="warroom" />
+
+<MapSection {game} {snap} />
 
 <style>
   .bar {

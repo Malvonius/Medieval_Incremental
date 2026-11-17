@@ -11,6 +11,7 @@ export const TILE_IDS = [
   "alchemy",
   "chapel",
   "ritual",
+  "hall",
   "chronicle",
 ] as const;
 export type TileId = (typeof TILE_IDS)[number];

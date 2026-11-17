@@ -79,7 +79,7 @@ test("Englisch: Oberfläche, Story und Zahlen wechseln die Sprache", async ({ pa
   const errors = trackErrors(page);
   await start(page);
   await page.locator("button.tile", { hasText: "Chronik" }).click();
-  await page.getByRole("combobox").first().selectOption("en");
+  await page.getByRole("combobox", { name: "Sprache" }).selectOption("en");
   await expect(page.locator("h1")).toHaveText("The Ashes of Vhal");
   await expect(page.locator("button.tile", { hasText: "Keep" })).toBeVisible();
   await expect(page.locator("summary", { hasText: "The Inheritance" })).toBeVisible();

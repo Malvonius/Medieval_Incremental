@@ -3,6 +3,7 @@ import { type DeepReadonly, type Result, OK, fail, recordFrom } from "../core/ty
 import { ASH_EXPONENT, ASH_GOLD_BASE, BUILDING_IDS, FORTIFICATION_IDS, UPGRADE_IDS } from "../content/balance";
 import { RESOURCE_IDS } from "../content/ids";
 import type { GameState } from "./state";
+import { logRun } from "./extensions";
 
 type View = DeepReadonly<GameState>;
 
@@ -30,6 +31,7 @@ export function performRitual(state: GameState): Result {
   const gain = ashGain(state);
   if (gain < 1) return fail("Das Feuer hätte nichts zu verzehren. Sammle mehr Gold.");
 
+  logRun(state, "ritual");
   const faith = state.resources.faith;
   state.resources = recordFrom(RESOURCE_IDS, () => ZERO);
   state.resources.faith = faith;
@@ -44,6 +46,7 @@ export function performRitual(state: GameState): Result {
   state.alchemy.active = null;
   state.siege.fortifications = recordFrom(FORTIFICATION_IDS, () => 0);
   state.siege.battle = null;
+  state.workshop = { levels: { mine: 0, smelter: 0, smithy: 0 }, ore: 0, ingots: 0, blades: 0 };
 
   state.ritual.ash += gain;
   state.ritual.performed += 1;

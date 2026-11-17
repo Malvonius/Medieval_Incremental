@@ -14,6 +14,8 @@ import { resolveEvent, tickAutomation, tickEvents } from "./depth";
 import { evaluateAchievements } from "./achievements";
 import type { AchievementId } from "../content/achievements";
 import { type StoryNode, StoryDirector } from "./story";
+import { evaluateCodex, tickAutobuy, tickWorkshop, unlockExtras } from "./extensions";
+import type { CodexId } from "../content/extensions";
 
 export type Completion =
   | { readonly kind: "expedition"; readonly id: ExpeditionId }
@@ -27,6 +29,7 @@ export interface SimulationEvents extends Record<string, unknown> {
   completed: Completion;
   /** Erfolgreich ausgeführte Spieleraktion – z. B. für Sound. */
   action: Action["type"];
+  codex: CodexId;
 }
 
 /**
@@ -83,13 +86,15 @@ export class Simulation {
     if (this.state.siege.wave > waveBefore) this.events.emit("completed", { kind: "battle", wave: waveBefore });
     if (tickEvents(this.state, dt)) this.invalidate();
     if (tickAutomation(this.state, dt)) this.invalidate();
+    if (tickAutobuy(this.state, dt)) this.invalidate();
+    if (tickWorkshop(this.state, dt)) this.invalidate();
     this.advanceStory();
   }
 
   dispatch(action: Action): Result {
     const result = action.type === "resolveEvent" ? resolveEvent(this.state, action.choice, this.rates) : applyAction(this.state, action);
     // Neues Spiel+ ersetzt die Story: der Director muss seine Grenze neu bestimmen.
-    if (result.ok && action.type === "newGamePlus") this.director.sync(this.state);
+    if (result.ok && (action.type === "newGamePlus" || action.type === "ascend")) this.director.sync(this.state);
     if (result.ok) {
       this.events.emit("action", action.type);
       this.invalidate();
@@ -106,10 +111,13 @@ export class Simulation {
   private advanceStory(): void {
     const done = this.director.evaluate(this.state);
     const earned = evaluateAchievements(this.state);
-    if (done.length === 0 && earned.length === 0) return;
+    const unlockedExtra = unlockExtras(this.state);
+    const lore = evaluateCodex(this.state);
+    if (done.length === 0 && earned.length === 0 && !unlockedExtra && lore.length === 0) return;
     this.invalidate();
     for (const node of done) this.events.emit("story", node);
     for (const id of earned) this.events.emit("achievement", id);
+    for (const id of lore) this.events.emit("codex", id);
   }
 
   storyNode(id: string): StoryNode | undefined {

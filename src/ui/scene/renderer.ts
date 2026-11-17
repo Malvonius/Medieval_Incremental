@@ -1,4 +1,4 @@
-import { Application, FillGradient, Graphics } from "pixi.js";
+import { Application, FillGradient, Graphics, Particle as Sprite, ParticleContainer, type Texture } from "pixi.js";
 import { MAX_HOUSES, type SceneModel } from "./model";
 
 /** Himmel je Akt (oben → Horizont): von Abenddämmerung bis Blutmond. */
@@ -48,6 +48,16 @@ interface Particle {
   readonly streak?: boolean;
 }
 
+/** Partikel plus GPU-Sprite; alle Sprites teilen sich eine Textur und damit einen Draw-Call. */
+interface Mote extends Particle {
+  readonly sprite: Sprite;
+}
+
+/** Radius der Punkt-Textur in Pixeln; Partikelgrößen skalieren relativ dazu. */
+const DOT_RADIUS = 4;
+/** Himmel, Sonne und Mond ändern sich langsam: höchstens zehnmal pro Sekunde neu zeichnen. */
+const SKY_INTERVAL = 0.1;
+
 /** Deterministischer Pseudozufall je Index: Häuser sehen bei jedem Neuzeichnen gleich aus. */
 const hash = (i: number): number => {
   const x = Math.sin(i * 127.1 + 311.7) * 43_758.5453;
@@ -64,8 +74,12 @@ export class SceneRenderer {
   private readonly world = new Graphics();
   private readonly gradients = new Map<string, FillGradient>();
   private readonly anim = new Graphics();
-  private readonly fx = new Graphics();
-  private particles: Particle[] = [];
+  /** Alle Partikel in einem ParticleContainer: ein einziger, gebündelter Draw-Call. */
+  private readonly fx = new ParticleContainer({ dynamicProperties: { position: true, vertex: true, color: true, rotation: false, uvs: false } });
+  private dot: Texture | null = null;
+  private streak: Texture | null = null;
+  private particles: Mote[] = [];
+  private lastSky = -Infinity;
   private model: SceneModel | null = null;
   private animate = true;
   private time = 0;
@@ -74,6 +88,10 @@ export class SceneRenderer {
     await this.app.init({ resizeTo: host, backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: devicePixelRatio });
     host.appendChild(this.app.canvas);
     this.app.stage.addChild(this.sky, this.world, this.anim, this.fx);
+    this.dot = this.app.renderer.generateTexture(new Graphics().circle(DOT_RADIUS, DOT_RADIUS, DOT_RADIUS).fill(0xffffff));
+    this.streak = this.app.renderer.generateTexture(new Graphics().moveTo(2, 0).lineTo(0, 9).stroke({ color: 0xffffff, width: 1 }));
+    // Die statische Ebene wird nur bei Änderungen neu gerastert und sonst als eine Textur gezeichnet.
+    this.world.cacheAsTexture(true);
     this.app.renderer.on("resize", () => this.draw());
     this.app.ticker.add((t) => this.step(t.deltaMS / 1000));
   }
@@ -81,8 +99,7 @@ export class SceneRenderer {
   setAnimate(animate: boolean): void {
     this.animate = animate;
     if (!animate) {
-      this.particles = [];
-      this.fx.clear();
+      this.clearParticles();
       this.drawAnim();
     }
   }
@@ -93,6 +110,8 @@ export class SceneRenderer {
   }
 
   destroy(): void {
+    this.dot?.destroy(true);
+    this.streak?.destroy(true);
     this.app.destroy(true, { children: true });
   }
 
@@ -116,7 +135,14 @@ export class SceneRenderer {
     if (m.chapel) this.drawChapel(g, m);
     this.drawWalls(g, m);
     this.drawDead(g, m);
+    this.world.updateCacheTexture();
     this.drawAnim();
+  }
+
+  private clearParticles(): void {
+    this.particles = [];
+    this.fx.particleChildren = [];
+    this.fx.update();
   }
 
   /** 0 = Mitternacht, 0,5 = Mittag. Ohne Animation bleibt es Nacht. */
@@ -334,11 +360,15 @@ export class SceneRenderer {
 
   // ── Animierte Ebene ─────────────────────────────────────────────────────────
 
-  private drawAnim(): void {
+  /** `sky = false` überspringt den (teuren, sich langsam ändernden) Himmel. */
+  private drawAnim(sky = true): void {
     const m = this.model;
     if (!m) return;
     const { w, h, ground } = this.size;
-    this.drawSky(m);
+    if (sky) {
+      this.lastSky = this.time;
+      this.drawSky(m);
+    }
     const g = this.anim.clear();
     const t = this.animate ? this.time : 0;
     const night = this.night(m);
@@ -392,45 +422,60 @@ export class SceneRenderer {
 
   // ── Partikel ────────────────────────────────────────────────────────────────
 
+  private emit(p: Particle): void {
+    const texture = p.streak ? this.streak : this.dot;
+    if (!texture) return;
+    const sprite = new Sprite({ texture, x: p.x, y: p.y, tint: p.color, alpha: p.streak ? 0.55 : 0.75 });
+    this.particles.push({ ...p, sprite });
+  }
+
   private spawn(): void {
     const m = this.model;
     if (!m || this.particles.length > 420) return;
     const { w, h, ground } = this.size;
     if (m.forge && Math.random() < (m.forging ? 0.45 : 0.12)) {
-      this.particles.push({ x: w * 0.64 + w * 0.045 * 0.8, y: ground - h * 0.27, vx: 3 + Math.random() * 6, vy: -8 - Math.random() * 8, life: 3.5, color: 0x6a6058, size: 1.5 + Math.random() * 2, grow: 1.2 });
+      this.emit({ x: w * 0.64 + w * 0.045 * 0.8, y: ground - h * 0.27, vx: 3 + Math.random() * 6, vy: -8 - Math.random() * 8, life: 3.5, color: 0x6a6058, size: 1.5 + Math.random() * 2, grow: 1.2 });
     }
     if (m.forge && m.forging && Math.random() < 0.25) {
-      this.particles.push({ x: w * 0.64 + w * 0.0225, y: ground - h * 0.04, vx: (Math.random() - 0.5) * 30, vy: -25 - Math.random() * 25, life: 0.6, color: 0xffb04a, size: 1, grow: 0 });
+      this.emit({ x: w * 0.64 + w * 0.0225, y: ground - h * 0.04, vx: (Math.random() - 0.5) * 30, vy: -25 - Math.random() * 25, life: 0.6, color: 0xffb04a, size: 1, grow: 0 });
     }
     if (m.burning && Math.random() < 0.9) {
-      this.particles.push({ x: w * 0.2 + Math.random() * w * 0.36, y: ground - h * 0.12, vx: (Math.random() - 0.5) * 8, vy: -22 - Math.random() * 22, life: 1.6, color: Math.random() < 0.5 ? 0xe07b39 : 0xffc35a, size: 1.4, grow: -0.5 });
+      this.emit({ x: w * 0.2 + Math.random() * w * 0.36, y: ground - h * 0.12, vx: (Math.random() - 0.5) * 8, vy: -22 - Math.random() * 22, life: 1.6, color: Math.random() < 0.5 ? 0xe07b39 : 0xffc35a, size: 1.4, grow: -0.5 });
     }
     if (m.weather === "rain") {
       for (let i = 0; i < 4; i += 1) {
-        this.particles.push({ x: Math.random() * w * 1.1, y: -5, vx: -40, vy: 260 + Math.random() * 80, life: 1, color: 0x9ab0c8, size: 1, grow: 0, streak: true });
+        this.emit({ x: Math.random() * w * 1.1, y: -5, vx: -40, vy: 260 + Math.random() * 80, life: 1, color: 0x9ab0c8, size: 1, grow: 0, streak: true });
       }
     } else if (m.weather === "snow" && Math.random() < 0.7) {
-      this.particles.push({ x: Math.random() * w, y: -4, vx: (Math.random() - 0.5) * 10, vy: 14 + Math.random() * 14, life: 14, color: 0xf2f2f2, size: 1 + Math.random() * 1.3, grow: 0 });
+      this.emit({ x: Math.random() * w, y: -4, vx: (Math.random() - 0.5) * 10, vy: 14 + Math.random() * 14, life: 14, color: 0xf2f2f2, size: 1 + Math.random() * 1.3, grow: 0 });
     }
     if (m.souls && Math.random() < 0.18) {
-      this.particles.push({ x: w * 0.69 + Math.random() * w * 0.1, y: ground + 4, vx: (Math.random() - 0.5) * 4, vy: -7 - Math.random() * 4, life: 4.5, color: 0x8fb8c9, size: 1.6, grow: 0 });
+      this.emit({ x: w * 0.69 + Math.random() * w * 0.1, y: ground + 4, vx: (Math.random() - 0.5) * 4, vy: -7 - Math.random() * 4, life: 4.5, color: 0x8fb8c9, size: 1.6, grow: 0 });
     }
   }
 
   private step(dt: number): void {
     if (!this.animate) return;
     this.time += dt;
-    this.drawAnim();
+    this.drawAnim(this.time - this.lastSky >= SKY_INTERVAL);
     this.spawn();
-    const g = this.fx.clear();
-    this.particles = this.particles.filter((p) => (p.life -= dt) > 0 && p.y < this.size.h + 10);
+    const h = this.size.h;
+    this.particles = this.particles.filter((p) => (p.life -= dt) > 0 && p.y < h + 10);
     for (const p of this.particles) {
       const sway = p.color === 0x8fb8c9 || p.color === 0xf2f2f2 ? Math.sin(this.time * 2 + p.y * 0.05) * 0.3 : 0;
       p.x += p.vx * dt + sway;
       p.y += p.vy * dt;
       p.size = Math.max(0.4, p.size + p.grow * dt);
-      if (p.streak) g.moveTo(p.x, p.y).lineTo(p.x - 2, p.y + 9).stroke({ color: p.color, width: 1, alpha: 0.55 });
-      else g.circle(p.x, p.y, p.size).fill({ color: p.color, alpha: Math.min(1, p.life) * 0.75 });
+      const sprite = p.sprite;
+      sprite.x = p.x - (p.streak ? 0 : p.size);
+      sprite.y = p.y - (p.streak ? 0 : p.size);
+      if (!p.streak) {
+        sprite.scaleX = sprite.scaleY = p.size / DOT_RADIUS;
+        sprite.alpha = Math.min(1, p.life) * 0.75;
+      }
     }
+    // Ein Array-Tausch statt removeParticle je Partikel: O(n) pro Frame.
+    this.fx.particleChildren = this.particles.map((p) => p.sprite);
+    this.fx.update();
   }
 }

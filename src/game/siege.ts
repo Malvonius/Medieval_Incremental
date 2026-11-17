@@ -3,6 +3,7 @@ import { ENDINGS, type EndingId, type FortificationId, WAVES, type WaveDef } fro
 import { defense, fortificationCost } from "./rates";
 import { type GameState, spend } from "./state";
 import { Decimal } from "../core/decimal";
+import { endingUnlocked } from "./extensions";
 
 type View = DeepReadonly<GameState>;
 
@@ -61,11 +62,12 @@ export function tickSiege(state: GameState, dt: number): boolean {
   return true;
 }
 
-export type EndingBlocker = "notYet" | "chosen" | "cost";
+export type EndingBlocker = "notYet" | "chosen" | "locked" | "cost";
 
 export function endingBlocker(state: View, id: EndingId): EndingBlocker | null {
   if (state.siege.wave < WAVES.length) return "notYet";
   if (state.siege.ending !== null) return "chosen";
+  if (!endingUnlocked(state, id)) return "locked";
   const def = ENDINGS[id];
   if (state.resources[def.costResource].lt(def.cost)) return "cost";
   return null;
@@ -74,6 +76,7 @@ export function endingBlocker(state: View, id: EndingId): EndingBlocker | null {
 export const ENDING_BLOCKER_TEXT: Readonly<Record<EndingBlocker, string>> = {
   notYet: "Der Bischof steht noch vor den Toren.",
   chosen: "Du hast deine Wahl bereits getroffen.",
+  locked: "Dieser Weg ist dir noch verborgen.",
   cost: "Dafür fehlt dir noch die Kraft.",
 };
 
@@ -83,5 +86,6 @@ export function chooseEnding(state: GameState, id: EndingId): Result {
   const def = ENDINGS[id];
   spend(state, def.costResource, new Decimal(def.cost));
   state.siege.ending = id;
+  state.meta.endingsSeen[id] = true;
   return OK;
 }

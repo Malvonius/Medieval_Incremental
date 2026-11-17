@@ -3,12 +3,15 @@
   import { loc } from "../../i18n/content";
   import type { GameController } from "../../app/controller";
   import type { StoryNode } from "../../game/story";
-  import { formatDuration, formatNumber } from "../format";
   import ProgressSection from "./ProgressSection.svelte";
   import SlotSection from "./SlotSection.svelte";
   import EpilogueDialog from "../EpilogueDialog.svelte";
   import { CLOUD_URL, downloadSave, isValidSyncCode, syncCode, uploadSave } from "../../app/cloud";
   import SettingsSection from "./SettingsSection.svelte";
+  import StatsSection from "./StatsSection.svelte";
+  import CodexSection from "./CodexSection.svelte";
+  import HeraldrySection from "./HeraldrySection.svelte";
+  import { downloadText, qrDataUrls, readFileText, scanQr, scanSupported } from "../saveTransfer";
 
   let { game }: { game: GameController } = $props();
 
@@ -54,6 +57,38 @@
   function doImport(): void {
     if (game.importText(importText).ok) importText = "";
   }
+
+  function exportFile(): void {
+    const date = new Date().toISOString().slice(0, 10);
+    downloadText(`vhal-${date}.txt`, game.exportText());
+  }
+
+  async function importFile(event: Event & { currentTarget: HTMLInputElement }): Promise<void> {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (file) game.importText(await readFileText(file));
+  }
+
+  let qr = $state<string[]>([]);
+  let qrError = $state("");
+  async function showQr(): Promise<void> {
+    qrError = "";
+    try {
+      qr = await qrDataUrls(game.exportText());
+    } catch {
+      qr = [];
+      qrError = "Der QR-Code konnte nicht erzeugt werden. Nutze die Datei.";
+    }
+  }
+
+  async function importQr(event: Event & { currentTarget: HTMLInputElement }): Promise<void> {
+    const files = [...(event.currentTarget.files ?? [])];
+    event.currentTarget.value = "";
+    if (files.length === 0) return;
+    const text = await scanQr(files);
+    if (text === null) qrError = "Nicht alle Teile des QR-Codes wurden gefunden.";
+    else game.importText(text);
+  }
 </script>
 
 <section class="panel-section">
@@ -72,19 +107,8 @@
   </ol>
 </section>
 
-<section class="panel-section">
-  <h3 class="section-title">{$tx("Statistik")}</h3>
-  <dl class="stats">
-    <dt>{$tx("Spielzeit")}</dt>
-    <dd class="num">{formatDuration(snap.state.stats.playSeconds)}</dd>
-    <dt>{$tx("Steuern eingetrieben")}</dt>
-    <dd class="num">{formatNumber(snap.state.stats.clicks)}×</dd>
-    <dt>{$tx("Gold insgesamt")}</dt>
-    <dd class="num">{formatNumber(snap.state.totals.gold)}</dd>
-    <dt>{$tx("Geschmiedete Klingen")}</dt>
-    <dd class="num">{formatNumber(snap.state.totals.swords)}</dd>
-  </dl>
-</section>
+<StatsSection {game} {snap} />
+<CodexSection {snap} />
 
 {#if snap.state.flags.act5Complete}
   <section class="panel-section">
@@ -96,6 +120,7 @@
 
 <SlotSection {game} {snap} />
 <ProgressSection {game} {snap} />
+<HeraldrySection {snap} />
 <SettingsSection />
 
 <section class="panel-section">
@@ -106,6 +131,31 @@
     {#if copyState === "copied"}<span class="hint">{$tx("In die Zwischenablage kopiert.")}</span>{/if}
     {#if copyState === "failed"}<span class="hint">{$tx("Bitte manuell kopieren.")}</span>{/if}
   </div>
+  <div class="row">
+    <button class="btn" onclick={exportFile}>{$tx("Als Datei speichern")}</button>
+    <label class="btn file">
+      {$tx("Datei laden")}
+      <input type="file" accept=".txt,text/plain" onchange={importFile} />
+    </label>
+    <button class="btn" onclick={showQr}>{$tx("QR-Code zeigen")}</button>
+    {#if scanSupported()}
+      <label class="btn file">
+        {$tx("QR-Code einlesen")}
+        <input type="file" accept="image/*" multiple onchange={importQr} />
+      </label>
+    {/if}
+  </div>
+  {#if qrError}<p class="hint">{$tx(qrError)}</p>{/if}
+  {#if qr.length > 0}
+    <figure class="qr">
+      <div class="codes">
+        {#each qr as src, i (src)}
+          <img {src} alt={$tx("QR-Code des Spielstands, Teil {i} von {n}", { i: String(i + 1), n: String(qr.length) })} width="200" height="200" />
+        {/each}
+      </div>
+      <figcaption class="hint">{$tx("Jeden Teil mit dem anderen Gerät fotografieren und dort alle Fotos unter „QR-Code einlesen“ wählen.")}</figcaption>
+    </figure>
+  {/if}
   {#if exported}
     <textarea readonly rows="3" aria-label={$tx("Exportierter Spielstand")} onfocus={(e) => e.currentTarget.select()}>{exported}</textarea>
   {/if}
@@ -167,20 +217,6 @@
     color: var(--text-muted);
   }
 
-  .stats {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 4px 16px;
-    margin: 0;
-  }
-
-  dt {
-    color: var(--text-muted);
-  }
-
-  dd {
-    margin: 0;
-  }
 
   .row {
     display: flex;
@@ -226,5 +262,37 @@
   .hint {
     color: var(--text-muted);
     font-size: 0.85rem;
+  }
+
+  .file {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .file input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .file:focus-within {
+    outline: 2px solid var(--focus);
+  }
+
+  .qr {
+    margin: 8px 0;
+  }
+
+  .codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .qr img {
+    background: #fff;
+    padding: 8px;
+    border-radius: var(--radius);
   }
 </style>

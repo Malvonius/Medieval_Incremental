@@ -26,7 +26,8 @@
     "break_infinity.js": "^2.2.0",
     "inkjs": "^2.3.2",
     "lz-string": "^1.5.0",
-    "pixi.js": "^8.21.0"
+    "pixi.js": "^8.21.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
@@ -35,6 +36,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^22.20.5",
+    "@types/qrcode": "^1.5.5",
     "eslint": "^10.14.0",
     "svelte": "^5.57.3",
     "svelte-check": "^4.7.8",

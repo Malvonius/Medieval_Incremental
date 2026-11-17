@@ -1,3 +1,5 @@
+import { UI_EXT_EN } from "./ui.ext.en";
+
 /** Englische Oberflächentexte; Schlüssel ist der deutsche Originaltext. */
 export const UI_EN: Readonly<Record<string, string>> = {
   "Die Asche von Vhal": "The Ashes of Vhal",
@@ -299,4 +301,5 @@ export const UI_EN: Readonly<Record<string, string>> = {
   "Ein gebrochenes Siegel": "A broken seal",
   "Vorräte": "Supplies",
   "Zum Inhalt springen": "Skip to content",
+  ...UI_EXT_EN,
 };

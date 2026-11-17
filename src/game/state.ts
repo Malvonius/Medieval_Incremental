@@ -3,6 +3,7 @@ import { recordFrom } from "../core/types";
 import {
   BUILDING_IDS,
   type BuildingId,
+  ENDING_IDS,
   type EndingId,
   EXPEDITION_IDS,
   type ExpeditionId,
@@ -18,6 +19,23 @@ import {
 } from "../content/balance";
 import { ACHIEVEMENT_IDS, type AchievementId } from "../content/achievements";
 import { CHALLENGE_IDS, type ChallengeId, type EventId } from "../content/depth";
+import {
+  AUTOMATION_DEFAULT_THRESHOLD,
+  AUTOMATOR_IDS,
+  type AutomatorId,
+  CODEX_IDS,
+  type CodexId,
+  FACTION_IDS,
+  type FactionId,
+  MAP_CENTER,
+  type OfficeId,
+  RETAINER_IDS,
+  type RetainerId,
+  STATION_IDS,
+  type StationId,
+  TALENT_IDS,
+  type TalentId,
+} from "../content/extensions";
 import { FLAG_IDS, type FlagId, RESOURCE_IDS, type ResourceId, TILE_IDS, type TileId } from "../content/ids";
 
 export const SAVE_VERSION = 1;
@@ -88,6 +106,42 @@ export interface MetaState {
   memories: number;
   challenge: ChallengeId | null;
   challengesDone: Record<ChallengeId, boolean>;
+  /** Zweite Prestige-Ebene: Glut aus dem Aufstieg, ausgegeben im Talentbaum. */
+  embers: number;
+  ascensions: number;
+  talents: Record<TalentId, boolean>;
+  endingsSeen: Record<EndingId, boolean>;
+  codex: Record<CodexId, boolean>;
+  /** Dauer abgeschlossener Läufe (Ritual, Neues Spiel+, Aufstieg), älteste zuerst, gedeckelt. */
+  runLog: RunRecord[];
+}
+
+export type RunKind = "ritual" | "ngplus" | "ascend";
+export interface RunRecord {
+  kind: RunKind;
+  seconds: number;
+}
+export const RUN_LOG_CAP = 50;
+
+export interface AutobuyState {
+  enabled: Record<AutomatorId, boolean>;
+  /** Kaufen, wenn Kosten ≤ threshold × Vorrat (0 < threshold ≤ 1). */
+  threshold: number;
+  timer: number;
+}
+
+export interface RetainerState {
+  level: number;
+  office: OfficeId | null;
+  equipped: boolean;
+}
+
+export interface WorkshopState {
+  levels: Record<StationId, number>;
+  ore: number;
+  ingots: number;
+  /** Bruchteile einer Klinge in Arbeit. */
+  blades: number;
 }
 
 export interface GameState {
@@ -115,7 +169,14 @@ export interface GameState {
   events: EventState;
   automation: { enabled: boolean; timer: number };
   meta: MetaState;
-  stats: { playSeconds: number; clicks: number };
+  autobuy: AutobuyState;
+  factions: { rep: Record<FactionId, number>; courted: Record<FactionId, number> };
+  /** null = (noch) nicht angeheuert. */
+  retinue: Record<RetainerId, RetainerState | null>;
+  /** Indizes eroberter Kartenfelder, die Burg zuerst. */
+  map: { owned: number[] };
+  workshop: WorkshopState;
+  stats: { playSeconds: number; clicks: number; eventsResolved: number; runStart: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
   lastSeen: number;
 }
@@ -142,8 +203,24 @@ export function createInitialState(now: number): GameState {
     rng: ((now >>> 0) ^ 0x9e3779b9) >>> 0,
     events: { pending: null, timer: 240, buff: null },
     automation: { enabled: true, timer: 0 },
-    meta: { ngPlus: 0, memories: 0, challenge: null, challengesDone: recordFrom(CHALLENGE_IDS, () => false) },
-    stats: { playSeconds: 0, clicks: 0 },
+    meta: {
+      ngPlus: 0,
+      memories: 0,
+      challenge: null,
+      challengesDone: recordFrom(CHALLENGE_IDS, () => false),
+      embers: 0,
+      ascensions: 0,
+      talents: recordFrom(TALENT_IDS, () => false),
+      endingsSeen: recordFrom(ENDING_IDS, () => false),
+      codex: recordFrom(CODEX_IDS, () => false),
+      runLog: [],
+    },
+    autobuy: { enabled: recordFrom(AUTOMATOR_IDS, () => false), threshold: AUTOMATION_DEFAULT_THRESHOLD, timer: 0 },
+    factions: { rep: recordFrom(FACTION_IDS, () => 0), courted: recordFrom(FACTION_IDS, () => 0) },
+    retinue: recordFrom(RETAINER_IDS, () => null),
+    map: { owned: [MAP_CENTER] },
+    workshop: { levels: recordFrom(STATION_IDS, () => 0), ore: 0, ingots: 0, blades: 0 },
+    stats: { playSeconds: 0, clicks: 0, eventsResolved: 0, runStart: 0 },
     lastSeen: now,
   };
 }

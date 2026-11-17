@@ -884,7 +884,7 @@ export const WAVES: readonly WaveDef[] = [
   { name: "Der Bischof von Vhal", strength: 180_000, durationSeconds: 600, lossRate: 0.3 },
 ];
 
-export type EndingId = "light" | "ash";
+export type EndingId = "light" | "ash" | "concord" | "awakening";
 
 export interface EndingDef {
   readonly name: string;
@@ -905,6 +905,18 @@ export const ENDINGS: Readonly<Record<EndingId, EndingDef>> = {
     description: "Halt ihn fest. Die Toten gehorchen nun dir, und irgendwer muss sie ja anführen.",
     costResource: "souls",
     cost: 2e8,
+  },
+  concord: {
+    name: "Die Eintracht von Vhal",
+    description: "Kirche, Adel und Volk an einem Tisch, ohne dass jemand ein Messer zieht. Ein Wunder, und Wunder kosten Glauben.",
+    costResource: "faith",
+    cost: 1_000_000,
+  },
+  awakening: {
+    name: "Das wahre Erwachen",
+    description: "Du hast jedes Ende gesehen. Jetzt brich den Kreis, statt ihn noch einmal zu laufen.",
+    costResource: "gold",
+    cost: 1e18,
   },
 };
 export const ENDING_IDS = Object.keys(ENDINGS) as EndingId[];

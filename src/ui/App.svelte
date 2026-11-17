@@ -13,6 +13,10 @@
   import { TILES } from "./tiles/registry";
   import { t } from "../i18n";
   import Scene from "./Scene.svelte";
+  import Heraldry from "./Heraldry.svelte";
+  import TimelapseOverlay from "./TimelapseOverlay.svelte";
+  import { settings } from "../app/settings";
+  import { startGamepad } from "../app/gamepad";
 
   let { game }: { game: GameController } = $props();
 
@@ -23,20 +27,35 @@
   const blocking = $derived($storyQueue.length > 0 || $snapshot.state.events.pending !== null || decisionOpen($snapshot.state, "trust"));
   $effect(() => audio.setMuffled(active === "crypt"));
 
-  /** 1–9 wählt eine Kachel, Leertaste treibt Steuern ein. Nicht in Eingabefeldern oder auf Knöpfen. */
+  $effect(() => startGamepad(() => game.dispatch({ type: "collect" })));
+
+  /** Wechselt zur nächsten offenen Kachel in Richtung `step` (zyklisch). */
+  function cycle(step: 1 | -1): void {
+    const open = TILES.filter((tile) => $snapshot.state.tiles[tile.id]);
+    const i = open.findIndex((tile) => tile.id === active);
+    const next = open[(i + step + open.length) % open.length];
+    if (next) active = next.id;
+  }
+
+  /**
+   * 1–9 und 0 wählen eine Kachel; die übrigen Befehle sind in den Einstellungen frei belegbar.
+   * Nicht in Eingabefeldern, auf Knöpfen oder in Dialogen.
+   */
   function onkeydown(event: KeyboardEvent): void {
     if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
     const target = event.target as HTMLElement | null;
-    if (target?.closest("input, textarea, select, button, [role=dialog]")) return;
+    if (target?.closest("input, textarea, select, button, [role=dialog], [data-capture-keys]")) return;
     const index = Number.parseInt(event.key, 10);
-    const tile = Number.isInteger(index) ? TILES[index - 1] : undefined;
-    if (tile && $snapshot.state.tiles[tile.id]) {
-      active = tile.id;
-      event.preventDefault();
-    } else if (event.key === " ") {
-      game.dispatch({ type: "collect" });
-      event.preventDefault();
-    }
+    const tile = Number.isInteger(index) ? TILES[index === 0 ? 9 : index - 1] : undefined;
+    const keys = $settings.keys;
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    if (tile && $snapshot.state.tiles[tile.id]) active = tile.id;
+    else if (key === keys.collect) game.dispatch({ type: "collect" });
+    else if (key === keys.save) game.save();
+    else if (key === keys.prevTile) cycle(-1);
+    else if (key === keys.nextTile) cycle(1);
+    else return;
+    event.preventDefault();
   }
   const actLabel = $derived.by(() => {
     const { flags } = $snapshot.state;
@@ -47,7 +66,11 @@
 
   function label(flags: typeof $snapshot.state.flags): string {
     if (flags.act5Complete) {
-      return $snapshot.state.siege.ending === "ash" ? "Ende · Die Asche von Vhal" : "Ende · Das Licht von Vhal";
+      const ending = $snapshot.state.siege.ending;
+      if (ending === "ash") return "Ende · Die Asche von Vhal";
+      if (ending === "concord") return "Ende · Die Eintracht von Vhal";
+      if (ending === "awakening") return "Wahres Ende · Das Erwachen";
+      return "Ende · Das Licht von Vhal";
     }
     if (flags.act4Complete) return "Akt V · Die letzte Glocke";
     if (flags.act3Complete) return "Akt IV · Glaube und Verrat";
@@ -65,6 +88,7 @@
 <div class="shell" inert={blocking}>
   <header class="top">
     <div class="brand">
+      <Heraldry heraldry={$settings.heraldry} size={40} />
       <h1>{$tx("Die Asche von Vhal")}</h1>
       <p class="act">{actLabel}</p>
     </div>
@@ -95,6 +119,7 @@
 <StoryDialog {game} />
 <ChoiceDialog {game} />
 <NoticeToast {game} />
+<TimelapseOverlay {game} />
 
 <style>
   .skip {
@@ -132,6 +157,17 @@
     padding-bottom: 12px;
     margin-bottom: 16px;
     border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 10px;
+    align-items: center;
+  }
+
+  .brand > :global(svg) {
+    grid-row: span 2;
   }
 
   h1 {

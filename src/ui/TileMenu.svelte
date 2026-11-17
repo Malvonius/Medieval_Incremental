@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snapshot } from "../app/controller";
   import type { TileId } from "../content/ids";
-    import { hasAffordable } from "../game/affordable";
+  import { hasAffordable } from "../game/affordable";
   import { TILES } from "./tiles/registry";
   import { t, tx } from "../i18n";
 
@@ -10,9 +10,31 @@
     active,
     onselect,
   }: { snap: Snapshot; active: TileId; onselect: (id: TileId) => void } = $props();
+
+  const COLUMNS = 3;
+  const STEP: Readonly<Record<string, number>> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -COLUMNS, ArrowDown: COLUMNS };
+
+  /** Rasternavigation mit Pfeiltasten (auch Gamepad-Steuerkreuz); versiegelte Kacheln werden übersprungen. */
+  function navigate(event: KeyboardEvent): void {
+    const step = STEP[event.key];
+    const grid = event.currentTarget as HTMLElement;
+    if (step === undefined) return;
+    const buttons = [...grid.querySelectorAll<HTMLButtonElement>("button.tile")];
+    let i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (i < 0) return;
+    event.preventDefault();
+    for (i += step; i >= 0 && i < buttons.length; i += step) {
+      const target = buttons[i];
+      if (target && !target.disabled) {
+        target.focus();
+        return;
+      }
+    }
+  }
 </script>
 
-<ul class="grid">
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<ul class="grid" onkeydown={navigate} data-tile-grid>
   {#each TILES as tile (tile.id)}
     {@const unlocked = snap.state.tiles[tile.id]}
     <li>
@@ -41,6 +63,17 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  /* Zehn Kacheln: die Chronik schließt das 3×3-Raster als breites Band ab. */
+  li:last-child {
+    grid-column: 1 / -1;
+  }
+
+  li:last-child .tile {
+    aspect-ratio: auto;
+    min-height: 64px;
+    flex-direction: row;
   }
 
   .tile {

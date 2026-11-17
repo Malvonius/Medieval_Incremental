@@ -2,6 +2,7 @@ import type { DeepReadonly } from "../core/types";
 import type { GameState } from "../game/state";
 import type { UpgradeEffect, VowId } from "./balance";
 import type { FlagId, ResourceId } from "./ids";
+import type { FactionId } from "./extensions";
 
 // ── Zufallsereignisse ─────────────────────────────────────────────────────────
 
@@ -10,7 +11,8 @@ export type EventEffect =
   | { readonly kind: "loseFraction"; readonly resource: ResourceId; readonly fraction: number }
   | { readonly kind: "prisoners"; readonly amount: number }
   | { readonly kind: "loseSoldiers"; readonly fraction: number }
-  | { readonly kind: "buff"; readonly resource: ResourceId; readonly factor: number; readonly seconds: number };
+  | { readonly kind: "buff"; readonly resource: ResourceId; readonly factor: number; readonly seconds: number }
+  | { readonly kind: "reputation"; readonly deltas: Readonly<Partial<Record<FactionId, number>>> };
 
 export interface EventChoice {
   readonly label: string;
@@ -29,6 +31,24 @@ export const EVENT_ROLL_SECONDS = 240;
 export const EVENT_CHANCE = 0.5;
 
 export const EVENTS = {
+  border: {
+    title: "Ärger an der Grenze",
+    text: "Ein Nachbar behauptet, dein neuer Acker gehöre seit jeher seiner Großmutter. Die Großmutter ist seit vierzig Jahren tot, aber sehr streitlustig.",
+    condition: (s) => s.map.owned.length >= 3,
+    choices: [
+      { label: "Abfinden (−10 % Gold, Adel +10)", effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.1 }, { kind: "reputation", deltas: { nobility: 10 } }] },
+      { label: "Verjagen (−5 % Soldaten, Volk +10, Adel −10)", effects: [{ kind: "loseSoldiers", fraction: 0.05 }, { kind: "reputation", deltas: { people: 10, nobility: -10 } }] },
+    ],
+  },
+  tithe: {
+    title: "Der Zehnte",
+    text: "Ein Bote des Bistums verlangt den Zehnten. Er hat eine Liste, einen Esel und erstaunlich wenig Humor.",
+    condition: (s) => s.factions.courted.church + s.factions.courted.nobility + s.factions.courted.people > 0,
+    choices: [
+      { label: "Zahlen (−10 % Glauben, Kirche +15)", effects: [{ kind: "loseFraction", resource: "faith", fraction: 0.1 }, { kind: "reputation", deltas: { church: 15 } }] },
+      { label: "Den Esel beschlagnahmen (Volk +10, Kirche −15)", effects: [{ kind: "reputation", deltas: { people: 10, church: -15 } }] },
+    ],
+  },
   harvest: {
     title: "Eine gute Ernte",
     text: "Zum ersten Mal seit der Pest biegen sich die Ähren. Die Bauern wagen sogar zu lächeln, wenn auch vorsichtig.",
