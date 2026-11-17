@@ -13,12 +13,17 @@ import {
 } from "../content/balance";
 import { CHALLENGE_IDS, EVENT_IDS } from "../content/depth";
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
+import { MAP, MAP_CENTER, OFFICE_IDS, type OfficeId, REPUTATION_MAX, REPUTATION_MIN, RETAINER_MAX_LEVEL } from "../content/extensions";
 import {
   type ActiveExpedition,
   type AlchemyState,
   type EventState,
   type GameState,
   type MetaState,
+  RUN_LOG_CAP,
+  type RetainerState,
+  type RunKind,
+  type RunRecord,
   type SiegeState,
   createInitialState,
 } from "./state";
@@ -67,7 +72,19 @@ export function toPlain(state: DeepReadonly<GameState>) {
     rng: state.rng,
     events: { pending: state.events.pending, timer: state.events.timer, buff: state.events.buff === null ? null : { ...state.events.buff } },
     automation: { ...state.automation },
-    meta: { ...state.meta, challengesDone: { ...state.meta.challengesDone } },
+    meta: {
+      ...state.meta,
+      challengesDone: { ...state.meta.challengesDone },
+      talents: { ...state.meta.talents },
+      endingsSeen: { ...state.meta.endingsSeen },
+      codex: { ...state.meta.codex },
+      runLog: state.meta.runLog.map((r) => ({ ...r })),
+    },
+    autobuy: { enabled: { ...state.autobuy.enabled }, threshold: state.autobuy.threshold, timer: state.autobuy.timer },
+    factions: { rep: { ...state.factions.rep }, courted: { ...state.factions.courted } },
+    retinue: Object.fromEntries(Object.entries(state.retinue).map(([k, v]) => [k, v === null ? null : { ...v }])),
+    map: { owned: [...state.map.owned] },
+    workshop: { ...state.workshop, levels: { ...state.workshop.levels } },
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
   };
@@ -174,6 +191,80 @@ function readMeta(source: Record<string, unknown>, defaults: MetaState): MetaSta
     memories: readNumber(source["memories"], "meta.memories", 0, { integer: true }),
     challenge: challenge as MetaState["challenge"],
     challengesDone: readRecord(section(source, "challengesDone"), defaults.challengesDone, "meta.challengesDone", readBoolean),
+    embers: readNumber(source["embers"], "meta.embers", 0, { integer: true }),
+    ascensions: readNumber(source["ascensions"], "meta.ascensions", 0, { integer: true }),
+    talents: readRecord(section(source, "talents"), defaults.talents, "meta.talents", readBoolean),
+    endingsSeen: readRecord(section(source, "endingsSeen"), defaults.endingsSeen, "meta.endingsSeen", readBoolean),
+    codex: readRecord(section(source, "codex"), defaults.codex, "meta.codex", readBoolean),
+    runLog: readRunLog(source["runLog"]),
+  };
+}
+
+const RUN_KINDS: ReadonlySet<string> = new Set<RunKind>(["ritual", "ngplus", "ascend"]);
+
+function readRunLog(value: unknown): RunRecord[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new SaveError('Feld "meta.runLog" muss eine Liste sein.');
+  return value.slice(-RUN_LOG_CAP).map((entry, i) => {
+    if (!isObject(entry) || typeof entry["kind"] !== "string" || !RUN_KINDS.has(entry["kind"])) {
+      throw new SaveError(`Feld "meta.runLog[${i}]" ist ungültig.`);
+    }
+    return { kind: entry["kind"] as RunKind, seconds: readNumber(entry["seconds"], `meta.runLog[${i}].seconds`, 0) };
+  });
+}
+
+const OFFICE_SET: ReadonlySet<string> = new Set(OFFICE_IDS);
+
+function readRetinue(source: Record<string, unknown>, defaults: GameState["retinue"]): GameState["retinue"] {
+  return readRecord(source, defaults, "retinue", (value, path): RetainerState | null => {
+    if (value === undefined || value === null) return null;
+    if (!isObject(value)) throw new SaveError(`Feld "${path}" muss ein Objekt sein.`);
+    const office = value["office"] ?? null;
+    if (office !== null && (typeof office !== "string" || !OFFICE_SET.has(office))) throw new SaveError(`Feld "${path}.office" ist unbekannt.`);
+    const level = readNumber(value["level"], `${path}.level`, 1, { integer: true });
+    if (level < 1 || level > RETAINER_MAX_LEVEL) throw new SaveError(`Feld "${path}.level" ist ungültig.`);
+    return { level, office: office as OfficeId | null, equipped: readBoolean(value["equipped"], `${path}.equipped`, false) };
+  });
+}
+
+function readMap(source: Record<string, unknown>): GameState["map"] {
+  const raw = source["owned"];
+  if (raw === undefined) return { owned: [MAP_CENTER] };
+  if (!Array.isArray(raw) || !raw.every((i): i is number => Number.isSafeInteger(i) && i >= 0 && i < MAP.length)) {
+    throw new SaveError('Feld "map.owned" enthält ungültige Felder.');
+  }
+  const owned = [...new Set([MAP_CENTER, ...raw])];
+  return { owned };
+}
+
+function readAutobuy(source: Record<string, unknown>, defaults: GameState["autobuy"]): GameState["autobuy"] {
+  const threshold = readNumber(source["threshold"], "autobuy.threshold", defaults.threshold);
+  if (threshold <= 0 || threshold > 1) throw new SaveError('Feld "autobuy.threshold" muss in (0, 1] liegen.');
+  return {
+    enabled: readRecord(section(source, "enabled"), defaults.enabled, "autobuy.enabled", readBoolean),
+    threshold,
+    timer: readNumber(source["timer"], "autobuy.timer", 0),
+  };
+}
+
+function readFactions(source: Record<string, unknown>, defaults: GameState["factions"]): GameState["factions"] {
+  const rep = section(source, "rep");
+  return {
+    rep: readRecord(rep, defaults.rep, "factions.rep", (v, p, f) => {
+      if (v === undefined) return f;
+      if (typeof v !== "number" || !Number.isFinite(v) || v < REPUTATION_MIN || v > REPUTATION_MAX) throw new SaveError(`Feld "${p}" ist ungültig.`);
+      return v;
+    }),
+    courted: readRecord(section(source, "courted"), defaults.courted, "factions.courted", (v, p, f) => readNumber(v, p, f, { integer: true })),
+  };
+}
+
+function readWorkshop(source: Record<string, unknown>, defaults: GameState["workshop"]): GameState["workshop"] {
+  return {
+    levels: readRecord(section(source, "levels"), defaults.levels, "workshop.levels", (v, p, f) => readNumber(v, p, f, { integer: true })),
+    ore: readNumber(source["ore"], "workshop.ore", 0),
+    ingots: readNumber(source["ingots"], "workshop.ingots", 0),
+    blades: readNumber(source["blades"], "workshop.blades", 0),
   };
 }
 
@@ -288,9 +379,16 @@ export function fromPlain(data: unknown, now: number): GameState {
       timer: readNumber(section(data, "automation")["timer"], "automation.timer", 0),
     },
     meta: readMeta(section(data, "meta"), d.meta),
+    autobuy: readAutobuy(section(data, "autobuy"), d.autobuy),
+    factions: readFactions(section(data, "factions"), d.factions),
+    retinue: readRetinue(section(data, "retinue"), d.retinue),
+    map: readMap(section(data, "map")),
+    workshop: readWorkshop(section(data, "workshop"), d.workshop),
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),
       clicks: readCount(stats["clicks"], "stats.clicks", 0),
+      eventsResolved: readCount(stats["eventsResolved"], "stats.eventsResolved", 0),
+      runStart: readNumber(stats["runStart"], "stats.runStart", 0),
     },
     lastSeen: readNumber(data["lastSeen"], "lastSeen", now),
   };

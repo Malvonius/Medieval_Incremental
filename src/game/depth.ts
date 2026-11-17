@@ -14,6 +14,7 @@ import {
 } from "../content/depth";
 import { type Rates, buildingCost, isBuildingVisible, unitRate } from "./rates";
 import { type GameState, createInitialState, gain, spend } from "./state";
+import { adjustReputation } from "./bonuses";
 
 type View = DeepReadonly<GameState>;
 
@@ -67,6 +68,9 @@ function applyEventEffect(state: GameState, effect: EventEffect, rates: Rates): 
     case "buff":
       state.events.buff = { resource: effect.resource, factor: effect.factor, remaining: effect.seconds };
       return;
+    case "reputation":
+      adjustReputation(state, effect.deltas);
+      return;
   }
 }
 
@@ -77,6 +81,7 @@ export function resolveEvent(state: GameState, choice: number, rates: Rates): Re
   if (option === undefined) return fail(`Unbekannte Wahl: ${choice}`);
   for (const effect of option.effects) applyEventEffect(state, effect, rates);
   state.events.pending = null;
+  state.stats.eventsResolved += 1;
   return OK;
 }
 
@@ -148,7 +153,14 @@ export function decide(state: GameState, id: DecisionId, option: 0 | 1): Result 
  */
 export function newGamePlus(state: GameState, challenge: ChallengeId | null): Result {
   if (!state.flags.act5Complete) return fail("Erst muss die letzte Glocke geläutet haben.");
-  const meta = { ...state.meta, challengesDone: { ...state.meta.challengesDone } };
+  const meta = {
+    ...state.meta,
+    challengesDone: { ...state.meta.challengesDone },
+    talents: { ...state.meta.talents },
+    endingsSeen: { ...state.meta.endingsSeen },
+    codex: { ...state.meta.codex },
+    runLog: [...state.meta.runLog],
+  };
   if (meta.challenge !== null) meta.challengesDone[meta.challenge] = true;
   meta.ngPlus += 1;
   meta.memories += 1;

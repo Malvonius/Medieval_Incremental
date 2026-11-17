@@ -38,6 +38,8 @@ import {
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
 import { achievementMultiplier } from "./achievements";
 import { CHALLENGES, CHALLENGE_IDS, DECISIONS, DECISION_IDS, MEMORY_BONUS, SYNERGIES } from "../content/depth";
+import { FACTIONS, FACTION_IDS, REPUTATION_BOON, REPUTATION_CURSE, TALENTS, TALENT_IDS } from "../content/extensions";
+import { landFactor, retinueFactor } from "./bonuses";
 import { type GameState, aliveSoldiers } from "./state";
 
 export type Rates = Readonly<Record<ResourceId, Decimal>>;
@@ -45,9 +47,13 @@ type View = DeepReadonly<GameState>;
 type EffectKind = UpgradeEffect["kind"];
 type EffectOf<K extends EffectKind> = Extract<UpgradeEffect, { kind: K }>;
 
+/** Herkunft eines Effekts – getrennt, damit der Tooltip Talente und Ruf einzeln ausweist. */
+type EffectGroup = "core" | "talent" | "faction";
+
 interface EffectSource {
   readonly owned: (state: View) => boolean;
   readonly effect: UpgradeEffect;
+  readonly group: EffectGroup;
 }
 
 /**
@@ -56,7 +62,8 @@ interface EffectSource {
  */
 const EFFECTS_BY_KIND: ReadonlyMap<EffectKind, readonly EffectSource[]> = (() => {
   const map = new Map<EffectKind, EffectSource[]>();
-  const add = (source: EffectSource): void => {
+  const add = (partial: Omit<EffectSource, "group"> & { group?: EffectGroup }): void => {
+    const source: EffectSource = { group: "core", ...partial };
     const list = map.get(source.effect.kind) ?? [];
     list.push(source);
     map.set(source.effect.kind, list);
@@ -70,14 +77,25 @@ const EFFECTS_BY_KIND: ReadonlyMap<EffectKind, readonly EffectSource[]> = (() =>
     add({ owned: (s) => s.meta.challengesDone[id], effect: CHALLENGES[id].reward });
   }
   for (const id of DECISION_IDS) for (const option of DECISIONS[id].options) add({ owned: (s) => s.flags[option.flag], effect: option.effect });
+  for (const id of TALENT_IDS) for (const effect of TALENTS[id].effects) add({ owned: (s) => s.meta.talents[id], effect, group: "talent" });
+  for (const id of FACTION_IDS) {
+    add({ owned: (s) => s.factions.rep[id] >= REPUTATION_BOON, effect: FACTIONS[id].boon, group: "faction" });
+    add({ owned: (s) => s.factions.rep[id] <= REPUTATION_CURSE, effect: FACTIONS[id].curse, group: "faction" });
+  }
   return map;
 })();
 
-function* ownedEffects<K extends EffectKind>(state: View, kind: K): Generator<EffectOf<K>> {
-  for (const { owned, effect } of EFFECTS_BY_KIND.get(kind) ?? []) {
-    if (owned(state)) yield effect as EffectOf<K>;
+function* ownedEffects<K extends EffectKind>(state: View, kind: K, group?: EffectGroup): Generator<EffectOf<K>> {
+  for (const source of EFFECTS_BY_KIND.get(kind) ?? []) {
+    if ((group === undefined || source.group === group) && source.owned(state)) yield source.effect as EffectOf<K>;
   }
 }
+
+const groupResourceProduct = (state: View, resource: ResourceId, group: EffectGroup): number => {
+  let result = 1;
+  for (const e of ownedEffects(state, "resourceMult", group)) if (e.resource === resource) result *= e.factor;
+  return result;
+};
 
 const productOf = <K extends EffectKind>(state: View, kind: K, pick: (e: EffectOf<K>) => number | null): number => {
   let result = 1;
@@ -101,8 +119,7 @@ export const armedBonus = (state: View): number =>
   state.resources.swords.add(aliveSoldiers(state)).toNumber() * SWORD_GOLD_BONUS;
 
 /** Multiplikator aus Pakten und Forschung für eine Ressource. */
-export const pactMultiplier = (state: View, resource: ResourceId): number =>
-  productOf(state, "resourceMult", (e) => (e.resource === resource ? e.factor : null));
+export const pactMultiplier = (state: View, resource: ResourceId): number => groupResourceProduct(state, resource, "core");
 
 export const memoryMultiplier = (state: View): number => 1 + state.meta.memories * MEMORY_BONUS;
 
@@ -135,6 +152,10 @@ export function resourceFactors(state: View, resource: ResourceId): RateFactor[]
     push("Fronarbeit", 1 + labor * (resource === "gold" ? LABOR_GOLD_BONUS : LABOR_IRON_BONUS));
   }
   push("Pakte, Forschung & Gelübde", pactMultiplier(state, resource));
+  push("Glut-Talente", groupResourceProduct(state, resource, "talent"));
+  push("Ruf", groupResourceProduct(state, resource, "faction"));
+  push("Gefolge", retinueFactor(state, resource));
+  push("Ländereien", landFactor(state, resource));
   const buff = state.events.buff;
   if (buff !== null && buff.resource === resource) push("Ereignis", buff.factor);
   if (resource !== "swords") {

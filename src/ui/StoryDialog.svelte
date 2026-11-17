@@ -3,6 +3,9 @@
   import { loc } from "../i18n/content";
   import { PORTRAITS, portraitFor } from "./portraits";
   import type { GameController } from "../app/controller";
+  import { locale } from "../i18n";
+  import { settings } from "../app/settings";
+  import { speak, stopSpeaking } from "../app/voice";
 
   let { game }: { game: GameController } = $props();
 
@@ -18,6 +21,14 @@
     seal: "Ein gebrochenes Siegel",
   } as const;
   const ACT_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
+
+  // Vorlesen: jede neue Szene ersetzt die laufende; Schließen verstummt.
+  $effect(() => {
+    if (!node || !$settings.voice) return;
+    const { title, text } = $loc.story(node);
+    speak([title, ...text], $locale, portrait === "seal" || portrait === null ? "narrator" : portrait);
+    return stopSpeaking;
+  });
 
   let button = $state<HTMLButtonElement | null>(null);
   $effect(() => {

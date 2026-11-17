@@ -10,5 +10,6 @@ export const TILE_HINTS: Readonly<Record<TileId, string>> = {
   alchemy: "Forschungen kosten Gold, Seelen und Geduld. Es läuft immer nur eine – wähl mit Bedacht.",
   chapel: "Glaube öffnet Gelübde: Jedes schenkt einen Segen und verlangt einen Fluch. Altäre sind knapp.",
   ritual: "Das Ritual brennt Vhal nieder und schenkt dir Asche. Asche macht jeden Neuanfang schneller.",
+  hall: "Heuere Gefolgsleute an, setz sie in Ämter und umwirb Kirche, Adel und Volk. Wer die eine Seite hofiert, verärgert die andere.",
   chronicle: "Hier stehen Geschichte, Erfolge und Einstellungen. Hier speicherst, exportierst und wechselst du Spielstände.",
 };

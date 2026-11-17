@@ -18,6 +18,23 @@ import { buildFortification, chooseEnding, startBattle } from "./siege";
 import { decide, newGamePlus, setAutomation } from "./depth";
 import type { ChallengeId, DecisionId } from "../content/depth";
 import type { ResourceId } from "../content/ids";
+import type { AutomatorId, FactionId, OfficeId, RetainerId, StationId, TalentId } from "../content/extensions";
+import {
+  applyDecisionReputation,
+  ascend,
+  assign,
+  buyTalent,
+  conquer,
+  court,
+  equip,
+  hire,
+  levelUp,
+  logRun,
+  setAutoThreshold,
+  setAutomator,
+  upgradeStation,
+} from "./extensions";
+import { DECISIONS } from "../content/depth";
 import { startResearch } from "./alchemy";
 import { forceLabor, interrogate } from "./dungeon";
 import { launchExpedition, recruit } from "./warroom";
@@ -66,7 +83,18 @@ export type Action =
   | { readonly type: "resolveEvent"; readonly choice: number }
   | { readonly type: "setAutomation"; readonly enabled: boolean }
   | { readonly type: "decide"; readonly decision: DecisionId; readonly option: 0 | 1 }
-  | { readonly type: "newGamePlus"; readonly challenge: ChallengeId | null };
+  | { readonly type: "newGamePlus"; readonly challenge: ChallengeId | null }
+  | { readonly type: "setAutomator"; readonly automator: AutomatorId; readonly enabled: boolean }
+  | { readonly type: "setAutoThreshold"; readonly threshold: number }
+  | { readonly type: "ascend" }
+  | { readonly type: "buyTalent"; readonly talent: TalentId }
+  | { readonly type: "court"; readonly faction: FactionId }
+  | { readonly type: "hire"; readonly retainer: RetainerId }
+  | { readonly type: "levelRetainer"; readonly retainer: RetainerId }
+  | { readonly type: "equipRetainer"; readonly retainer: RetainerId }
+  | { readonly type: "assignRetainer"; readonly retainer: RetainerId; readonly office: OfficeId | null }
+  | { readonly type: "conquer"; readonly index: number }
+  | { readonly type: "upgradeStation"; readonly station: StationId };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   const def = BUILDINGS[building];
@@ -141,10 +169,36 @@ export function applyAction(state: GameState, action: Exclude<Action, { type: "r
       return chooseEnding(state, action.ending);
     case "setAutomation":
       return setAutomation(state, action.enabled);
-    case "decide":
-      return decide(state, action.decision, action.option);
+    case "decide": {
+      const result = decide(state, action.decision, action.option);
+      if (result.ok) applyDecisionReputation(state, DECISIONS[action.decision].options[action.option].flag);
+      return result;
+    }
     case "newGamePlus":
+      if (state.flags.act5Complete) logRun(state, "ngplus");
       return newGamePlus(state, action.challenge);
+    case "setAutomator":
+      return setAutomator(state, action.automator, action.enabled);
+    case "setAutoThreshold":
+      return setAutoThreshold(state, action.threshold);
+    case "ascend":
+      return ascend(state);
+    case "buyTalent":
+      return buyTalent(state, action.talent);
+    case "court":
+      return court(state, action.faction);
+    case "hire":
+      return hire(state, action.retainer);
+    case "levelRetainer":
+      return levelUp(state, action.retainer);
+    case "equipRetainer":
+      return equip(state, action.retainer);
+    case "assignRetainer":
+      return assign(state, action.retainer, action.office);
+    case "conquer":
+      return conquer(state, action.index);
+    case "upgradeStation":
+      return upgradeStation(state, action.station);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);

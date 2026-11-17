@@ -7,6 +7,7 @@ import ChroniclePanel from "./ChroniclePanel.svelte";
 import CryptPanel from "./CryptPanel.svelte";
 import DungeonPanel from "./DungeonPanel.svelte";
 import ForgePanel from "./ForgePanel.svelte";
+import HallPanel from "./HallPanel.svelte";
 import KeepPanel from "./KeepPanel.svelte";
 import RitualPanel from "./RitualPanel.svelte";
 import WarroomPanel from "./WarroomPanel.svelte";
@@ -30,5 +31,6 @@ export const TILES: readonly TileView[] = [
   { id: "alchemy", title: "Alchemisten\u00ADturm", glyph: "⚗", sealedHint: "Grünes Licht flackert hinter den Scheiben.", Panel: AlchemyPanel },
   { id: "chapel", title: "Kapelle", glyph: "✝", sealedHint: "Die Glocke schweigt seit dem Feuer.", Panel: ChapelPanel },
   { id: "ritual", title: "Ritual der Asche", glyph: "✶", sealedHint: "Ein Kreis aus Ruß auf kaltem Stein.", Panel: RitualPanel },
+  { id: "hall", title: "Rittersaal", glyph: "♛", sealedHint: "Hinter der Tür streiten Stimmen über Erbrecht.", Panel: HallPanel },
   { id: "chronicle", title: "Chronik", glyph: "❦", sealedHint: "", Panel: ChroniclePanel },
 ];

@@ -4,7 +4,12 @@ VAR trust_sera = false
 VAR trust_ilse = false
 VAR ng_plus = 0
 
-{ ending == "light": -> light | -> ash }
+{ ending:
+- "light": -> light
+- "ash": -> ash
+- "concord": -> concord
+- else: -> awakening
+}
 
 === light ===
 The snow melts in Vhal. For the first time in years the wind smells of earth instead of ash.
@@ -42,4 +47,32 @@ They lie down, one after another. Only one remains standing and looks at you –
 = march
 The dead turn east. Beyond the horizon lies a kingdom that has never heard of Vhal.
 Soon it will.
+-> END
+
+=== concord ===
+In the market square the new fountain splashes. A bishop, a count and a peasant argue over who paid for it.
+{ trust_sera: Sera mediates. She has the patience of a saint and a very large sword. }
++ [Settle the quarrel] -> settle
++ [Watch and eat bread] -> bread
+
+= settle
+You explain that you paid for it. All three agree at once that this cannot be true. Concord, at last.
+-> END
+
+= bread
+The bread is good. The quarrel lasts until vespers. Nobody dies. For Vhal that is a feast day.
+-> END
+
+=== awakening ===
+The ash lies still. For the first time you feel no pull back to the beginning.
+{ ng_plus > 0: For {ng_plus + 1} lifetimes you saved and burnt this land. This time you may simply stay. }
++ [Stay] -> stay
++ [Move on] -> moveon
+
+= stay
+You plant an apple tree beside Brannoc's grave. You will see it bear fruit.
+-> END
+
+= moveon
+You take nothing but a walking staff. Behind you the bell tolls though no one pulls it.
 -> END

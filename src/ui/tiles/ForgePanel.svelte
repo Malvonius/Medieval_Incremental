@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WorkshopSection from "./WorkshopSection.svelte";
   import { tx } from "../../i18n";
   import { loc } from "../../i18n/content";
   import { t } from "../../i18n";
@@ -90,6 +91,8 @@
 </section>
 
 <UpgradeList {game} {snap} tile="forge" />
+
+<WorkshopSection {game} {snap} />
 
 <style>
   .bar {

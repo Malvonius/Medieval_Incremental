@@ -474,6 +474,35 @@ export const STORY: readonly StoryNode[] = [
     effects: [{ kind: "setFlag", flag: "act5Complete" }],
   },
 
+  {
+    id: "a5_end_concord",
+    act: 5,
+    title: "Ende: Die Eintracht von Vhal",
+    text: [
+      "Die Männer des Bischofs legen ihre Banner nieder, der Graf legt seinen Handschuh nieder, und die Bauern legen ihre Mistgabeln nieder. Dann sehen alle dich an und erwarten eine Rede.",
+      "Du fasst dich kurz. Niemand wirft etwas. In Vhal gilt das als Triumph.",
+      "Den Stein vergräbst du unter dem Marktplatz, unter einem Brunnen, der meistens funktioniert. Kinder werfen Münzen hinein und wünschen sich Dinge, die die Toten nie hatten.",
+      "– Ende –",
+    ],
+    requires: ["a5_fall"],
+    trigger: (s) => s.siege.ending === "concord",
+    effects: [{ kind: "setFlag", flag: "act5Complete" }],
+  },
+  {
+    id: "a5_end_awakening",
+    act: 5,
+    title: "Ende: Das wahre Erwachen",
+    text: [
+      "Du erinnerst dich an jeden Frühling, jedes Feuer und jede Glocke. Der Stein erinnert sich auch, und zum ersten Mal hat er Angst.",
+      "Du zerbrichst ihn nicht, du nimmst ihn nicht. Du legst ihn einfach hin und gehst. Hinter dir zerfällt der Kreis aus Asche zu gewöhnlichem Staub.",
+      "Irgendwo erhält ein neuer Erbe einen Brief mit unversehrtem Siegel. Niemand in Vhal muss je wieder brennen.",
+      "– Wahres Ende –",
+    ],
+    requires: ["a5_fall"],
+    trigger: (s) => s.siege.ending === "awakening",
+    effects: [{ kind: "setFlag", flag: "act5Complete" }],
+  },
+
   // ── Neues Spiel+ und Epilog ─────────────────────────────────────────────────
   {
     id: "a1_memory",

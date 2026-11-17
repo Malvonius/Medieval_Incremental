@@ -51,7 +51,8 @@ export function sceneModel(s: DeepReadonly<GameState>): SceneModel {
     burning: s.ritual.performed > 0 && keep < 20,
     walls: Math.min(10, forts),
     dead: sieging ? Math.min(MAX_DEAD, 8 + s.siege.wave * 4) : 0,
-    ending: s.siege.ending,
+    // Eintracht und Erwachen sind helle Enden: dieselbe Szene wie das Licht.
+    ending: s.siege.ending === null ? null : s.siege.ending === "ash" ? "ash" : "light",
     weather: plague(s) ? "rain" : sieging || (flags.act4Complete && s.siege.ending === null) ? "snow" : "clear",
   };
 }

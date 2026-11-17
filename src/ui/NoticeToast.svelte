@@ -3,11 +3,13 @@
   import { tx } from "../i18n";
   import type { GameController } from "../app/controller";
   import { formatDuration, formatNumber } from "./format";
+  import { bi } from "../i18n/bi";
+  import { CODEX } from "../content/extensions";
 
   let { game }: { game: GameController } = $props();
 
   const notice = $derived(game.notice);
-  const DISMISS_MS = { offline: 12_000, info: 4_000, achievement: 4_000, error: 5_000 } as const;
+  const DISMISS_MS = { offline: 20_000, info: 4_000, achievement: 4_000, codex: 5_000, error: 5_000 } as const;
 
   $effect(() => {
     const current = $notice;
@@ -34,6 +36,20 @@
               gold: formatNumber(r.gains.gold),
             })}
       </p>
+      {@const lines = [
+        r.completions.expedition > 0 ? $tx("{n} Expeditionen kehrten heim.", { n: String(r.completions.expedition) }) : "",
+        r.completions.research > 0 ? $tx("{n} Forschungen wurden abgeschlossen.", { n: String(r.completions.research) }) : "",
+        r.completions.battle > 0 ? $tx("{n} Wellen wurden abgewehrt.", { n: String(r.completions.battle) }) : "",
+        r.buildings > 0 ? $tx("{n} Gebäude wurden errichtet.", { n: formatNumber(r.buildings) }) : "",
+        r.story.length > 0 ? $tx("{n} neue Kapitel warten auf dich.", { n: String(r.story.length) }) : "",
+        r.achievements.length + r.codex.length > 0 ? $tx("{n} Erfolge und Kodex-Einträge kamen hinzu.", { n: String(r.achievements.length + r.codex.length) }) : "",
+        r.eventPending ? $tx("Ein Ereignis wartet auf deine Entscheidung.") : "",
+      ].filter((line) => line !== "")}
+      {#if lines.length > 0}
+        <ul class="report">{#each lines as line (line)}<li>{line}</li>{/each}</ul>
+      {/if}
+    {:else if $notice.kind === "codex"}
+      <p>{$tx("Neuer Kodex-Eintrag:")} {$bi(CODEX[$notice.id].title)}</p>
     {:else if $notice.kind === "achievement"}
       <p>{$tx("Erfolg:")} {$loc.achievement($notice.id).name} (+1 % {$tx("Produktion")})</p>
     {:else}
@@ -44,6 +60,13 @@
 {/if}
 
 <style>
+  .report {
+    margin: 4px 0 0;
+    padding-left: 18px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
   .toast {
     position: fixed;
     right: 16px;

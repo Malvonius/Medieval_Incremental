@@ -6,6 +6,8 @@
   import { ashMultiplier } from "../../game/rates";
   import { ashGain, goldForNextAsh } from "../../game/ritual";
   import { formatNumber, formatPercent } from "../format";
+  import AutomationSection from "./AutomationSection.svelte";
+  import AscensionSection from "./AscensionSection.svelte";
   import { CHALLENGE_IDS, type ChallengeId, MEMORY_BONUS } from "../../content/depth";
 
   let { game }: { game: GameController } = $props();
@@ -77,6 +79,12 @@
     {/if}
   </div>
 </section>
+
+<AutomationSection {game} {snap} />
+
+{#if snap.state.flags.act5Complete || snap.state.meta.ascensions > 0 || snap.state.meta.embers > 0}
+  <AscensionSection {game} {snap} />
+{/if}
 
 {#if snap.state.flags.act5Complete || snap.state.meta.ngPlus > 0}
   <section class="panel-section">

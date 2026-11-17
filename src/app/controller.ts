@@ -1,4 +1,4 @@
-import { type Readable, type Writable, writable } from "svelte/store";
+import { type Readable, type Writable, get, writable } from "svelte/store";
 import { startLoop } from "../core/loop";
 import { RingBuffer } from "../core/ringBuffer";
 import type { AchievementId } from "../content/achievements";
@@ -9,7 +9,12 @@ import { settings } from "./settings";
 import type { DeepReadonly, Result } from "../core/types";
 import { GAP_THRESHOLD_SECONDS, TICK_SECONDS } from "../content/balance";
 import type { Action } from "../game/actions";
-import { type CatchUpReport, applyOfflineProgress, catchUp } from "../game/offline";
+import { type CatchUpReport, TIMELAPSE_MIN_SECONDS, applyOfflineProgress, awaySeconds, catchUp, offlineParams, reportFromPlain } from "../game/offline";
+import { fromPlain, toPlain } from "../game/serialize";
+import { type TimelapseResponse, spawnTimelapse } from "../game/timelapse";
+import type { CodexId } from "../content/extensions";
+import { RESOURCE_IDS, type ResourceId } from "../content/ids";
+import { recordFrom } from "../core/types";
 import {
   type KeyValueStorage,
   SLOT_KEY,
@@ -44,6 +49,7 @@ export type Notice =
   | { readonly kind: "offline"; readonly report: CatchUpReport }
   | { readonly kind: "info"; readonly message: string }
   | { readonly kind: "achievement"; readonly id: AchievementId }
+  | { readonly kind: "codex"; readonly id: CodexId }
   | { readonly kind: "error"; readonly message: string };
 
 /** Verlauf der Goldproduktion: ein Wert pro Spielminute, bis zu 8 Stunden. */
@@ -60,9 +66,16 @@ export class GameController {
   private autosaveHandle: ReturnType<typeof setInterval> | null = null;
   private unsubscribeSettings: () => void = () => {};
   private lastSampleMinute = -1;
-  private readonly historyBuffer = new RingBuffer<number>(HISTORY_MINUTES);
+  private readonly historyBuffer = new RingBuffer<Readonly<Record<ResourceId, number>>>(HISTORY_MINUTES);
   /** log10 der Goldproduktion je Spielminute, älteste zuerst. */
   readonly history = writable<readonly number[]>([]);
+  /** log10 der Produktion aller Ressourcen je Spielminute (Statistik-Diagramme). */
+  readonly historyAll = writable<readonly Readonly<Record<ResourceId, number>>[]>([]);
+  /** Fortschritt des Zeitraffers (simulierte / gesamte Sekunden) oder null. */
+  readonly timelapse = writable<{ readonly done: number; readonly total: number } | null>(null);
+  /** Solange der Zeitraffer läuft, steht die Simulation hier still. */
+  private paused = false;
+  private worker: Worker | null = null;
   private frame = 0;
   private readonly snapshotStore: Writable<Snapshot>;
 
@@ -92,10 +105,64 @@ export class GameController {
         message: `${loaded.error.message} Eine Kopie wurde gesichert; es beginnt ein neues Spiel.`,
       });
     } else if (loaded.kind === "loaded") {
-      const report = applyOfflineProgress(this.sim, now);
-      if (report) this.notice.set({ kind: "offline", report });
+      this.resumeOffline(now);
     }
     this.publish();
+  }
+
+  /**
+   * Offline-Fortschritt: kurze Abwesenheit sofort, lange im Zeitraffer-Worker, damit die
+   * Oberfläche bedienbar bleibt. Ohne Worker (Tests, alte Browser) synchron.
+   */
+  private resumeOffline(now: number): void {
+    const away = awaySeconds(this.sim.view, now);
+    if (away === null) return;
+    const { efficiency, cap } = offlineParams(this.sim.view);
+    const worker = Math.min(away, cap) * efficiency >= TIMELAPSE_MIN_SECONDS ? spawnTimelapse() : null;
+    if (worker === null) {
+      const report = applyOfflineProgress(this.sim, now);
+      if (report) this.notice.set({ kind: "offline", report });
+      return;
+    }
+    this.paused = true;
+    this.worker = worker;
+    this.timelapse.set({ done: 0, total: Math.min(away, cap) * efficiency });
+    const finish = (): void => this.cancelTimelapse();
+    worker.onmessage = (event: MessageEvent<TimelapseResponse>): void => {
+      const msg = event.data;
+      if (msg.type === "progress") {
+        this.timelapse.set({ done: msg.done, total: msg.total });
+        return;
+      }
+      finish();
+      if (msg.type === "error") {
+        const report = applyOfflineProgress(this.sim, this.clock());
+        if (report) this.notice.set({ kind: "offline", report });
+      } else {
+        this.sim = this.attach(fromPlain(msg.plain, this.clock()));
+        const report = reportFromPlain(msg.report);
+        const nodes = report.story.map((id) => this.sim.storyNode(id)).filter((n): n is StoryNode => n !== undefined);
+        this.storyQueue.update((q) => [...q, ...nodes]);
+        this.notice.set({ kind: "offline", report });
+      }
+      this.save();
+      this.publish();
+    };
+    worker.onerror = (): void => {
+      finish();
+      const report = applyOfflineProgress(this.sim, this.clock());
+      if (report) this.notice.set({ kind: "offline", report });
+      this.publish();
+    };
+    worker.postMessage({ plain: toPlain(this.sim.view), awaySeconds: away, now });
+  }
+
+  /** Beendet einen laufenden Zeitraffer, etwa beim Wechsel des Speicherplatzes. */
+  private cancelTimelapse(): void {
+    this.worker?.terminate();
+    this.worker = null;
+    this.paused = false;
+    this.timelapse.set(null);
   }
 
   get snapshot(): Readable<Snapshot> {
@@ -109,6 +176,10 @@ export class GameController {
     const offAchievement = sim.events.on("achievement", (id) =>
       this.notice.set({ kind: "achievement", id }),
     );
+    // Kodex-Einträge, die mit einer Story-Szene kommen, melden sich nicht extra – die Szene erzählt schon.
+    const offCodex = sim.events.on("codex", (id) => {
+      if (get(this.storyQueue).length === 0) this.notice.set({ kind: "codex", id });
+    });
     const offStoryCue = sim.events.on("story", () => audio.play("story"));
     const offCompleted = sim.events.on("completed", (completion) => notifyCompletion(completion));
     const offAction = sim.events.on("action", (type) => {
@@ -118,6 +189,7 @@ export class GameController {
     this.unsubscribeStory = () => {
       offStory();
       offAchievement();
+      offCodex();
       offStoryCue();
       offAction();
       offCompleted();
@@ -145,9 +217,11 @@ export class GameController {
     const minute = Math.floor(this.sim.view.stats.playSeconds / 60);
     if (minute === this.lastSampleMinute) return;
     this.lastSampleMinute = minute;
-    const rate = this.sim.rates.gold;
-    this.historyBuffer.push(rate.gt(0) ? rate.log10() : 0);
-    this.history.set(this.historyBuffer.toArray());
+    const rates = this.sim.rates;
+    this.historyBuffer.push(recordFrom(RESOURCE_IDS, (r) => (rates[r].gt(0) ? rates[r].log10() : 0)));
+    const all = this.historyBuffer.toArray();
+    this.historyAll.set(all);
+    this.history.set(all.map((sample) => sample.gold));
   }
 
   private readonly onVisibility = (): void => {
@@ -161,9 +235,13 @@ export class GameController {
     this.stopLoop = startLoop({
       tickSeconds: TICK_SECONDS,
       gapThresholdSeconds: GAP_THRESHOLD_SECONDS,
-      tick: (dt) => this.sim.tick(dt),
+      tick: (dt) => {
+        if (!this.paused) this.sim.tick(dt);
+      },
       // Tab war im Hintergrund: volle Effizienz, aber gleiche Obergrenze wie offline.
-      onGap: (seconds) => void catchUp(this.sim, seconds, 1),
+      onGap: (seconds) => {
+        if (!this.paused) void catchUp(this.sim, seconds, 1, offlineParams(this.sim.view).cap);
+      },
       render: () => this.publish(),
     });
     const offLocale = locale.subscribe((lang) => {
@@ -174,6 +252,7 @@ export class GameController {
       setNotation(s.notation);
       audio.apply(s);
       document.documentElement.toggleAttribute("data-reduce-motion", s.reduceMotion);
+      document.documentElement.dataset["scheme"] = s.scheme;
       if (this.autosaveHandle !== null) clearInterval(this.autosaveHandle);
       this.autosaveHandle = setInterval(() => this.save(), s.autosaveSeconds * 1000);
       this.publish();
@@ -197,6 +276,7 @@ export class GameController {
   }
 
   dispatch(action: Action): Result {
+    if (this.paused) return { ok: false, reason: "Die Zeit läuft gerade im Zeitraffer." };
     const result = this.sim.dispatch(action);
     if (result.ok) this.publish();
     else this.notice.set({ kind: "error", message: result.reason });
@@ -216,6 +296,8 @@ export class GameController {
   }
 
   save(): void {
+    // Während des Zeitraffers würde ein Speichern die noch nicht simulierte Abwesenheit verwerfen.
+    if (this.paused) return;
     this.sim.touch(this.clock());
     try {
       writeSave(this.storage, this.sim.view, this.currentSlot);
@@ -271,6 +353,7 @@ export class GameController {
   switchSlot(slot: SlotNumber): void {
     if (slot === this.currentSlot) return;
     this.save();
+    this.cancelTimelapse();
     this.slotCache.clear();
     this.currentSlot = slot;
     this.slot.set(slot);
@@ -279,11 +362,10 @@ export class GameController {
     const loaded = readSave(this.storage, now, slot);
     this.storyQueue.set([]);
     this.sim = this.attach(loaded.kind === "loaded" ? loaded.state : createInitialState(now));
-    const report = loaded.kind === "loaded" ? applyOfflineProgress(this.sim, now) : null;
+    if (loaded.kind === "corrupt") this.notice.set({ kind: "error", message: loaded.error.message });
+    else if (loaded.kind === "loaded") this.resumeOffline(now);
     this.save();
     this.publish();
-    if (loaded.kind === "corrupt") this.notice.set({ kind: "error", message: loaded.error.message });
-    else if (report) this.notice.set({ kind: "offline", report });
   }
 
   reset(): void {
@@ -292,6 +374,7 @@ export class GameController {
   }
 
   private replaceState(state: GameState, message: string): void {
+    this.cancelTimelapse();
     this.storyQueue.set([]);
     this.sim = this.attach(state);
     this.save();

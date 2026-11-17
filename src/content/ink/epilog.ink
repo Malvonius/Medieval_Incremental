@@ -4,7 +4,12 @@ VAR trust_sera = false
 VAR trust_ilse = false
 VAR ng_plus = 0
 
-{ ending == "light": -> licht | -> asche }
+{ ending:
+- "light": -> licht
+- "ash": -> asche
+- "concord": -> eintracht
+- else: -> erwachen
+}
 
 === licht ===
 Der Schnee schmilzt in Vhal. Zum ersten Mal seit Jahren riecht der Wind nach Erde statt nach Asche.
@@ -42,4 +47,32 @@ Sie legen sich nieder, einer nach dem anderen. Nur einer bleibt stehen und sieht
 = marsch
 Die Toten wenden sich nach Osten. Hinter dem Horizont liegt ein Königreich, das noch nie von Vhal gehört hat.
 Bald wird es von Vhal hören. Sehr bald.
+-> END
+
+=== eintracht ===
+Auf dem Marktplatz plätschert der neue Brunnen. Ein Bischof, ein Graf und ein Bauer streiten darüber, wer ihn bezahlt hat.
+{ trust_sera: Sera schlichtet. Sie hat dafür eine Engelsgeduld und ein sehr großes Schwert. }
++ [Den Streit schlichten] -> schlichten
++ [Zusehen und Brot essen] -> brot
+
+= schlichten
+Du erklärst, dass du ihn bezahlt hast. Alle drei sind sich sofort einig, dass das nicht stimmen kann. Eintracht, endlich.
+-> END
+
+= brot
+Das Brot ist gut. Der Streit dauert bis zur Vesper. Niemand stirbt. Für Vhal ist das ein Festtag.
+-> END
+
+=== erwachen ===
+Die Asche liegt still. Zum ersten Mal spürst du keinen Sog zurück an den Anfang.
+{ ng_plus > 0: {ng_plus + 1} Leben lang hast du dieses Land gerettet und verbrannt. Dieses Mal darfst du einfach bleiben. }
++ [Bleiben] -> bleiben
++ [Weiterziehen] -> weiter
+
+= bleiben
+Du pflanzt einen Apfelbaum neben Brannocs Grab. Du wirst sehen, wie er Früchte trägt.
+-> END
+
+= weiter
+Du nimmst nur einen Wanderstab mit. Hinter dir läutet die Glocke, ohne dass jemand sie zieht.
 -> END

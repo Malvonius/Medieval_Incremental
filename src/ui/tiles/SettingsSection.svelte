@@ -2,7 +2,41 @@
   import { audio } from "../../app/audio";
   import { requestNotifications } from "../../app/notifications";
   import { LOCALES, type Locale, locale, t, tx } from "../../i18n";
-  import { type Notation, settings, updateSettings } from "../../app/settings";
+  import { COMMAND_IDS, type CommandId, DEFAULT_KEYS, type Notation, settings, updateSettings } from "../../app/settings";
+  import { voiceSupported } from "../../app/voice";
+
+  const COMMAND_NAMES: Readonly<Record<CommandId, string>> = {
+    collect: "Steuern eintreiben",
+    save: "Speichern",
+    prevTile: "Voriger Ort",
+    nextTile: "Nächster Ort",
+  };
+  let listening = $state<CommandId | null>(null);
+  let keyError = $state("");
+  const keyLabel = (key: string): string => (key === " " ? "Leertaste" : key.length === 1 ? key.toUpperCase() : key);
+
+  /** Nimmt die nächste Taste als neue Belegung; Ziffern bleiben den Orten vorbehalten, Escape bricht ab. */
+  function capture(event: KeyboardEvent, id: CommandId): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.key === "Escape" || event.key === "Tab") {
+      listening = null;
+      return;
+    }
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    if (/^[0-9]$/.test(key)) {
+      keyError = "Ziffern wählen Orte und sind nicht belegbar.";
+      return;
+    }
+    const taken = COMMAND_IDS.find((other) => other !== id && $settings.keys[other] === key);
+    if (taken) {
+      keyError = "Diese Taste ist schon belegt.";
+      return;
+    }
+    keyError = "";
+    listening = null;
+    updateSettings({ keys: { ...$settings.keys, [id]: key } });
+  }
 
   const AUTOSAVE = [15, 30, 60] as const;
   let notifyBlocked = $state(false);
@@ -80,8 +114,31 @@
     </label>
     <button class="btn" disabled={$settings.hintsSeen.length === 0} onclick={() => updateSettings({ hintsSeen: [] })}>{$tx("Tipps wieder anzeigen")}</button>
   </div>
+  <div class="grid">
+    <label class="check">
+      <input type="checkbox" checked={$settings.voice} disabled={!voiceSupported()} onchange={(e) => updateSettings({ voice: e.currentTarget.checked })} />
+      <span>{$tx("Szenen vorlesen")}</span>
+    </label>
+  </div>
+  <h4>{$tx("Tastenbelegung")}</h4>
+  <ul class="keys">
+    {#each COMMAND_IDS as id (id)}
+      <li>
+        <span>{$tx(COMMAND_NAMES[id])}</span>
+        {#if listening === id}
+          <button class="btn listening" data-capture-keys onkeydown={(e) => capture(e, id)} onblur={() => (listening = null)}>{$tx("Taste drücken …")}</button>
+        {:else}
+          <button class="btn" onclick={(e) => { listening = id; keyError = ""; const el = e.currentTarget; queueMicrotask(() => el.parentElement?.querySelector<HTMLButtonElement>("[data-capture-keys]")?.focus()); }}>
+            <kbd>{$tx(keyLabel($settings.keys[id]))}</kbd>
+          </button>
+        {/if}
+      </li>
+    {/each}
+  </ul>
+  <button class="btn" onclick={() => updateSettings({ keys: DEFAULT_KEYS })}>{$tx("Standardbelegung")}</button>
+  {#if keyError}<p class="hint">{$tx(keyError)}</p>{/if}
   {#if notifyBlocked}<p class="hint">{$tx("Benachrichtigungen wurden vom Browser blockiert.")}</p>{/if}
-  <p class="hint">{$tx("Tastatur:")} <kbd>1</kbd>–<kbd>9</kbd> {$tx("wählt einen Ort,")} <kbd>{$tx("Leertaste")}</kbd> {$tx("treibt Steuern ein.")}</p>
+  <p class="hint">{$tx("Tastatur:")} <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> {$tx("wählt einen Ort, Pfeiltasten wandern durch das Kachelraster.")} {$tx("Gamepad: Steuerkreuz bewegt, A wählt, B schließt, X treibt Steuern ein.")}</p>
 </section>
 
 <style>
@@ -122,6 +179,33 @@
     color: var(--text-muted);
     font-size: 0.82rem;
     margin: 10px 0 0;
+  }
+
+  h4 {
+    font-family: var(--font-display);
+    font-weight: normal;
+    margin: 14px 0 6px;
+  }
+
+  .keys {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px;
+  }
+
+  .keys li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+
+  .listening {
+    border-color: var(--focus);
   }
 
   kbd {

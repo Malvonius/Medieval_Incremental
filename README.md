@@ -53,6 +53,24 @@ Der Test `src/sim/bot.test.ts` schlägt fehl, wenn der Bot Akt I nicht in 32–5
 in 88–128 min, Akt III nicht in 158–232 min, Akt IV nicht in 228–336 min oder das Spiel nicht in 292–400 min
 (jeweils Gesamtzeit) abschließt. Ein Bot-Ende bei ≈ 361 min entspricht ≈ 8 h für Menschen.
 
+## Systeme nach dem Ende
+
+| System | Ort | Kern |
+| --- | --- | --- |
+| Aschen-Automaten | Ritual der Asche | Ab dem 1./2./3. Ritual: Verbesserungen, Gebäude, Schmiede, Rekruten; Kaufschwelle in % des Vorrats |
+| Aufstieg & Talentbaum | Ritual der Asche | Nach einem Ende: Erinnerungen + Asche → Glut; 10 Talente als DAG (`content/extensions.ts`) |
+| Ruf | Rittersaal | Kirche, Adel, Volk (−100…+100); Segen ab +50, Fluch ab −50, Rivalität beim Umwerben |
+| Gefolge | Rittersaal | 6 Gefolgsleute, 5 Ämter (je eine Ressource), Stufen, Wunschamt ×2, Ausrüstung ×1,5 |
+| Ländereien | Kriegsrat | 5×5-Karte, Eroberung angrenzender Felder kostet Soldaten, +8 % je Feld; Grenzereignisse |
+| Werkstatt-Kette | Schmiede | Erz → Barren → Klingen → Schwerter, Engpass-Anzeige |
+| Enden | Belagerung | Zusätzlich: Eintracht (geheim, Ruf ≥ 60 überall) und Wahres Erwachen (alle anderen Enden gesehen) |
+| Kodex, Statistik, Wappen | Chronik | 16 Lore-Einträge (bleiben über Neustarts), SVG-Diagramme, Wappen-Editor und Farbschemata als Erfolgsbelohnung |
+
+Weitere Technik: Offline-Zeitraffer im Web Worker (`game/catchup.worker.ts`) mit Bericht, gebündelte Partikel
+(`ParticleContainer`) und gecachte statische Szene, frei belegbare Tasten und Gamepad-Steuerung
+(`app/gamepad.ts`), Vorlesen per Web Speech API (`app/voice.ts`), Export als Datei oder mehrteiliger QR-Code.
+Keines dieser Systeme wird vom Bot genutzt; die Pacing-Messung (~6 h Bot ≈ 8 h Mensch) bleibt unverändert.
+
 ## Roadmap
 
 | Akt | Inhalt | Kacheln |
