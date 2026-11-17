@@ -72,6 +72,20 @@ describe("Aschen-Automaten", () => {
     expect(s.view.buildings.serf).toBe(count);
   });
 
+  it("schmieden ausgewählte Rezepte automatisch, sobald die Rohstoffe reichen", () => {
+    const s = sim((st) => {
+      st.tiles.forge = true;
+      st.resources.gold = new Decimal(400 * 3);
+      st.resources.iron = new Decimal(30 * 3);
+    });
+    s.tick(1);
+    expect(s.view.forge.queue.length).toBe(0);
+    expect(s.dispatch({ type: "setRecipeAuto", recipe: "sword", enabled: true }).ok).toBe(true);
+    s.tick(1);
+    expect(s.view.forge.queue.length).toBe(3);
+    expect(s.view.resources.iron.toNumber()).toBe(0);
+  });
+
   it("verweigern noch unsichtbare Gebäude", () => {
     const s = sim();
     expect(s.dispatch({ type: "setBuildingAuto", building: "bell_tower", enabled: true }).ok).toBe(false);
@@ -294,6 +308,7 @@ describe("Speichern der Erweiterungen", () => {
       st.workshop.ore = 1.5;
       st.autobuy.threshold = 0.3;
       st.autobuy.picks.serf = true;
+      st.autobuy.recipePicks.sword = true;
     });
     const back = importSave(exportSave(s.view), 0);
     expect(back.meta.embers).toBe(4);
@@ -306,5 +321,6 @@ describe("Speichern der Erweiterungen", () => {
     expect(back.workshop.ore).toBe(1.5);
     expect(back.autobuy.threshold).toBe(0.3);
     expect(back.autobuy.picks.serf).toBe(true);
+    expect(back.autobuy.recipePicks.sword).toBe(true);
   });
 });

@@ -132,4 +132,5 @@ export const UI_EXT_EN: Readonly<Record<string, string>> = {
   "Auto": "Auto",
   "Dieses Gebäude ist noch nicht verfügbar.": "This building is not available yet.",
   "Automatisch kaufen, sobald genug im Vorrat ist.": "Buy automatically as soon as you can afford it.",
+  "Automatisch schmieden, sobald die Rohstoffe reichen": "Forge automatically as soon as you have the materials",
 };

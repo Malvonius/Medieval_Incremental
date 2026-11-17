@@ -1,7 +1,7 @@
 import { Decimal } from "../core/decimal";
 import { bulkCost } from "../core/economy";
 import { type DeepReadonly, type Result, OK, fail } from "../core/types";
-import { BUILDINGS, BUILDING_IDS, type BuildingId, RECIPE_IDS, RECRUIT_SWORDS, UPGRADES, UPGRADE_IDS, WAVES, type EndingId } from "../content/balance";
+import { BUILDINGS, BUILDING_IDS, type BuildingId, RECIPES, RECIPE_IDS, type RecipeId, RECRUIT_SWORDS, UPGRADES, UPGRADE_IDS, WAVES, type EndingId } from "../content/balance";
 import {
   AUTOMATION_INTERVAL,
   AUTOMATION_MAX_BUYS,
@@ -80,6 +80,13 @@ export function setBuildingAuto(state: GameState, id: BuildingId, enabled: boole
   return OK;
 }
 
+/** Rezept zum automatischen Schmieden aus- oder abwählen. */
+export function setRecipeAuto(state: GameState, id: RecipeId, enabled: boolean): Result {
+  if (enabled && !state.tiles[RECIPES[id].tile]) return fail("Die Schmiede ist noch nicht zugänglich.");
+  state.autobuy.recipePicks[id] = enabled;
+  return OK;
+}
+
 export function setAutoThreshold(state: GameState, threshold: number): Result {
   if (!(threshold > 0 && threshold <= 1)) return fail("Die Schwelle muss zwischen 1 und 100 % liegen.");
   state.autobuy.threshold = threshold;
@@ -129,9 +136,11 @@ function autoBuildings(state: GameState, all: boolean): boolean {
   return bought;
 }
 
-function autoForge(state: GameState): boolean {
+/** Füllt die Warteschlange: mit allen Rezepten (Glutgeselle) oder nur mit den ausgewählten. */
+function autoForge(state: GameState, all: boolean): boolean {
   let queued = false;
   for (const recipe of RECIPE_IDS) {
+    if (!all && !state.autobuy.recipePicks[recipe]) continue;
     while (state.forge.queue.length < forgeCapacity(state) && canAffordRecipe(state, recipe, 1)) {
       if (!enqueueCraft(state, recipe, 1).ok) break;
       queued = true;
@@ -159,7 +168,8 @@ export function tickAutobuy(state: GameState, dt: number): boolean {
   if (active(state, "upgrades")) changed = autoUpgrades(state) || changed;
   const all = active(state, "buildings");
   if (all || BUILDING_IDS.some((id) => state.autobuy.picks[id])) changed = autoBuildings(state, all) || changed;
-  if (active(state, "forge") && state.tiles.forge) changed = autoForge(state) || changed;
+  const allRecipes = active(state, "forge");
+  if (state.tiles.forge && (allRecipes || RECIPE_IDS.some((r) => state.autobuy.recipePicks[r]))) changed = autoForge(state, allRecipes) || changed;
   if (active(state, "recruit") && state.tiles.warroom) changed = autoRecruit(state) || changed;
   return changed;
 }
