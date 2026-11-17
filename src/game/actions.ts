@@ -32,6 +32,7 @@ import {
   logRun,
   setAutoThreshold,
   setAutomator,
+  setBuildingAuto,
   upgradeStation,
 } from "./extensions";
 import { DECISIONS } from "../content/depth";
@@ -86,6 +87,7 @@ export type Action =
   | { readonly type: "newGamePlus"; readonly challenge: ChallengeId | null }
   | { readonly type: "setAutomator"; readonly automator: AutomatorId; readonly enabled: boolean }
   | { readonly type: "setAutoThreshold"; readonly threshold: number }
+  | { readonly type: "setBuildingAuto"; readonly building: BuildingId; readonly enabled: boolean }
   | { readonly type: "ascend" }
   | { readonly type: "buyTalent"; readonly talent: TalentId }
   | { readonly type: "court"; readonly faction: FactionId }
@@ -179,6 +181,8 @@ export function applyAction(state: GameState, action: Exclude<Action, { type: "r
       return newGamePlus(state, action.challenge);
     case "setAutomator":
       return setAutomator(state, action.automator, action.enabled);
+    case "setBuildingAuto":
+      return setBuildingAuto(state, action.building, action.enabled);
     case "setAutoThreshold":
       return setAutoThreshold(state, action.threshold);
     case "ascend":

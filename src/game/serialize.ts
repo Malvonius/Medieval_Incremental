@@ -80,7 +80,7 @@ export function toPlain(state: DeepReadonly<GameState>) {
       codex: { ...state.meta.codex },
       runLog: state.meta.runLog.map((r) => ({ ...r })),
     },
-    autobuy: { enabled: { ...state.autobuy.enabled }, threshold: state.autobuy.threshold, timer: state.autobuy.timer },
+    autobuy: { enabled: { ...state.autobuy.enabled }, picks: { ...state.autobuy.picks }, threshold: state.autobuy.threshold, timer: state.autobuy.timer },
     factions: { rep: { ...state.factions.rep }, courted: { ...state.factions.courted } },
     retinue: Object.fromEntries(Object.entries(state.retinue).map(([k, v]) => [k, v === null ? null : { ...v }])),
     map: { owned: [...state.map.owned] },
@@ -242,6 +242,7 @@ function readAutobuy(source: Record<string, unknown>, defaults: GameState["autob
   if (threshold <= 0 || threshold > 1) throw new SaveError('Feld "autobuy.threshold" muss in (0, 1] liegen.');
   return {
     enabled: readRecord(section(source, "enabled"), defaults.enabled, "autobuy.enabled", readBoolean),
+    picks: readRecord(section(source, "picks"), defaults.picks, "autobuy.picks", readBoolean),
     threshold,
     timer: readNumber(source["timer"], "autobuy.timer", 0),
   };

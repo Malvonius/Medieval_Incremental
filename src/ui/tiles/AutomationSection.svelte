@@ -4,10 +4,10 @@
   import type { GameController, Snapshot } from "../../app/controller";
   import { AUTOMATORS, AUTOMATOR_IDS } from "../../content/extensions";
   import { automatorUnlocked } from "../../game/extensions";
+  import AutoThreshold from "./AutoThreshold.svelte";
 
   let { game, snap }: { game: GameController; snap: Snapshot } = $props();
 
-  const percent = $derived(Math.round(snap.state.autobuy.threshold * 100));
 </script>
 
 <section class="panel-section">
@@ -30,16 +30,7 @@
       </li>
     {/each}
   </ul>
-  <label class="threshold">
-    <span>{$tx("Kaufen, wenn die Kosten höchstens {p} % des Vorrats betragen", { p: String(percent) })}</span>
-    <input
-      type="range"
-      min="1"
-      max="100"
-      value={percent}
-      onchange={(e) => game.dispatch({ type: "setAutoThreshold", threshold: Number(e.currentTarget.value) / 100 })}
-    />
-  </label>
+  <AutoThreshold {game} {snap} />
 </section>
 
 <style>
@@ -65,9 +56,4 @@
     color: var(--text-faint);
   }
 
-  .threshold {
-    display: grid;
-    gap: 4px;
-    margin-top: 8px;
-  }
 </style>

@@ -129,4 +129,9 @@ export const UI_EXT_EN: Readonly<Record<string, string>> = {
   "Lager": "Stock",
   "Ausbauen": "Upgrade",
   "Hinter der Tür streiten Stimmen über Erbrecht.": "Behind the door, voices argue about inheritance law.",
+  "Auto": "Auto",
+  "Automatisch kaufen, sobald die Kosten höchstens {p} % des Vorrats betragen (Schwelle in der Chronik).": "Buy automatically once the cost is at most {p} % of your stock (threshold in the Chronicle).",
+  "Automatischer Kauf": "Automatic buying",
+  "Setz bei einem Gebäude das Häkchen „Auto“, dann kauft Vhal es selbst, sobald es günstig genug ist.": "Tick “Auto” on a building and Vhal buys it by itself once it is cheap enough.",
+  "Dieses Gebäude ist noch nicht verfügbar.": "This building is not available yet.",
 };

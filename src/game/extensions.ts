@@ -1,7 +1,7 @@
 import { Decimal } from "../core/decimal";
 import { bulkCost } from "../core/economy";
 import { type DeepReadonly, type Result, OK, fail } from "../core/types";
-import { BUILDINGS, BUILDING_IDS, RECIPE_IDS, RECRUIT_SWORDS, UPGRADES, UPGRADE_IDS, WAVES, type EndingId } from "../content/balance";
+import { BUILDINGS, BUILDING_IDS, type BuildingId, RECIPE_IDS, RECRUIT_SWORDS, UPGRADES, UPGRADE_IDS, WAVES, type EndingId } from "../content/balance";
 import {
   AUTOMATION_INTERVAL,
   AUTOMATION_MAX_BUYS,
@@ -73,6 +73,13 @@ export function setAutomator(state: GameState, id: AutomatorId, enabled: boolean
   return OK;
 }
 
+/** Einzelnes Gebäude zum automatischen Kauf aus- oder abwählen; sichtbar muss es sein. */
+export function setBuildingAuto(state: GameState, id: BuildingId, enabled: boolean): Result {
+  if (enabled && !isBuildingVisible(state, id)) return fail("Dieses Gebäude ist noch nicht verfügbar.");
+  state.autobuy.picks[id] = enabled;
+  return OK;
+}
+
 export function setAutoThreshold(state: GameState, threshold: number): Result {
   if (!(threshold > 0 && threshold <= 1)) return fail("Die Schwelle muss zwischen 1 und 100 % liegen.");
   state.autobuy.threshold = threshold;
@@ -96,13 +103,16 @@ function autoUpgrades(state: GameState): boolean {
   return bought;
 }
 
-/** Kauft je Durchlauf das relativ günstigste Gebäude, bis nichts mehr unter die Schwelle fällt. */
-function autoBuildings(state: GameState): boolean {
+/**
+ * Kauft je Durchlauf das relativ günstigste Gebäude, bis nichts mehr unter die Schwelle fällt.
+ * `all` = Aschenbaumeister aktiv (alle Gebäude), sonst nur die einzeln ausgewählten.
+ */
+function autoBuildings(state: GameState, all: boolean): boolean {
   let bought = false;
   for (let i = 0; i < AUTOMATION_MAX_BUYS; i += 1) {
-    let best: { id: (typeof BUILDING_IDS)[number]; share: number; cost: Decimal } | null = null;
+    let best: { id: BuildingId; share: number; cost: Decimal } | null = null;
     for (const id of BUILDING_IDS) {
-      if (!isBuildingVisible(state, id)) continue;
+      if (!(all || state.autobuy.picks[id]) || !isBuildingVisible(state, id)) continue;
       const stock = state.resources[BUILDINGS[id].costResource];
       const cost = buildingCost(state, id, 1);
       if (!withinThreshold(state, cost, stock)) continue;
@@ -145,7 +155,8 @@ export function tickAutobuy(state: GameState, dt: number): boolean {
   state.autobuy.timer = 0;
   let changed = false;
   if (active(state, "upgrades")) changed = autoUpgrades(state) || changed;
-  if (active(state, "buildings")) changed = autoBuildings(state) || changed;
+  const all = active(state, "buildings");
+  if (all || BUILDING_IDS.some((id) => state.autobuy.picks[id])) changed = autoBuildings(state, all) || changed;
   if (active(state, "forge") && state.tiles.forge) changed = autoForge(state) || changed;
   if (active(state, "recruit") && state.tiles.warroom) changed = autoRecruit(state) || changed;
   return changed;
