@@ -9,6 +9,7 @@ import {
   type ExpeditionId,
   FORTIFICATION_IDS,
   type FortificationId,
+  RECIPE_IDS,
   RESEARCH_IDS,
   type RecipeId,
   type ResearchId,
@@ -127,6 +128,8 @@ export interface AutobuyState {
   enabled: Record<AutomatorId, boolean>;
   /** Gebäude, die einzeln zum automatischen Kauf ausgewählt sind – ohne Ritual verfügbar. */
   picks: Record<BuildingId, boolean>;
+  /** Schmiede-Rezepte, die automatisch in die Warteschlange kommen, sobald die Rohstoffe reichen. */
+  recipePicks: Record<RecipeId, boolean>;
   /** Kaufen, wenn Kosten ≤ threshold × Vorrat (0 < threshold ≤ 1). */
   threshold: number;
   timer: number;
@@ -217,7 +220,7 @@ export function createInitialState(now: number): GameState {
       codex: recordFrom(CODEX_IDS, () => false),
       runLog: [],
     },
-    autobuy: { enabled: recordFrom(AUTOMATOR_IDS, () => false), picks: recordFrom(BUILDING_IDS, () => false), threshold: AUTOMATION_DEFAULT_THRESHOLD, timer: 0 },
+    autobuy: { enabled: recordFrom(AUTOMATOR_IDS, () => false), picks: recordFrom(BUILDING_IDS, () => false), recipePicks: recordFrom(RECIPE_IDS, () => false), threshold: AUTOMATION_DEFAULT_THRESHOLD, timer: 0 },
     factions: { rep: recordFrom(FACTION_IDS, () => 0), courted: recordFrom(FACTION_IDS, () => 0) },
     retinue: recordFrom(RETAINER_IDS, () => null),
     map: { owned: [MAP_CENTER] },

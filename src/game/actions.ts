@@ -33,6 +33,7 @@ import {
   setAutoThreshold,
   setAutomator,
   setBuildingAuto,
+  setRecipeAuto,
   upgradeStation,
 } from "./extensions";
 import { DECISIONS } from "../content/depth";
@@ -88,6 +89,7 @@ export type Action =
   | { readonly type: "setAutomator"; readonly automator: AutomatorId; readonly enabled: boolean }
   | { readonly type: "setAutoThreshold"; readonly threshold: number }
   | { readonly type: "setBuildingAuto"; readonly building: BuildingId; readonly enabled: boolean }
+  | { readonly type: "setRecipeAuto"; readonly recipe: RecipeId; readonly enabled: boolean }
   | { readonly type: "ascend" }
   | { readonly type: "buyTalent"; readonly talent: TalentId }
   | { readonly type: "court"; readonly faction: FactionId }
@@ -183,6 +185,8 @@ export function applyAction(state: GameState, action: Exclude<Action, { type: "r
       return setAutomator(state, action.automator, action.enabled);
     case "setBuildingAuto":
       return setBuildingAuto(state, action.building, action.enabled);
+    case "setRecipeAuto":
+      return setRecipeAuto(state, action.recipe, action.enabled);
     case "setAutoThreshold":
       return setAutoThreshold(state, action.threshold);
     case "ascend":

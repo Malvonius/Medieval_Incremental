@@ -78,6 +78,14 @@
       >
         {$tx("Warteschlange füllen")}{fillable >= 2 ? ` (×${fillable})` : ""}
       </button>
+      <label class="auto" class:on={snap.state.autobuy.recipePicks.sword}>
+        <input
+          type="checkbox"
+          checked={snap.state.autobuy.recipePicks.sword}
+          onchange={(e) => game.dispatch({ type: "setRecipeAuto", recipe: "sword", enabled: e.currentTarget.checked })}
+        />
+        {$tx("Automatisch schmieden, sobald die Rohstoffe reichen")}
+      </label>
     </div>
   </div>
 </section>
@@ -95,6 +103,19 @@
 <WorkshopSection {game} {snap} />
 
 <style>
+  .auto {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .auto.on {
+    color: var(--gold);
+  }
+
   .bar {
     display: flex;
     align-items: center;
