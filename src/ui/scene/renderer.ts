@@ -25,6 +25,16 @@ const C = {
   gold: 0xd4a54a,
 } as const;
 
+/** Länge eines Spieltags in Sekunden (Echtzeit). */
+const DAY_SECONDS = 240;
+/** Tageshimmel (oben, Horizont), in den je nach Tageszeit überblendet wird. */
+const DAY_SKY: readonly [number, number] = [0x4f6f94, 0xc9a477];
+
+const lerpColor = (a: number, b: number, t: number): number => {
+  const ch = (shift: number): number => Math.round(((a >> shift) & 255) + ((((b >> shift) & 255) - ((a >> shift) & 255)) * t));
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+};
+
 interface Particle {
   x: number;
   y: number;
@@ -33,7 +43,9 @@ interface Particle {
   life: number;
   color: number;
   size: number;
-  grow: number;
+  readonly grow: number;
+  /** Regentropfen werden als Strich gezeichnet. */
+  readonly streak?: boolean;
 }
 
 /** Deterministischer Pseudozufall je Index: Häuser sehen bei jedem Neuzeichnen gleich aus. */
@@ -48,7 +60,9 @@ const hash = (i: number): number => {
  */
 export class SceneRenderer {
   private readonly app = new Application();
+  private readonly sky = new Graphics();
   private readonly world = new Graphics();
+  private readonly gradients = new Map<string, FillGradient>();
   private readonly anim = new Graphics();
   private readonly fx = new Graphics();
   private particles: Particle[] = [];
@@ -59,7 +73,7 @@ export class SceneRenderer {
   async init(host: HTMLElement): Promise<void> {
     await this.app.init({ resizeTo: host, backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: devicePixelRatio });
     host.appendChild(this.app.canvas);
-    this.app.stage.addChild(this.world, this.anim, this.fx);
+    this.app.stage.addChild(this.sky, this.world, this.anim, this.fx);
     this.app.renderer.on("resize", () => this.draw());
     this.app.ticker.add((t) => this.step(t.deltaMS / 1000));
   }
@@ -93,7 +107,7 @@ export class SceneRenderer {
     const m = this.model;
     if (!m) return;
     const g = this.world.clear();
-    this.drawSky(g, m);
+    this.gradients.clear();
     this.drawLand(g);
     this.drawKeep(g, m);
     this.drawHouses(g, m);
@@ -105,21 +119,53 @@ export class SceneRenderer {
     this.drawAnim();
   }
 
-  private drawSky(g: Graphics, m: SceneModel): void {
+  /** 0 = Mitternacht, 0,5 = Mittag. Ohne Animation bleibt es Nacht. */
+  private get phase(): number {
+    return this.animate ? (this.time / DAY_SECONDS + 0.75) % 1 : 0;
+  }
+
+  /** 1 = tiefe Nacht, 0 = heller Tag; Wetter und späte Akte dämpfen das Tageslicht. */
+  private night(m: SceneModel): number {
+    const daylight = (1 - Math.cos(this.phase * Math.PI * 2)) / 2;
+    const cap = m.weather === "clear" ? 1 - (m.act - 1) * 0.12 : 0.45;
+    return 1 - daylight * Math.max(0.2, cap);
+  }
+
+  private drawSky(m: SceneModel): void {
     const { w, h } = this.size;
-    const [top, bottom] = m.ending === "light" ? [0x2a3346, 0x8a6a42] : (SKY[m.act - 1] ?? [0x141a2a, 0x3a2a26]);
-    const sky = new FillGradient(0, 0, 0, h);
-    sky.addColorStop(0, top);
-    sky.addColorStop(1, bottom);
-    g.rect(0, 0, w, h).fill(sky);
-    const moonRed = m.act >= 5 && m.ending !== "light";
-    const mx = w * 0.88;
-    const my = h * 0.24;
-    const r = h * 0.09;
-    for (let i = 4; i >= 1; i -= 1) g.circle(mx, my, r * (1 + i * 0.35)).fill({ color: moonRed ? 0xa3302a : 0xd8cfb8, alpha: 0.04 });
-    g.circle(mx, my, r).fill(moonRed ? 0xb8402f : 0xe2d9c2);
-    g.circle(mx - r * 0.3, my - r * 0.2, r * 0.18).fill({ color: 0x000000, alpha: 0.08 });
-    g.circle(mx + r * 0.25, my + r * 0.3, r * 0.12).fill({ color: 0x000000, alpha: 0.08 });
+    const g = this.sky.clear();
+    const [nTop, nBottom] = m.ending === "light" ? [0x2a3346, 0x8a6a42] : (SKY[m.act - 1] ?? [0x141a2a, 0x3a2a26]);
+    const step = Math.round((1 - this.night(m)) * 32) / 32;
+    // Verläufe werden je Helligkeitsstufe zwischengespeichert statt jedes Frame neu erzeugt.
+    const key = `${m.act}-${m.ending}-${step}-${h}`;
+    let gradient = this.gradients.get(key);
+    if (!gradient) {
+      gradient = new FillGradient(0, 0, 0, h);
+      gradient.addColorStop(0, lerpColor(nTop, DAY_SKY[0], step));
+      gradient.addColorStop(1, lerpColor(nBottom, DAY_SKY[1], step));
+      this.gradients.set(key, gradient);
+    }
+    g.rect(0, 0, w, h).fill(gradient);
+
+    // Sonne und Mond auf gegenüberliegenden Bahnen
+    const arc = (offset: number): { x: number; y: number; up: number } => {
+      const a = (this.phase + offset) * Math.PI * 2;
+      return { x: w * (0.5 - Math.sin(a) * 0.42), y: h * (0.62 + Math.cos(a) * 0.5), up: -Math.cos(a) };
+    };
+    const r = h * 0.08;
+    const moon = arc(0);
+    if (moon.up > -0.2) {
+      const red = m.act >= 5 && m.ending !== "light";
+      for (let i = 4; i >= 1; i -= 1) g.circle(moon.x, moon.y, r * (1 + i * 0.35)).fill({ color: red ? 0xa3302a : 0xd8cfb8, alpha: 0.04 });
+      g.circle(moon.x, moon.y, r).fill(red ? 0xb8402f : 0xe2d9c2);
+      g.circle(moon.x - r * 0.3, moon.y - r * 0.2, r * 0.18).fill({ color: 0x000000, alpha: 0.08 });
+    }
+    const sun = arc(0.5);
+    if (sun.up > -0.2 && m.weather === "clear") {
+      for (let i = 5; i >= 1; i -= 1) g.circle(sun.x, sun.y, r * (1 + i * 0.5)).fill({ color: 0xffd98a, alpha: 0.05 });
+      g.circle(sun.x, sun.y, r * 0.9).fill(0xffe2a0);
+    }
+    if (m.weather !== "clear") g.rect(0, 0, w, h).fill({ color: m.weather === "rain" ? 0x1a2028 : 0x8a8a90, alpha: 0.25 });
   }
 
   private drawLand(g: Graphics): void {
@@ -292,12 +338,15 @@ export class SceneRenderer {
     const m = this.model;
     if (!m) return;
     const { w, h, ground } = this.size;
+    this.drawSky(m);
     const g = this.anim.clear();
     const t = this.animate ? this.time : 0;
-    // Funkelnde Sterne
-    for (let i = 0; i < 40; i += 1) {
+    const night = this.night(m);
+    // Funkelnde Sterne – nur bei Nacht und klarem Himmel
+    const starAlpha = m.weather === "clear" ? Math.max(0, night - 0.35) / 0.65 : 0;
+    for (let i = 0; starAlpha > 0 && i < 40; i += 1) {
       const twinkle = 0.35 + 0.35 * Math.sin(t * (0.8 + hash(i) * 2) + i);
-      g.circle(hash(i + 200) * w, hash(i + 300) * h * 0.45, hash(i + 400) > 0.85 ? 1.3 : 0.8).fill({ color: 0xffffff, alpha: twinkle * (m.act >= 4 ? 0.5 : 0.8) });
+      g.circle(hash(i + 200) * w, hash(i + 300) * h * 0.45, hash(i + 400) > 0.85 ? 1.3 : 0.8).fill({ color: 0xffffff, alpha: twinkle * starAlpha * 0.8 });
     }
     // Wehende Fahne am Burgfried
     const kx = w * 0.08 + Math.max(46, w * 0.07) / 2;
@@ -330,7 +379,7 @@ export class SceneRenderer {
       const x = left + (i / MAX_HOUSES) * span;
       const hw = w * (0.016 + hash(i) * 0.008);
       const hh = h * (0.09 + hash(i + 3) * 0.05);
-      const lit = 0.55 + 0.35 * Math.sin(t * (2 + hash(i + 8) * 3) + i);
+      const lit = (0.55 + 0.35 * Math.sin(t * (2 + hash(i + 8) * 3) + i)) * (0.15 + night * 0.85);
       g.rect(x + hw * 0.12, ground - hh * 0.82, hw * 0.2, hh * 0.18).fill({ color: C.window, alpha: lit });
     }
     // Schießscharten im Burgfried
@@ -345,7 +394,7 @@ export class SceneRenderer {
 
   private spawn(): void {
     const m = this.model;
-    if (!m || this.particles.length > 160) return;
+    if (!m || this.particles.length > 420) return;
     const { w, h, ground } = this.size;
     if (m.forge && Math.random() < (m.forging ? 0.45 : 0.12)) {
       this.particles.push({ x: w * 0.64 + w * 0.045 * 0.8, y: ground - h * 0.27, vx: 3 + Math.random() * 6, vy: -8 - Math.random() * 8, life: 3.5, color: 0x6a6058, size: 1.5 + Math.random() * 2, grow: 1.2 });
@@ -355,6 +404,13 @@ export class SceneRenderer {
     }
     if (m.burning && Math.random() < 0.9) {
       this.particles.push({ x: w * 0.2 + Math.random() * w * 0.36, y: ground - h * 0.12, vx: (Math.random() - 0.5) * 8, vy: -22 - Math.random() * 22, life: 1.6, color: Math.random() < 0.5 ? 0xe07b39 : 0xffc35a, size: 1.4, grow: -0.5 });
+    }
+    if (m.weather === "rain") {
+      for (let i = 0; i < 4; i += 1) {
+        this.particles.push({ x: Math.random() * w * 1.1, y: -5, vx: -40, vy: 260 + Math.random() * 80, life: 1, color: 0x9ab0c8, size: 1, grow: 0, streak: true });
+      }
+    } else if (m.weather === "snow" && Math.random() < 0.7) {
+      this.particles.push({ x: Math.random() * w, y: -4, vx: (Math.random() - 0.5) * 10, vy: 14 + Math.random() * 14, life: 14, color: 0xf2f2f2, size: 1 + Math.random() * 1.3, grow: 0 });
     }
     if (m.souls && Math.random() < 0.18) {
       this.particles.push({ x: w * 0.69 + Math.random() * w * 0.1, y: ground + 4, vx: (Math.random() - 0.5) * 4, vy: -7 - Math.random() * 4, life: 4.5, color: 0x8fb8c9, size: 1.6, grow: 0 });
@@ -367,12 +423,14 @@ export class SceneRenderer {
     this.drawAnim();
     this.spawn();
     const g = this.fx.clear();
-    this.particles = this.particles.filter((p) => (p.life -= dt) > 0);
+    this.particles = this.particles.filter((p) => (p.life -= dt) > 0 && p.y < this.size.h + 10);
     for (const p of this.particles) {
-      p.x += p.vx * dt + (p.color === 0x8fb8c9 ? Math.sin(this.time * 2 + p.y * 0.05) * 0.3 : 0);
+      const sway = p.color === 0x8fb8c9 || p.color === 0xf2f2f2 ? Math.sin(this.time * 2 + p.y * 0.05) * 0.3 : 0;
+      p.x += p.vx * dt + sway;
       p.y += p.vy * dt;
       p.size = Math.max(0.4, p.size + p.grow * dt);
-      g.circle(p.x, p.y, p.size).fill({ color: p.color, alpha: Math.min(1, p.life) * 0.75 });
+      if (p.streak) g.moveTo(p.x, p.y).lineTo(p.x - 2, p.y + 9).stroke({ color: p.color, width: 1, alpha: 0.55 });
+      else g.circle(p.x, p.y, p.size).fill({ color: p.color, alpha: Math.min(1, p.life) * 0.75 });
     }
   }
 }

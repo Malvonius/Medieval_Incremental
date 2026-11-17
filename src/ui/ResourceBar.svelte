@@ -6,6 +6,7 @@
   import { aliveSoldiers } from "../game/state";
   import { formatNumber, formatPercent } from "./format";
   import { t, tx } from "../i18n";
+  import RateTooltip from "./RateTooltip.svelte";
 
   let { snap }: { snap: Snapshot } = $props();
 
@@ -13,105 +14,138 @@
   const soldiers = $derived(aliveSoldiers(snap.state));
 </script>
 
-<dl class="resources">
-  <div class="res gold">
-    <dt>{$t("res.gold")}</dt>
-    <dd class="num">{formatNumber(snap.state.resources.gold)} <small>+{formatNumber(snap.rates.gold)}/s</small></dd>
-  </div>
+<ul class="resources" aria-label={$tx("Vorräte")}>
+  <li class="res gold">
+    <span class="label">{$t("res.gold")}</span>
+    <span class="value num">{formatNumber(snap.state.resources.gold)} <small>+{formatNumber(snap.rates.gold)}/s</small></span>
+      <button class="info" type="button" aria-label={$tx("Aufschlüsselung anzeigen")} aria-describedby="rate-gold">i</button>
+      <RateTooltip {snap} resource="gold" id="rate-gold" />
+  </li>
   {#if snap.state.tiles.forge}
-    <div class="res iron">
-      <dt>{$t("res.iron")}</dt>
-      <dd class="num">{formatNumber(snap.state.resources.iron)} <small>+{formatNumber(snap.rates.iron)}/s</small></dd>
-    </div>
-    <div class="res swords">
-      <dt>{$t("res.swords")}</dt>
-      <dd class="num">{formatNumber(snap.state.resources.swords)} <small>+{formatPercent(bonus)} {$tx("Gold")}</small></dd>
-    </div>
+    <li class="res iron">
+      <span class="label">{$t("res.iron")}</span>
+      <span class="value num">{formatNumber(snap.state.resources.iron)} <small>+{formatNumber(snap.rates.iron)}/s</small></span>
+      <button class="info" type="button" aria-label={$tx("Aufschlüsselung anzeigen")} aria-describedby="rate-iron">i</button>
+      <RateTooltip {snap} resource="iron" id="rate-iron" />
+    </li>
+    <li class="res swords">
+      <span class="label">{$t("res.swords")}</span>
+      <span class="value num">{formatNumber(snap.state.resources.swords)} <small>+{formatPercent(bonus)} {$tx("Gold")}</small></span>
+    </li>
   {/if}
   {#if snap.state.tiles.warroom}
-    <div class="res soldiers">
-      <dt>{$t("res.soldiers")}</dt>
-      <dd class="num">{formatNumber(soldiers)} <small>{formatNumber(snap.state.warroom.soldiers)} {$tx("bereit")}</small></dd>
-    </div>
+    <li class="res soldiers">
+      <span class="label">{$t("res.soldiers")}</span>
+      <span class="value num">{formatNumber(soldiers)} <small>{formatNumber(snap.state.warroom.soldiers)} {$tx("bereit")}</small></span>
+    </li>
   {/if}
   {#if snap.state.tiles.dungeon}
-    <div class="res prisoners">
-      <dt>{$t("res.prisoners")}</dt>
-      <dd class="num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} {$tx("Hinweise")}</small></dd>
-    </div>
+    <li class="res prisoners">
+      <span class="label">{$t("res.prisoners")}</span>
+      <span class="value num">{formatNumber(snap.state.dungeon.prisoners)} <small>{formatNumber(snap.state.dungeon.intel)} {$tx("Hinweise")}</small></span>
+    </li>
   {/if}
   {#if siegeActive(snap.state)}
-    <div class="res defense">
-      <dt>{$t("res.defense")}</dt>
-      <dd class="num">{formatNumber(defense(snap.state))} <small>{$tx("Welle")} {snap.state.siege.wave + 1}/{WAVES.length}</small></dd>
-    </div>
+    <li class="res defense">
+      <span class="label">{$t("res.defense")}</span>
+      <span class="value num">{formatNumber(defense(snap.state))} <small>{$tx("Welle")} {snap.state.siege.wave + 1}/{WAVES.length}</small></span>
+    </li>
   {/if}
   {#if snap.state.tiles.crypt}
-    <div class="res souls">
-      <dt>{$t("res.souls")}</dt>
-      <dd class="num">{formatNumber(snap.state.resources.souls)} <small>+{formatNumber(snap.rates.souls)}/s</small></dd>
-    </div>
+    <li class="res souls">
+      <span class="label">{$t("res.souls")}</span>
+      <span class="value num">{formatNumber(snap.state.resources.souls)} <small>+{formatNumber(snap.rates.souls)}/s</small></span>
+      <button class="info" type="button" aria-label={$tx("Aufschlüsselung anzeigen")} aria-describedby="rate-souls">i</button>
+      <RateTooltip {snap} resource="souls" id="rate-souls" />
+    </li>
   {/if}
   {#if snap.state.tiles.chapel}
-    <div class="res faith">
-      <dt>{$t("res.faith")}</dt>
-      <dd class="num">{formatNumber(snap.state.resources.faith)} <small>+{formatNumber(snap.rates.faith)}/s</small></dd>
-    </div>
+    <li class="res faith">
+      <span class="label">{$t("res.faith")}</span>
+      <span class="value num">{formatNumber(snap.state.resources.faith)} <small>+{formatNumber(snap.rates.faith)}/s</small></span>
+      <button class="info" type="button" aria-label={$tx("Aufschlüsselung anzeigen")} aria-describedby="rate-faith">i</button>
+      <RateTooltip {snap} resource="faith" id="rate-faith" />
+    </li>
   {/if}
   {#if snap.state.ritual.ash > 0}
-    <div class="res ash">
-      <dt>{$t("res.ash")}</dt>
-      <dd class="num">{formatNumber(snap.state.ritual.ash)} <small>×{formatNumber(ashMultiplier(snap.state))}</small></dd>
-    </div>
+    <li class="res ash">
+      <span class="label">{$t("res.ash")}</span>
+      <span class="value num">{formatNumber(snap.state.ritual.ash)} <small>×{formatNumber(ashMultiplier(snap.state))}</small></span>
+    </li>
   {/if}
   {#if snap.state.warroom.seals > 0}
-    <div class="res seals">
-      <dt>{$t("res.seals")}</dt>
-      <dd class="num">{snap.state.warroom.seals} <small>+{formatPercent(snap.state.warroom.seals * SEAL_BONUS)}</small></dd>
-    </div>
+    <li class="res seals">
+      <span class="label">{$t("res.seals")}</span>
+      <span class="value num">{snap.state.warroom.seals} <small>+{formatPercent(snap.state.warroom.seals * SEAL_BONUS)}</small></span>
+    </li>
   {/if}
-</dl>
+</ul>
 
 <style>
   .resources {
+    list-style: none;
+    padding: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin: 0;
   }
 
-  dt::before {
+  .label::before {
     margin-right: 4px;
     color: var(--gold);
   }
-  .gold dt::before { content: "⛁"; }
-  .iron dt::before { content: "⚒"; }
-  .swords dt::before { content: "⚔"; }
-  .soldiers dt::before { content: "⛨"; }
-  .prisoners dt::before { content: "⛓"; }
-  .souls dt::before { content: "☽"; }
-  .faith dt::before { content: "✝"; }
-  .ash dt::before { content: "✶"; }
-  .seals dt::before { content: "⚜"; }
-  .defense dt::before { content: "♜"; }
+  .gold .label::before { content: "⛁"; }
+  .iron .label::before { content: "⚒"; }
+  .swords .label::before { content: "⚔"; }
+  .soldiers .label::before { content: "⛨"; }
+  .prisoners .label::before { content: "⛓"; }
+  .souls .label::before { content: "☽"; }
+  .faith .label::before { content: "✝"; }
+  .ash .label::before { content: "✶"; }
+  .seals .label::before { content: "⚜"; }
+  .defense .label::before { content: "♜"; }
+
+  .info {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-muted);
+    font: italic 600 0.65rem/1 Georgia, serif;
+  }
+
+  .info:hover,
+  .info:focus-visible {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
 
   .res {
+    position: relative;
     background: linear-gradient(180deg, #1a1510 0%, #0d0a08 100%);
     box-shadow: inset 0 1px 0 rgb(255 230 180 / 0.05);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 6px 12px;
+    padding: 6px 24px 6px 12px;
     min-width: 118px;
   }
 
-  dt {
+  .label {
+    display: block;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
   }
 
-  dd {
+  .value {
+    display: block;
     margin: 0;
     font-size: 1.15rem;
   }
@@ -121,34 +155,34 @@
     color: var(--text-muted);
   }
 
-  .gold dd {
+  .gold .value {
     color: var(--gold);
   }
-  .iron dd {
+  .iron .value {
     color: var(--iron);
   }
-  .swords dd {
+  .swords .value {
     color: var(--blood-bright);
   }
-  .soldiers dd {
+  .soldiers .value {
     color: var(--text);
   }
-  .prisoners dd {
+  .prisoners .value {
     color: var(--moss);
   }
-  .souls dd {
+  .souls .value {
     color: var(--soul);
   }
-  .defense dd {
+  .defense .value {
     color: var(--blood-bright);
   }
-  .faith dd {
+  .faith .value {
     color: #e8d9a8;
   }
-  .ash dd {
+  .ash .value {
     color: var(--ember);
   }
-  .seals dd {
+  .seals .value {
     color: var(--iron);
   }
 </style>

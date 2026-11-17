@@ -1,9 +1,19 @@
 <script lang="ts">
   import { audio } from "../../app/audio";
+  import { requestNotifications } from "../../app/notifications";
   import { LOCALES, type Locale, locale, t, tx } from "../../i18n";
   import { type Notation, settings, updateSettings } from "../../app/settings";
 
   const AUTOSAVE = [15, 30, 60] as const;
+  let notifyBlocked = $state(false);
+
+  async function toggleNotifications(event: Event & { currentTarget: HTMLInputElement }): Promise<void> {
+    const wanted = event.currentTarget.checked;
+    if (!wanted) return updateSettings({ notifications: false });
+    const allowed = await requestNotifications();
+    notifyBlocked = !allowed;
+    updateSettings({ notifications: allowed });
+  }
 </script>
 
 <section class="panel-section">
@@ -59,10 +69,26 @@
       />
     </label>
   </div>
+  <div class="grid">
+    <label class="check">
+      <input type="checkbox" checked={$settings.music} disabled={!$settings.sound} onchange={(e) => updateSettings({ music: e.currentTarget.checked })} />
+      <span>{$tx("Musik")}</span>
+    </label>
+    <label class="check">
+      <input type="checkbox" checked={$settings.notifications} onchange={toggleNotifications} />
+      <span>{$tx("Benachrichtigungen im Hintergrund")}</span>
+    </label>
+    <button class="btn" disabled={$settings.hintsSeen.length === 0} onclick={() => updateSettings({ hintsSeen: [] })}>{$tx("Tipps wieder anzeigen")}</button>
+  </div>
+  {#if notifyBlocked}<p class="hint">{$tx("Benachrichtigungen wurden vom Browser blockiert.")}</p>{/if}
   <p class="hint">{$tx("Tastatur:")} <kbd>1</kbd>–<kbd>9</kbd> {$tx("wählt einen Ort,")} <kbd>{$tx("Leertaste")}</kbd> {$tx("treibt Steuern ein.")}</p>
 </section>
 
 <style>
+  .grid + .grid {
+    margin-top: 12px;
+  }
+
   .grid {
     display: flex;
     flex-wrap: wrap;

@@ -38,6 +38,13 @@ export function formatNumber(source: DecimalSource): string {
   return `${fixed(value.mantissa, 2)}e${value.exponent}`;
 }
 
+/** Multiplikator: unter 100 mit bis zu zwei Nachkommastellen (×1,01 statt ×1,0). */
+export function formatFactor(source: DecimalSource): string {
+  const value = toDecimal(source);
+  if (value.gte(100)) return formatNumber(value);
+  return value.toNumber().toLocaleString(numberLocale === "de" ? "de-DE" : "en-US", { maximumFractionDigits: 2 });
+}
+
 export function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
   const h = Math.floor(s / 3600);

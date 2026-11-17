@@ -3,6 +3,7 @@ import type { DeepReadonly, Result } from "../core/types";
 import { RESOURCE_IDS } from "../content/ids";
 import { STORY } from "../content/story";
 import { type Action, applyAction } from "./actions";
+import type { ExpeditionId, ResearchId } from "../content/balance";
 import { tickForge } from "./forge";
 import { type Rates, computeRates } from "./rates";
 import { type GameState, gain } from "./state";
@@ -14,9 +15,16 @@ import { evaluateAchievements } from "./achievements";
 import type { AchievementId } from "../content/achievements";
 import { type StoryNode, StoryDirector } from "./story";
 
+export type Completion =
+  | { readonly kind: "expedition"; readonly id: ExpeditionId }
+  | { readonly kind: "research"; readonly id: ResearchId }
+  | { readonly kind: "battle"; readonly wave: number };
+
 export interface SimulationEvents extends Record<string, unknown> {
   story: StoryNode;
   achievement: AchievementId;
+  /** Etwas Langwieriges ist fertig – Anlass für eine Browser-Benachrichtigung. */
+  completed: Completion;
   /** Erfolgreich ausgeführte Spieleraktion – z. B. für Sound. */
   action: Action["type"];
 }
@@ -57,10 +65,22 @@ export class Simulation {
     for (const resource of RESOURCE_IDS) gain(this.state, resource, rates[resource].mul(dt));
     this.state.stats.playSeconds += dt;
 
+    const expeditionsBefore = this.state.warroom.active.map((e) => e.id);
+    const researchBefore = this.state.alchemy.active?.id ?? null;
+    const waveBefore = this.state.siege.wave;
+
     if (tickForge(this.state, dt)) this.invalidate();
     if (tickWarroom(this.state, dt, rates.gold)) this.invalidate();
     if (tickAlchemy(this.state, dt)) this.invalidate();
     if (tickSiege(this.state, dt)) this.invalidate();
+
+    for (const id of expeditionsBefore) {
+      if (!this.state.warroom.active.some((e) => e.id === id)) this.events.emit("completed", { kind: "expedition", id });
+    }
+    if (researchBefore !== null && this.state.alchemy.completed[researchBefore]) {
+      this.events.emit("completed", { kind: "research", id: researchBefore });
+    }
+    if (this.state.siege.wave > waveBefore) this.events.emit("completed", { kind: "battle", wave: waveBefore });
     if (tickEvents(this.state, dt)) this.invalidate();
     if (tickAutomation(this.state, dt)) this.invalidate();
     this.advanceStory();

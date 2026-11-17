@@ -6,8 +6,10 @@
   import ResourceBar from "./ResourceBar.svelte";
   import StoryDialog from "./StoryDialog.svelte";
   import ChoiceDialog from "./ChoiceDialog.svelte";
+  import HintBanner from "./HintBanner.svelte";
   import TileMenu from "./TileMenu.svelte";
   import { audio } from "../app/audio";
+  import { decisionOpen } from "../game/depth";
   import { TILES } from "./tiles/registry";
   import { t } from "../i18n";
   import Scene from "./Scene.svelte";
@@ -17,6 +19,8 @@
   const snapshot = $derived(game.snapshot);
   let active = $state<TileId>("keep");
   const activeTile = $derived(TILES.find((t) => t.id === active));
+  const storyQueue = $derived(game.storyQueue);
+  const blocking = $derived($storyQueue.length > 0 || $snapshot.state.events.pending !== null || decisionOpen($snapshot.state, "trust"));
   $effect(() => audio.setMuffled(active === "crypt"));
 
   /** 1–9 wählt eine Kachel, Leertaste treibt Steuern ein. Nicht in Eingabefeldern oder auf Knöpfen. */
@@ -55,7 +59,10 @@
 
 <svelte:window {onkeydown} />
 
-<div class="shell">
+<a class="skip" href="#panel">{$tx("Zum Inhalt springen")}</a>
+
+<!-- Solange ein Dialog offen ist, ist der Rest für Tastatur und Screenreader gesperrt. -->
+<div class="shell" inert={blocking}>
   <header class="top">
     <div class="brand">
       <h1>{$tx("Die Asche von Vhal")}</h1>
@@ -71,10 +78,11 @@
       <TileMenu snap={$snapshot} {active} onselect={(id) => (active = id)} />
     </nav>
 
-    <section class="panel" aria-labelledby="panel-title">
+    <section class="panel" id="panel" tabindex="-1" aria-labelledby="panel-title">
       {#if activeTile?.Panel}
         {@const Panel = activeTile.Panel}
         <h2 id="panel-title" class="panel-title"><span aria-hidden="true">{activeTile.glyph}</span> {$t(`tile.${activeTile.id}`)}</h2>
+        <HintBanner tile={activeTile.id} />
         <Panel {game} />
       {:else}
         <h2 id="panel-title" class="panel-title">{$tx("Versiegelt")}</h2>
@@ -89,6 +97,26 @@
 <NoticeToast {game} />
 
 <style>
+  .skip {
+    position: absolute;
+    left: 16px;
+    top: -60px;
+    z-index: 50;
+    padding: 8px 14px;
+    background: var(--gold);
+    color: #1a120a;
+    border-radius: var(--radius);
+    font-weight: 600;
+  }
+
+  .skip:focus {
+    top: 12px;
+  }
+
+  .panel:focus {
+    outline: none;
+  }
+
   .shell {
     max-width: 1180px;
     margin: 0 auto;

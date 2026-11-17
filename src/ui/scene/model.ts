@@ -17,10 +17,16 @@ export interface SceneModel {
   readonly walls: number;
   readonly dead: number;
   readonly ending: "light" | "ash" | null;
+  /** Regen während der Pest, Schnee während der Belagerung. */
+  readonly weather: "clear" | "rain" | "snow";
 }
 
 export const MAX_HOUSES = 24;
 const MAX_DEAD = 40;
+
+/** Pest: das Ereignis steht an oder ihr Fluch (Gold ×0,5) wirkt noch. */
+const plague = (s: DeepReadonly<GameState>): boolean =>
+  s.events.pending === "plague" || (s.events.buff?.resource === "gold" && s.events.buff.factor < 1);
 
 export function sceneModel(s: DeepReadonly<GameState>): SceneModel {
   let keep = 0;
@@ -46,6 +52,7 @@ export function sceneModel(s: DeepReadonly<GameState>): SceneModel {
     walls: Math.min(10, forts),
     dead: sieging ? Math.min(MAX_DEAD, 8 + s.siege.wave * 4) : 0,
     ending: s.siege.ending,
+    weather: plague(s) ? "rain" : sieging || (flags.act4Complete && s.siege.ending === null) ? "snow" : "clear",
   };
 }
 

@@ -8,10 +8,14 @@ export interface Settings {
   readonly reduceMotion: boolean;
   readonly sound: boolean;
   readonly volume: number;
+  readonly notifications: boolean;
+  readonly music: boolean;
+  /** Kacheln, deren Tutorial-Hinweis schon gesehen wurde. */
+  readonly hintsSeen: readonly string[];
 }
 
 const KEY = "vhal.settings";
-export const DEFAULT_SETTINGS: Settings = { notation: "suffix", autosaveSeconds: 30, reduceMotion: false, sound: false, volume: 0.5 };
+export const DEFAULT_SETTINGS: Settings = { notation: "suffix", autosaveSeconds: 30, reduceMotion: false, sound: false, volume: 0.5, notifications: false, music: true, hintsSeen: [] };
 
 /** Validiert gespeicherte Einstellungen feldweise; Ungültiges fällt auf den Standard zurück. */
 export function parseSettings(raw: string | null): Settings {
@@ -31,6 +35,13 @@ export function parseSettings(raw: string | null): Settings {
     reduceMotion: pick(d["reduceMotion"], (v): v is boolean => typeof v === "boolean", DEFAULT_SETTINGS.reduceMotion),
     sound: pick(d["sound"], (v): v is boolean => typeof v === "boolean", DEFAULT_SETTINGS.sound),
     volume: pick(d["volume"], (v): v is number => typeof v === "number" && v >= 0 && v <= 1, DEFAULT_SETTINGS.volume),
+    notifications: pick(d["notifications"], (v): v is boolean => typeof v === "boolean", DEFAULT_SETTINGS.notifications),
+    music: pick(d["music"], (v): v is boolean => typeof v === "boolean", DEFAULT_SETTINGS.music),
+    hintsSeen: pick(
+      d["hintsSeen"],
+      (v): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string"),
+      DEFAULT_SETTINGS.hintsSeen,
+    ),
   };
 }
 

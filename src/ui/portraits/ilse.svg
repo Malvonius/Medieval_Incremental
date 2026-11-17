@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Magistra Ilse Varn">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#1f4a2c"/><stop offset="1" stop-color="#08130c"/></radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6c8aa"/><stop offset="1" stop-color="#b0907a"/></linearGradient>
+    <clipPath id="c"><circle cx="60" cy="60" r="54"/></clipPath>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="#d4a54a"/><circle cx="60" cy="60" r="55" fill="#2a1e14"/>
+  <g clip-path="url(#c)">
+    <rect width="120" height="120" fill="url(#bg)"/>
+    <circle cx="28" cy="34" r="3" fill="#8fe0a0" opacity=".6"/><circle cx="94" cy="28" r="2" fill="#8fe0a0" opacity=".5"/>
+    <path d="M16 120c4-26 20-36 44-36s40 10 44 36z" fill="#3a2a4a"/>
+    <path d="M40 92l20 28 20-28" fill="#2a1e36"/>
+    <rect x="53" y="70" width="14" height="14" fill="url(#skin)"/>
+    <path d="M30 60c-6-22 8-40 30-40s38 16 30 40c-2-14-8-20-12-22l-36 0c-6 4-10 10-12 22z" fill="#c8c0b0"/>
+    <path d="M30 60c-4 10-2 22 4 30M90 60c4 10 2 22-4 30" stroke="#c8c0b0" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="60" cy="54" rx="18" ry="22" fill="url(#skin)"/>
+    <circle cx="52" cy="53" r="6" fill="none" stroke="#6a5a3a" stroke-width="2"/><circle cx="68" cy="53" r="6" fill="none" stroke="#6a5a3a" stroke-width="2"/>
+    <path d="M58 53h4" stroke="#6a5a3a" stroke-width="2"/>
+    <circle cx="52" cy="53" r="2" fill="#1a1410"/><circle cx="68" cy="53" r="2" fill="#1a1410"/>
+    <path d="M54 66c3 1 9 1 12-1" stroke="#7a5444" stroke-width="1.6" fill="none"/>
+    <path d="M74 96c4-6 10-6 12 0v12c-4 6-10 6-12 0z" fill="#4a9a5a" opacity=".9"/>
+    <path d="M77 92h6v6h-6z" fill="#6a5a3a"/>
+    <circle cx="80" cy="104" r="2" fill="#bff0c8"/>
+  </g>
+</svg>

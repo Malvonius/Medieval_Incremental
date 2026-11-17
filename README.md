@@ -82,6 +82,9 @@ Vite baut mit relativen Pfaden (`base: "./"`), daher läuft das Spiel unter jede
 | **Cloud-Speicher** | Server in `server/` (Node, ohne Abhängigkeiten): `npm run cloud-server` oder `docker build -f server/Dockerfile .`. Umgebungsvariablen: `PORT`, `DATA_DIR`, `ALLOW_ORIGIN`. Im Spiel aktiv, wenn beim Build `VITE_CLOUD_SAVE_URL=https://dein-server/saves` gesetzt ist (z. B. als Repository-Variable im Deploy-Workflow). |
 | **Sprachen** | Deutsch und Englisch – Oberfläche, Story, alle Spieltexte, Meldungen, Zahlenformat und Ink-Epilog. Tests stellen sicher, dass jede Übersetzung existiert. |
 | **Ink** | Interaktiver Epilog in `src/content/ink/*.ink`, beim Build kompiliert (Vite-Plugin), im Spiel nur die Ink-Laufzeit (eigener Chunk). |
-| **Sound** | Synthetisch über Web Audio; ein Browser-Test misst den Ausgangspegel. |
+| **Sound & Musik** | Synthetisch über Web Audio. Generative Musik je Akt (`src/app/music.ts`): Kirchentonarten, Laute per Karplus-Strong, Formant-Chor, Rahmentrommel – lizenzfrei, weil vollständig berechnet. Ein Browser-Test misst den Ausgangspegel. |
+| **Barrierefreiheit** | axe-core-Prüfung (WCAG 2.1 AA, schwere/kritische Verstöße) in `tests/e2e/a11y.spec.ts`, Sprunglink, Fokusführung in Dialogen, `inert`-Hintergrund, Tastatur-Kürzel. |
+| **Speicherplätze** | Drei Plätze (Chronik → Speicherplätze); Platz 1 nutzt den bisherigen Schlüssel, alte Spielstände bleiben erhalten. |
+| **Benachrichtigungen** | Optional (Chronik → Einstellungen): Meldung, wenn Expedition, Forschung oder Schlacht im Hintergrund fertig werden. |
 | **Desktop** | Tauri 2 in `src-tauri/`. Lokal: `npm run tauri:build` (Rust + [Voraussetzungen](https://v2.tauri.app/start/prerequisites/)). In CI: **Actions → Desktop-Builds → Run workflow** erzeugt Installer für Windows (MSI/EXE), macOS (DMG) und Linux (DEB/AppImage) als Artefakte. |
 | **Browser-Tests** | `npm run e2e` (Playwright, Desktop + Mobil), läuft auch in CI. |

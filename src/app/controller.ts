@@ -10,7 +10,20 @@ import type { DeepReadonly, Result } from "../core/types";
 import { GAP_THRESHOLD_SECONDS, TICK_SECONDS } from "../content/balance";
 import type { Action } from "../game/actions";
 import { type CatchUpReport, applyOfflineProgress, catchUp } from "../game/offline";
-import { type KeyValueStorage, SAVE_KEY, exportSave, importSave, readSave, writeSave } from "../game/persistence";
+import {
+  type KeyValueStorage,
+  SLOT_KEY,
+  type SlotNumber,
+  type SlotSummary,
+  exportSave,
+  importSave,
+  isSlot,
+  readSave,
+  slotKey,
+  summarizeSlot,
+  writeSave,
+} from "../game/persistence";
+import { notifyCompletion } from "./notifications";
 import type { Rates } from "../game/rates";
 import { Simulation } from "../game/simulation";
 import { type GameState, createInitialState } from "../game/state";
@@ -54,6 +67,11 @@ export class GameController {
   private readonly snapshotStore: Writable<Snapshot>;
 
   readonly storyQueue = writable<readonly StoryNode[]>([]);
+  /** Aktiver Speicherplatz (1–3); wird im Storage gemerkt. */
+  readonly slot = writable<SlotNumber>(1);
+  private currentSlot: SlotNumber = 1;
+  /** Kurzinfos der inaktiven Plätze: ändern sich nur beim Wechsel, daher nicht bei jedem Frame neu lesen. */
+  private slotCache = new Map<SlotNumber, SlotSummary>();
   readonly notice = writable<Notice | null>(null);
 
   constructor(
@@ -61,7 +79,10 @@ export class GameController {
     private readonly clock: () => number = Date.now,
   ) {
     const now = this.clock();
-    const loaded = readSave(storage, now);
+    const storedSlot = Number(storage.getItem(SLOT_KEY));
+    this.currentSlot = isSlot(storedSlot) ? storedSlot : 1;
+    this.slot.set(this.currentSlot);
+    const loaded = readSave(storage, now, this.currentSlot);
     this.sim = this.attach(loaded.kind === "loaded" ? loaded.state : createInitialState(now));
     this.snapshotStore = writable(this.makeSnapshot());
 
@@ -89,6 +110,7 @@ export class GameController {
       this.notice.set({ kind: "achievement", id }),
     );
     const offStoryCue = sim.events.on("story", () => audio.play("story"));
+    const offCompleted = sim.events.on("completed", (completion) => notifyCompletion(completion));
     const offAction = sim.events.on("action", (type) => {
       const cue = ACTION_CUES[type];
       if (cue) audio.play(cue);
@@ -98,6 +120,7 @@ export class GameController {
       offAchievement();
       offStoryCue();
       offAction();
+      offCompleted();
     };
     return sim;
   }
@@ -195,7 +218,7 @@ export class GameController {
   save(): void {
     this.sim.touch(this.clock());
     try {
-      writeSave(this.storage, this.sim.view);
+      writeSave(this.storage, this.sim.view, this.currentSlot);
     } catch (error) {
       // Typisch: Speicherkontingent erschöpft oder Storage im privaten Modus gesperrt.
       console.error("Speichern fehlgeschlagen", error);
@@ -221,8 +244,50 @@ export class GameController {
     }
   }
 
+  /** Kurzinfo aller Speicherplätze für die Auswahl in der Chronik. */
+  slotSummaries(): SlotSummary[] {
+    return ([1, 2, 3] as const).map((n) =>
+      n === this.currentSlot
+        ? { slot: n, kind: "loaded" as const, playSeconds: this.sim.view.stats.playSeconds, act: this.act(), ngPlus: this.sim.view.meta.ngPlus }
+        : this.cachedSummary(n),
+    );
+  }
+
+  private cachedSummary(slot: SlotNumber): SlotSummary {
+    let summary = this.slotCache.get(slot);
+    if (!summary) {
+      summary = summarizeSlot(this.storage, slot, this.clock());
+      this.slotCache.set(slot, summary);
+    }
+    return summary;
+  }
+
+  private act(): number {
+    const f = this.sim.view.flags;
+    return 1 + [f.act1Complete, f.act2Complete, f.act3Complete, f.act4Complete].filter(Boolean).length;
+  }
+
+  /** Sichert den aktuellen Platz und lädt den gewählten (leer = neues Spiel). */
+  switchSlot(slot: SlotNumber): void {
+    if (slot === this.currentSlot) return;
+    this.save();
+    this.slotCache.clear();
+    this.currentSlot = slot;
+    this.slot.set(slot);
+    this.storage.setItem(SLOT_KEY, String(slot));
+    const now = this.clock();
+    const loaded = readSave(this.storage, now, slot);
+    this.storyQueue.set([]);
+    this.sim = this.attach(loaded.kind === "loaded" ? loaded.state : createInitialState(now));
+    const report = loaded.kind === "loaded" ? applyOfflineProgress(this.sim, now) : null;
+    this.save();
+    this.publish();
+    if (loaded.kind === "corrupt") this.notice.set({ kind: "error", message: loaded.error.message });
+    else if (report) this.notice.set({ kind: "offline", report });
+  }
+
   reset(): void {
-    this.storage.removeItem(SAVE_KEY);
+    this.storage.removeItem(slotKey(this.currentSlot));
     this.replaceState(createInitialState(this.clock()), "Ein neues Spiel beginnt.");
   }
 
