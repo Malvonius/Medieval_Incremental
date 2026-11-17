@@ -22,11 +22,7 @@
   const affordable = $derived(count >= 1 && snap.state.resources[def.costResource].gte(cost));
   const perUnit = $derived(unitRate(snap.state, building));
   const auto = $derived(snap.state.autobuy.picks[building]);
-  const autoTitle = $derived(
-    $tx("Automatisch kaufen, sobald die Kosten höchstens {p} % des Vorrats betragen (Schwelle in der Chronik).", {
-      p: String(Math.round(snap.state.autobuy.threshold * 100)),
-    }),
-  );
+  const autoTitle = $derived($tx("Automatisch kaufen, sobald genug im Vorrat ist."));
 </script>
 
 <div class="row">
