@@ -21,6 +21,12 @@
   const cost = $derived(buildingCost(snap.state, building, shown));
   const affordable = $derived(count >= 1 && snap.state.resources[def.costResource].gte(cost));
   const perUnit = $derived(unitRate(snap.state, building));
+  const auto = $derived(snap.state.autobuy.picks[building]);
+  const autoTitle = $derived(
+    $tx("Automatisch kaufen, sobald die Kosten höchstens {p} % des Vorrats betragen (Schwelle in der Chronik).", {
+      p: String(Math.round(snap.state.autobuy.threshold * 100)),
+    }),
+  );
 </script>
 
 <div class="row">
@@ -34,6 +40,11 @@
       {$tx("je")} +{formatNumber(perUnit)} {$t(`res.${def.produces}`)}/s · {$tx("gesamt")} +{formatNumber(perUnit.mul(snap.state.buildings[building]))}/s
     </p>
   </div>
+  <label class="auto" class:on={auto} title={autoTitle}>
+    <input type="checkbox" checked={auto} onchange={(e) => game.dispatch({ type: "setBuildingAuto", building, enabled: e.currentTarget.checked })} />
+    <span>{$tx("Auto")}</span>
+    <span class="sr-only">{autoTitle}</span>
+  </label>
   <button
     class="btn buy"
     disabled={!affordable}
@@ -86,6 +97,21 @@
     color: var(--text-faint);
   }
 
+  .auto {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .auto.on {
+    color: var(--gold);
+  }
+
   .buy {
     display: flex;
     flex-direction: column;
@@ -106,6 +132,10 @@
     }
     .buy {
       align-items: center;
+    }
+    .auto {
+      flex-direction: row;
+      align-self: flex-start;
     }
   }
 </style>

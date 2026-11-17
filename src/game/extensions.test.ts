@@ -42,6 +42,29 @@ describe("Aschen-Automaten", () => {
     expect(s.view.buildings.serf).toBeGreaterThan(0);
   });
 
+  it("kaufen einzeln ausgewählte Gebäude auch ohne Ritual – und nur diese", () => {
+    const s = sim((st) => {
+      st.tiles.forge = true;
+      st.autobuy.threshold = 1;
+      st.resources.gold = new Decimal(1e6);
+      st.resources.iron = new Decimal(1e6);
+    });
+    expect(s.dispatch({ type: "setBuildingAuto", building: "serf", enabled: true }).ok).toBe(true);
+    s.tick(1);
+    expect(s.view.buildings.serf).toBeGreaterThan(0);
+    const others = Object.entries(s.view.buildings).filter(([id, n]) => id !== "serf" && n > 0);
+    expect(others).toEqual([]);
+    s.dispatch({ type: "setBuildingAuto", building: "serf", enabled: false });
+    const count = s.view.buildings.serf;
+    s.tick(2);
+    expect(s.view.buildings.serf).toBe(count);
+  });
+
+  it("verweigern noch unsichtbare Gebäude", () => {
+    const s = sim();
+    expect(s.dispatch({ type: "setBuildingAuto", building: "bell_tower", enabled: true }).ok).toBe(false);
+  });
+
   it("lehnen ungültige Schwellen ab", () => {
     const s = sim();
     expect(s.dispatch({ type: "setAutoThreshold", threshold: 0 }).ok).toBe(false);
@@ -258,6 +281,7 @@ describe("Speichern der Erweiterungen", () => {
       st.workshop.levels.smelter = 2;
       st.workshop.ore = 1.5;
       st.autobuy.threshold = 0.3;
+      st.autobuy.picks.serf = true;
     });
     const back = importSave(exportSave(s.view), 0);
     expect(back.meta.embers).toBe(4);
@@ -269,5 +293,6 @@ describe("Speichern der Erweiterungen", () => {
     expect(back.workshop.levels.smelter).toBe(2);
     expect(back.workshop.ore).toBe(1.5);
     expect(back.autobuy.threshold).toBe(0.3);
+    expect(back.autobuy.picks.serf).toBe(true);
   });
 });
