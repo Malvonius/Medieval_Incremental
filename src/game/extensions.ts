@@ -41,6 +41,7 @@ import {
   TALENTS,
   type TalentId,
 } from "../content/extensions";
+import { LOYALTY_FAVOR, LOYALTY_MAX, LOYALTY_START, RIVALS } from "../content/living";
 import { enqueueCraft, canAffordRecipe } from "./forge";
 import { buildingCost, forgeCapacity, isBuildingVisible, isUpgradeVisible, recruitCost } from "./rates";
 import { recruit } from "./warroom";
@@ -247,13 +248,27 @@ export const factionsInConcord = (state: View): boolean => FACTION_IDS.every((id
 export const levelCost = (state: View, id: RetainerId): Decimal =>
   bulkCost({ base: RETAINERS[id].hireCost, growth: RETAINER_LEVEL_GROWTH }, state.retinue[id]?.level ?? 0, 1);
 
+/**
+ * Bevorzugung: die eigene Treue steigt, die des Rivalen sinkt. Fällt sie auf 0, geht der Rivale –
+ * samt Amt und Ausrüstung.
+ */
+export function favor(state: GameState, id: RetainerId): void {
+  const self = state.retinue[id];
+  if (self) self.loyalty = Math.min(LOYALTY_MAX, self.loyalty + LOYALTY_FAVOR);
+  const rivalId = RIVALS[id];
+  const rival = state.retinue[rivalId];
+  if (!rival) return;
+  rival.loyalty = Math.max(0, rival.loyalty - LOYALTY_FAVOR);
+  if (rival.loyalty === 0) state.retinue[rivalId] = null;
+}
+
 export function hire(state: GameState, id: RetainerId): Result {
   if (!state.tiles.hall) return fail("Der Rittersaal ist noch nicht eröffnet.");
   if (state.retinue[id] !== null) return fail("Diese Person steht schon in deinen Diensten.");
   const cost = new Decimal(RETAINERS[id].hireCost);
   if (state.resources.gold.lt(cost)) return fail("Nicht genug Gold.");
   spend(state, "gold", cost);
-  state.retinue[id] = { level: 1, office: null, equipped: false };
+  state.retinue[id] = { level: 1, office: null, equipped: false, loyalty: LOYALTY_START, quest: 0, questRemaining: null };
   return OK;
 }
 
@@ -265,6 +280,7 @@ export function levelUp(state: GameState, id: RetainerId): Result {
   if (state.resources.gold.lt(cost)) return fail("Nicht genug Gold.");
   spend(state, "gold", cost);
   r.level += 1;
+  favor(state, id);
   return OK;
 }
 
@@ -276,6 +292,7 @@ export function equip(state: GameState, id: RetainerId): Result {
   if (state.resources.swords.lt(swords)) return fail("Nicht genug Schwerter in der Waffenkammer.");
   spend(state, "swords", swords);
   r.equipped = true;
+  favor(state, id);
   return OK;
 }
 
@@ -290,7 +307,9 @@ export function assign(state: GameState, id: RetainerId, office: OfficeId | null
       if (o !== null && other !== id && o.office === office) o.office = null;
     }
   }
+  const promoted = office !== null && r.office !== office;
   r.office = office;
+  if (promoted) favor(state, id);
   return OK;
 }
 

@@ -4,12 +4,12 @@
   import type { GameController } from "../app/controller";
   import { formatDuration, formatNumber } from "./format";
   import { bi } from "../i18n/bi";
-  import { CODEX } from "../content/extensions";
+  import { CODEX, RETAINERS } from "../content/extensions";
 
   let { game }: { game: GameController } = $props();
 
   const notice = $derived(game.notice);
-  const DISMISS_MS = { offline: 20_000, info: 4_000, achievement: 4_000, codex: 5_000, error: 5_000 } as const;
+  const DISMISS_MS = { offline: 20_000, info: 4_000, achievement: 4_000, codex: 5_000, departed: 8_000, error: 5_000 } as const;
 
   $effect(() => {
     const current = $notice;
@@ -48,6 +48,8 @@
       {#if lines.length > 0}
         <ul class="report">{#each lines as line (line)}<li>{line}</li>{/each}</ul>
       {/if}
+    {:else if $notice.kind === "departed"}
+      <p>{$tx("{name} hat genug von deiner Bevorzugung anderer und verlässt Vhal.", { name: RETAINERS[$notice.id].name })}</p>
     {:else if $notice.kind === "codex"}
       <p>{$tx("Neuer Kodex-Eintrag:")} {$bi(CODEX[$notice.id].title)}</p>
     {:else if $notice.kind === "achievement"}

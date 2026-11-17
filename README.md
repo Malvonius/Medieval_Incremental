@@ -71,6 +71,25 @@ Weitere Technik: Offline-Zeitraffer im Web Worker (`game/catchup.worker.ts`) mit
 (`app/gamepad.ts`), Vorlesen per Web Speech API (`app/voice.ts`), Export als Datei oder mehrteiliger QR-Code.
 Keines dieser Systeme wird vom Bot genutzt; die Pacing-Messung (~6 h Bot ≈ 8 h Mensch) bleibt unverändert.
 
+## Lebendiges Vhal
+
+| System | Ort | Kern |
+| --- | --- | --- |
+| Gemalte Szene | oben | Ebenen mit Parallax (Maus/Neigung), Licht von links, Dreiviertelansicht, Jahreszeiten-Paletten, Nacht per `ColorMatrixFilter`, Lichtquellen additiv mit `BlurFilter` |
+| Klickbare Gebäude | Szene | Hover zeigt Produktion, Klick öffnet die Kachel; Rabe und Händlerkarren sind eigene Ziele |
+| Figuren & Belagerung | Szene | Bauern, Soldaten, Gefangene nach echten Werten; Feindwelle rückt an, Pfeile, Mauerrisse; Bildwackeln |
+| Ritual-Sequenz | Szene | ~7 s: Feuer, Asche, Wiederaufbau |
+| Jahreszeiten | überall | 15 min je Jahreszeit (`content/living.ts`), Faktor „Jahreszeit“ in der Aufschlüsselung |
+| Rabe | Burgfried | Kommentare, alle 10 min ein Geschenk (2 min Goldproduktion) |
+| Händler | Burgfried | Alle 8 min für 3 min, 3 Angebote; Feilschen: 50 % Rabatt, 25 % stur, 25 % beleidigt |
+| Folgeereignisse | Ereignisse | Pest → Seuchenwelle, Pilger → Prediger, Überfall → Rückkehr |
+| Burgplan | Burgfried | 5×4-Raster, +10 % je passendem Nachbarn |
+| Treue & Aufträge | Rittersaal | Rivalen, Treue 0–100 (bei 0 geht die Person), je zwei Aufträge mit Geschichte |
+
+Kachelbilder (`TileIcon.svelte`), gemalte Story-Hintergründe (`ui/backdrops`), Pergament-Karte mit Nebel
+(`MapSection.svelte`) und fliegende Zahlen/Lichtblitze (`ui/fx.ts`) sind reine Darstellung. Der Bot nutzt
+keines der neuen Systeme außer den Jahreszeiten, deren Faktoren über ein Jahr nahe 1 liegen; das Pacing bleibt im Zielfenster.
+
 ## Roadmap
 
 | Akt | Inhalt | Kacheln |

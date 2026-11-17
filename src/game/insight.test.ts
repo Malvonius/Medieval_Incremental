@@ -1,3 +1,4 @@
+import { SEASON_SECONDS } from "../content/living";
 import { describe, expect, it } from "vitest";
 import { Decimal } from "../core/decimal";
 import { EXPEDITIONS, RESEARCH, WAVES } from "../content/balance";
@@ -36,8 +37,11 @@ describe("Raten-Aufschlüsselung", () => {
 
   it("nennt alle wirksamen Faktoren und lässt neutrale weg", () => {
     const labels = resourceFactors(rich(), "gold").map((f) => f.label);
-    expect(labels).toEqual(["Bewaffnung", "Ordenssiegel", "Fronarbeit", "Pakte, Forschung & Gelübde", "Ereignis", "Asche", "Erfolge", "Erinnerungen"]);
-    expect(resourceFactors(createInitialState(0), "gold")).toEqual([]);
+    expect(labels).toEqual(["Bewaffnung", "Ordenssiegel", "Fronarbeit", "Pakte, Forschung & Gelübde", "Jahreszeit", "Ereignis", "Asche", "Erfolge", "Erinnerungen"]);
+    // Im Herbst wirkt keine Jahreszeit auf Gold.
+    const autumn = createInitialState(0);
+    autumn.stats.playSeconds = 2 * SEASON_SECONDS;
+    expect(resourceFactors(autumn, "gold")).toEqual([]);
   });
 });
 

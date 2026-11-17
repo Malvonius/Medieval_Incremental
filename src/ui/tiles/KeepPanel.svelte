@@ -8,6 +8,9 @@
   import BuildingRow from "./BuildingRow.svelte";
   import BuyAmountToggle from "./BuyAmountToggle.svelte";
   import UpgradeList from "./UpgradeList.svelte";
+  import MerchantSection from "./MerchantSection.svelte";
+  import PlanSection from "./PlanSection.svelte";
+  import { floatAt } from "../fx";
 
   let { game }: { game: GameController } = $props();
 
@@ -16,22 +19,17 @@
   const KEEP_BUILDINGS = BUILDING_IDS.filter((id) => BUILDINGS[id].tile === "keep");
   let amount = $state<BuyAmount>(1);
 
-  /** Aufsteigende Zahlen beim Klick; nach der Animation (900 ms) wieder entfernt. */
-  let floaters = $state<{ id: number; text: string; x: number }[]>([]);
-  let nextFloater = 0;
+  /** Aufsteigende Zahl und Münzen an der Klickposition (Tastatur: Mitte des Knopfs). */
   function collect(event: MouseEvent): void {
     const value = clickValue(snap.state);
     if (!game.dispatch({ type: "collect" }).ok || value.lte(0)) return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const id = nextFloater++;
-    floaters = [...floaters, { id, text: `+${formatNumber(value)}`, x: event.clientX - rect.left }];
-    setTimeout(() => (floaters = floaters.filter((f) => f.id !== id)), 900);
+    const target = event.detail > 0 ? { x: event.clientX, y: event.clientY - 10 } : (event.currentTarget as Element);
+    floatAt(target, `+${formatNumber(value)} ${$tx("Gold")}`, "gold", 3);
   }
 </script>
 
 <section class="panel-section">
   <button class="collect" onclick={collect}>
-    {#each floaters as f (f.id)}<span class="floater num" style:left="{f.x}px" aria-hidden="true">{f.text}</span>{/each}
     <span class="label">{$tx("Steuern eintreiben")}</span>
     <span class="value num">+{formatNumber(clickValue(snap.state))} Gold</span>
   </button>
@@ -58,7 +56,11 @@
   {/each}
 </section>
 
+<MerchantSection {game} {snap} />
+
 <UpgradeList {game} {snap} tile="keep" />
+
+<PlanSection {game} {snap} />
 
 <style>
   .collect {
@@ -95,22 +97,6 @@
     font-size: 0.9rem;
   }
 
-  .floater {
-    position: absolute;
-    top: 30%;
-    transform: translateX(-50%);
-    color: var(--gold);
-    font-weight: 600;
-    pointer-events: none;
-    animation: rise 900ms ease-out forwards;
-  }
-
-  @keyframes rise {
-    to {
-      transform: translate(-50%, -48px);
-      opacity: 0;
-    }
-  }
 
   .label {
     font-family: var(--font-display);

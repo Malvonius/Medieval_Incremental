@@ -15,7 +15,9 @@ import { evaluateAchievements } from "./achievements";
 import type { AchievementId } from "../content/achievements";
 import { type StoryNode, StoryDirector } from "./story";
 import { evaluateCodex, tickAutobuy, tickWorkshop, unlockExtras } from "./extensions";
-import type { CodexId } from "../content/extensions";
+import type { CodexId, RetainerId } from "../content/extensions";
+import { RETAINER_IDS } from "../content/extensions";
+import { type QuestDone, pokeRaven, seasonOf, tickMerchant, tickQuests, tickRaven } from "./living";
 
 export type Completion =
   | { readonly kind: "expedition"; readonly id: ExpeditionId }
@@ -30,6 +32,10 @@ export interface SimulationEvents extends Record<string, unknown> {
   /** Erfolgreich ausgeführte Spieleraktion – z. B. für Sound. */
   action: Action["type"];
   codex: CodexId;
+  /** Ein Gefolgsauftrag ist erfüllt – Anlass für eine kleine Geschichte. */
+  quest: QuestDone;
+  /** Eine Person hat das Gefolge im Zorn verlassen. */
+  departed: RetainerId;
 }
 
 /**
@@ -66,7 +72,9 @@ export class Simulation {
     if (!(dt > 0) || !Number.isFinite(dt)) throw new RangeError(`dt muss endlich und > 0 sein, war ${dt}`);
     const rates = this.rates;
     for (const resource of RESOURCE_IDS) gain(this.state, resource, rates[resource].mul(dt));
+    const seasonBefore = seasonOf(this.state.stats.playSeconds);
     this.state.stats.playSeconds += dt;
+    if (seasonOf(this.state.stats.playSeconds) !== seasonBefore) this.invalidate();
 
     const expeditionsBefore = this.state.warroom.active.map((e) => e.id);
     const researchBefore = this.state.alchemy.active?.id ?? null;
@@ -88,11 +96,23 @@ export class Simulation {
     if (tickAutomation(this.state, dt)) this.invalidate();
     if (tickAutobuy(this.state, dt)) this.invalidate();
     if (tickWorkshop(this.state, dt)) this.invalidate();
+    tickRaven(this.state, dt);
+    tickMerchant(this.state, dt, rates);
+    const quests = tickQuests(this.state, dt);
+    if (quests.length > 0) this.invalidate();
+    for (const done of quests) this.events.emit("quest", done);
     this.advanceStory();
   }
 
   dispatch(action: Action): Result {
-    const result = action.type === "resolveEvent" ? resolveEvent(this.state, action.choice, this.rates) : applyAction(this.state, action);
+    const hiredBefore = RETAINER_IDS.filter((id) => this.state.retinue[id] !== null);
+    const result =
+      action.type === "resolveEvent"
+        ? resolveEvent(this.state, action.choice, this.rates)
+        : action.type === "pokeRaven"
+          ? pokeRaven(this.state, this.rates)
+          : applyAction(this.state, action);
+    for (const id of hiredBefore) if (this.state.retinue[id] === null) this.events.emit("departed", id);
     // Neues Spiel+ ersetzt die Story: der Director muss seine Grenze neu bestimmen.
     if (result.ok && (action.type === "newGamePlus" || action.type === "ascend")) this.director.sync(this.state);
     if (result.ok) {

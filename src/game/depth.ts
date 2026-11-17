@@ -38,6 +38,13 @@ export function tickEvents(state: GameState, dt: number): boolean {
     }
   }
   if (ev.pending !== null) return changed;
+  // Fällige Folgeereignisse haben Vorrang vor dem Zufall.
+  const due = ev.followUps.findIndex((f) => f.at <= state.stats.playSeconds);
+  if (due >= 0) {
+    ev.pending = ev.followUps[due]?.id ?? null;
+    ev.followUps.splice(due, 1);
+    return changed;
+  }
   ev.timer -= dt;
   while (ev.timer <= 0 && ev.pending === null) {
     ev.timer += EVENT_ROLL_SECONDS;
@@ -70,6 +77,11 @@ function applyEventEffect(state: GameState, effect: EventEffect, rates: Rates): 
       return;
     case "reputation":
       adjustReputation(state, effect.deltas);
+      return;
+    case "followUp":
+      if (EVENT_IDS.includes(effect.event as EventId)) {
+        state.events.followUps.push({ id: effect.event as EventId, at: state.stats.playSeconds + effect.seconds });
+      }
       return;
   }
 }

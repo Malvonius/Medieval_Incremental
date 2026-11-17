@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1c26"/><stop offset="0.7" stop-color="#5a3a2a"/><stop offset="1" stop-color="#2a1a12"/></linearGradient>
+    <filter id="t"><feTurbulence baseFrequency="0.9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.08 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+  </defs>
+  <rect width="400" height="200" fill="url(#s)"/>
+  <circle cx="320" cy="60" r="18" fill="#e8d8b0" opacity="0.6"/>
+  <path d="M0 150 60 120 130 140 210 110 300 135 400 115V200H0z" fill="#1c1410"/>
+  <path d="M40 160V80h12v-8h10v8h14v-8h10v8h12v40l-8 10-6 30z" fill="#2a221a"/>
+  <path d="M60 160v-26a10 10 0 0 1 20 0v26z" fill="#0c0806"/>
+  <path d="M150 165l10-30 14 6 8-20 16 14 10-8 6 38z" fill="#231a14"/>
+  <path d="M0 200V170c80-8 160-6 240 2s120 4 160 0v28z" fill="#120c08"/>
+  <g fill="#8a7a6a" opacity="0.5"><circle cx="190" cy="90" r="1"/><circle cx="210" cy="70" r="1.2"/><circle cx="230" cy="96" r="0.8"/></g>
+  <rect width="400" height="200" filter="url(#t)" fill="#fff"/>
+</svg>
