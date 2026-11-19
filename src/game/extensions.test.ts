@@ -302,7 +302,7 @@ describe("Speichern der Erweiterungen", () => {
       st.meta.talents.spark = true;
       st.meta.runLog.push({ kind: "ritual", seconds: 1234 });
       st.factions.rep.people = -30;
-      st.retinue.anselm = { level: 3, office: "chaplain", equipped: true };
+      st.retinue.anselm = { level: 3, office: "chaplain", equipped: true, loyalty: 70, quest: 1, questRemaining: 12 };
       st.map.owned.push(MAP_CENTER + 1);
       st.workshop.levels.smelter = 2;
       st.workshop.ore = 1.5;
@@ -315,7 +315,7 @@ describe("Speichern der Erweiterungen", () => {
     expect(back.meta.talents.spark).toBe(true);
     expect(back.meta.runLog).toEqual([{ kind: "ritual", seconds: 1234 }]);
     expect(back.factions.rep.people).toBe(-30);
-    expect(back.retinue.anselm).toEqual({ level: 3, office: "chaplain", equipped: true });
+    expect(back.retinue.anselm).toEqual({ level: 3, office: "chaplain", equipped: true, loyalty: 70, quest: 1, questRemaining: 12 });
     expect(back.map.owned).toEqual([MAP_CENTER, MAP_CENTER + 1]);
     expect(back.workshop.levels.smelter).toBe(2);
     expect(back.workshop.ore).toBe(1.5);

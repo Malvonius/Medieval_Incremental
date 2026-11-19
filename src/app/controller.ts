@@ -1,4 +1,5 @@
 import { type Readable, type Writable, get, writable } from "svelte/store";
+import { EventBus } from "../core/events";
 import { startLoop } from "../core/loop";
 import { RingBuffer } from "../core/ringBuffer";
 import type { AchievementId } from "../content/achievements";
@@ -12,7 +13,8 @@ import type { Action } from "../game/actions";
 import { type CatchUpReport, TIMELAPSE_MIN_SECONDS, applyOfflineProgress, awaySeconds, catchUp, offlineParams, reportFromPlain } from "../game/offline";
 import { fromPlain, toPlain } from "../game/serialize";
 import { type TimelapseResponse, spawnTimelapse } from "../game/timelapse";
-import type { CodexId } from "../content/extensions";
+import type { CodexId, RetainerId } from "../content/extensions";
+import { QUESTS } from "../content/living";
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
 import { recordFrom } from "../core/types";
 import {
@@ -45,11 +47,18 @@ export interface Snapshot {
   readonly frame: number;
 }
 
+export interface SceneCues extends Record<string, unknown> {
+  ritual: null;
+  battleStart: null;
+  battleEnd: number;
+}
+
 export type Notice =
   | { readonly kind: "offline"; readonly report: CatchUpReport }
   | { readonly kind: "info"; readonly message: string }
   | { readonly kind: "achievement"; readonly id: AchievementId }
   | { readonly kind: "codex"; readonly id: CodexId }
+  | { readonly kind: "departed"; readonly id: RetainerId }
   | { readonly kind: "error"; readonly message: string };
 
 /** Verlauf der Goldproduktion: ein Wert pro Spielminute, bis zu 8 Stunden. */
@@ -86,6 +95,8 @@ export class GameController {
   /** Kurzinfos der inaktiven Plätze: ändern sich nur beim Wechsel, daher nicht bei jedem Frame neu lesen. */
   private slotCache = new Map<SlotNumber, SlotSummary>();
   readonly notice = writable<Notice | null>(null);
+  /** Anlässe für Szenen-Effekte (Ritual-Sequenz, Bildwackeln). */
+  readonly cues = new EventBus<SceneCues>();
 
   constructor(
     private readonly storage: KeyValueStorage,
@@ -177,12 +188,33 @@ export class GameController {
       this.notice.set({ kind: "achievement", id }),
     );
     // Kodex-Einträge, die mit einer Story-Szene kommen, melden sich nicht extra – die Szene erzählt schon.
+    // Erfüllte Gefolgsaufträge erzählen ihre Geschichte im Story-Dialog.
+    const offQuest = sim.events.on("quest", ({ retainer, step }) => {
+      const def = QUESTS[retainer][step];
+      if (!def) return;
+      const node: StoryNode = {
+        id: `quest_${retainer}_${step}`,
+        act: this.currentAct() as StoryNode["act"],
+        title: def.title.de,
+        text: def.story.map((p) => p.de),
+        requires: [],
+        trigger: () => false,
+        effects: [],
+      };
+      this.storyQueue.update((q) => [...q, node]);
+    });
+    const offDeparted = sim.events.on("departed", (id) => this.notice.set({ kind: "departed", id }));
     const offCodex = sim.events.on("codex", (id) => {
       if (get(this.storyQueue).length === 0) this.notice.set({ kind: "codex", id });
     });
     const offStoryCue = sim.events.on("story", () => audio.play("story"));
     const offCompleted = sim.events.on("completed", (completion) => notifyCompletion(completion));
+    const offCompletedCue = sim.events.on("completed", (c) => {
+      if (c.kind === "battle") this.cues.emit("battleEnd", c.wave);
+    });
     const offAction = sim.events.on("action", (type) => {
+      if (type === "ritual" || type === "ascend" || type === "newGamePlus") this.cues.emit("ritual", null);
+      if (type === "battle") this.cues.emit("battleStart", null);
       const cue = ACTION_CUES[type];
       if (cue) audio.play(cue);
     });
@@ -190,9 +222,12 @@ export class GameController {
       offStory();
       offAchievement();
       offCodex();
+      offQuest();
+      offDeparted();
       offStoryCue();
       offAction();
       offCompleted();
+      offCompletedCue();
     };
     return sim;
   }

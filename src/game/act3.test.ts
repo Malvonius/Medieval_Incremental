@@ -1,3 +1,4 @@
+import { SEASON_SECONDS } from "../content/living";
 import { describe, expect, it } from "vitest";
 import { Decimal } from "../core/decimal";
 import { FALLEN_SOUL_RATE, RESEARCH, RESEARCH_IDS } from "../content/balance";
@@ -24,7 +25,11 @@ function act3Sim(mutate?: (s: GameState) => void): Simulation {
 
 describe("Krypta", () => {
   it("Gefallene liefern Seelen", () => {
-    const sim = act3Sim((s) => (s.warroom.fallen = 100));
+    // Im Sommer wirkt keine Jahreszeit auf Seelen.
+    const sim = act3Sim((s) => {
+      s.warroom.fallen = 100;
+      s.stats.playSeconds = SEASON_SECONDS;
+    });
     expect(sim.rates.souls.toNumber()).toBeCloseTo(100 * FALLEN_SOUL_RATE);
     sim.tick(10);
     expect(sim.view.resources.souls.toNumber()).toBeCloseTo(100 * FALLEN_SOUL_RATE * 10);

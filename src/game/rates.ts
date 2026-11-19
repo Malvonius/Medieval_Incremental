@@ -40,6 +40,7 @@ import { achievementMultiplier } from "./achievements";
 import { CHALLENGES, CHALLENGE_IDS, DECISIONS, DECISION_IDS, MEMORY_BONUS, SYNERGIES } from "../content/depth";
 import { FACTIONS, FACTION_IDS, REPUTATION_BOON, REPUTATION_CURSE, TALENTS, TALENT_IDS } from "../content/extensions";
 import { landFactor, retinueFactor } from "./bonuses";
+import { planFactor, seasonFactor } from "./living";
 import { type GameState, aliveSoldiers } from "./state";
 
 export type Rates = Readonly<Record<ResourceId, Decimal>>;
@@ -110,7 +111,7 @@ const sumOf = <K extends EffectKind>(state: View, kind: K, pick: (e: EffectOf<K>
 };
 
 export const buildingMultiplier = (state: View, building: BuildingId): number =>
-  productOf(state, "buildingMult", (e) => (e.building === building ? e.factor : null));
+  productOf(state, "buildingMult", (e) => (e.building === building ? e.factor : null)) * planFactor(state, building);
 
 export const laborMultiplier = (state: View): number => productOf(state, "laborBonus", (e) => e.factor);
 
@@ -156,6 +157,7 @@ export function resourceFactors(state: View, resource: ResourceId): RateFactor[]
   push("Ruf", groupResourceProduct(state, resource, "faction"));
   push("Gefolge", retinueFactor(state, resource));
   push("Ländereien", landFactor(state, resource));
+  push("Jahreszeit", seasonFactor(state, resource));
   const buff = state.events.buff;
   if (buff !== null && buff.resource === resource) push("Ereignis", buff.factor);
   if (resource !== "swords") {

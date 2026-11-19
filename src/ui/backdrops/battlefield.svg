@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12060a"/><stop offset="0.75" stop-color="#5a1a12"/><stop offset="1" stop-color="#1a0c08"/></linearGradient>
+  </defs>
+  <rect width="400" height="200" fill="url(#s)"/>
+  <circle cx="300" cy="50" r="22" fill="#b8402f"/><circle cx="300" cy="50" r="40" fill="#b8402f" opacity="0.15"/>
+  <path d="M0 140h400v60H0z" fill="#1a0e0a"/>
+  <g fill="#0c0606">
+    <path d="M30 140V80h14v-8h8v8h14v-8h8v8h14v60z"/>
+    <path d="M110 140v-30h50v30z"/>
+  </g>
+  <g stroke="#0c0606" stroke-width="2">
+
+  </g>
+  <g fill="#0c0606">
+    <path d="M220 160l4-26 4 26zM240 162l4-28 4 28zM260 160l4-26 4 26zM280 163l4-30 4 30zM300 160l4-26 4 26zM320 162l4-28 4 28zM340 160l4-26 4 26z"/>
+    <path d="M226 110v50M246 106v56M266 110v50M286 102v61M306 110v50M326 106v56M346 110v50" stroke="#0c0606" stroke-width="1.5"/>
+  </g>
+  <g stroke="#d8c8a0" stroke-width="1" opacity="0.6"><path d="M90 90l40-14M96 100l42-10M88 80l40-18"/></g>
+  <g fill="#e8e0d0" opacity="0.6"><circle cx="50" cy="20" r="0.8"/><circle cx="160" cy="30" r="0.8"/><circle cx="210" cy="14" r="0.8"/></g>
+</svg>

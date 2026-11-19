@@ -1,8 +1,17 @@
+import { QUESTS } from "../content/living";
 /** Englische Spieltexte, nach ID. Fehlende Einträge fallen automatisch auf Deutsch zurück. */
 type Named = { readonly name: string; readonly description: string };
 type Story = { readonly title: string; readonly text: readonly string[] };
 
+/** Geschichten der Gefolgsaufträge; die Knoten-IDs bildet der Controller als quest_<person>_<schritt>. */
+const QUEST_STORY_EN: Readonly<Record<string, Story>> = Object.fromEntries(
+  (Object.keys(QUESTS) as (keyof typeof QUESTS)[]).flatMap((id) =>
+    QUESTS[id].map((step, i) => [`quest_${id}_${i}`, { title: step.title.en, text: step.story.map((p) => p.en) }] as const),
+  ),
+);
+
 export const STORY_EN: Readonly<Record<string, Story>> = {
+  ...QUEST_STORY_EN,
   a1_inheritance: { title: "The Inheritance", text: ["The letter bears your uncle's seal – broken, as if someone had read it before you.", "“Vhal is yours now,” it says. Nothing more. No greeting, no warning.", "When you reach the castle you find charred beams, a dry well and a dozen peasants staring at you like a ghost. The plague took everything from them. Except their tax debts."] },
   a1_first_serfs: { title: "Hands in the Mud", text: ["Ten serfs now work your fields. They work in silence.", "At night you hear them whisper. About your uncle. About the fire. About what remained in the chapel."] },
   a1_smith: { title: "The Masterless Smith", text: ["A giant with burnt arms knocks at the gate. He calls himself Brannoc and says he served your uncle.", "“The forge still stands,” he says. “Give me iron and I'll give you blades. You will need them, my lord. Soon.”"] },
@@ -153,14 +162,17 @@ export const ENDINGS_EN: Readonly<Record<string, Named>> = {
 };
 
 export const EVENTS_EN: Readonly<Record<string, { title: string; text: string; choices: readonly string[] }>> = {
+  plague_wave: { title: "The Plague Wave", text: "There was much praying and little airing. Now all of Vhal coughs, and the barber has doubled his prices.", choices: ["Close the city gates (−35 % gold)", "Keep praying (gold ×0.4 for 10 min, church +10)"] },
+  preacher: { title: "The Preacher Returns", text: "One of the pilgrims you turned away stands at the gate again. He now wears a cowl, carries a staff and a great deal of resentment. A hundred followers stand behind him.", choices: ["Let him preach (+20 min of faith, folk +10)", "Chase him off (church −15, folk −10)"] },
+  raid_return: { title: "The Riders Return", text: "The riders without crests noticed that nobody pursued them. They are back, this time with friends.", choices: ["Sally forth (−20 % soldiers, +8 prisoners)", "Pay the ransom (−25 % gold)"] },
   border: { title: "Trouble at the Border", text: "A neighbour claims your new field has always belonged to his grandmother. The grandmother has been dead for forty years, but she is very quarrelsome.", choices: ["Pay him off (−10 % gold, nobility +10)", "Chase him off (−5 % soldiers, folk +10, nobility −10)"] },
   tithe: { title: "The Tithe", text: "A messenger of the diocese demands the tithe. He has a list, a donkey and astonishingly little humour.", choices: ["Pay (−10 % faith, church +15)", "Confiscate the donkey (folk +10, church −15)"] },
   harvest: { title: "A Good Harvest", text: "For the first time since the plague the ears bend with grain. The peasants dare to smile.", choices: ["Hold a feast (gold ×2 for 5 min)", "Store everything (+5 min of gold production)"] },
-  plague: { title: "The Plague Returns", text: "In the huts by the river the children cough blood. The old ones cross themselves.", choices: ["Quarantine (−20 % gold)", "Pray and hope (gold ×0.5 for 5 min)"] },
+  plague: { title: "The Plague Returns", text: "In the huts by the river the children cough blood. The old ones cross themselves.", choices: ["Quarantine (−20 % gold)", "Pray and hope (gold ×0.5 for 5 min – the plague may return)"] },
   merchant: { title: "A Travelling Merchant", text: "He sells iron from the north. He doesn't ask what for. You don't ask where from.", choices: ["Buy (−10 % gold, +10 min of iron)", "Decline"] },
-  raid: { title: "Raid by Night", text: "Riders without crests burn down a barn and vanish into the Black Forest.", choices: ["Pursue (−10 % soldiers, +3 prisoners)", "Hold the walls (−15 % gold)"] },
+  raid: { title: "Raid by Night", text: "Riders without crests burn down a barn and vanish into the Black Forest.", choices: ["Pursue (−10 % soldiers, +3 prisoners)", "Hold the walls (−15 % gold – they may come back)"] },
   wisp: { title: "A Light in the Crypt", text: "Among the bones dances a light that does not belong with the others. It wants you to follow.", choices: ["Follow it (+5 min of souls)", "Seal the crypt (souls ×2 for 10 min)"] },
-  pilgrims: { title: "Pilgrims at the Gate", text: "They heard of the sermon. They came barefoot from Grauweiler.", choices: ["Take them in (+10 min of faith)", "Turn them away (+2 min of gold production)"] },
+  pilgrims: { title: "Pilgrims at the Gate", text: "They heard of the sermon. They came barefoot from Grauweiler.", choices: ["Take them in (+10 min of faith)", "Turn them away (+2 min of gold production – pilgrims don't forget)"] },
 };
 
 export const CHALLENGES_EN: Readonly<Record<string, { name: string; description: string; rewardText: string }>> = {

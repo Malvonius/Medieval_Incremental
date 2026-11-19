@@ -12,7 +12,9 @@ export type EventEffect =
   | { readonly kind: "prisoners"; readonly amount: number }
   | { readonly kind: "loseSoldiers"; readonly fraction: number }
   | { readonly kind: "buff"; readonly resource: ResourceId; readonly factor: number; readonly seconds: number }
-  | { readonly kind: "reputation"; readonly deltas: Readonly<Partial<Record<FactionId, number>>> };
+  | { readonly kind: "reputation"; readonly deltas: Readonly<Partial<Record<FactionId, number>>> }
+  /** Mehrstufige Ereignisse: plant ein Folgeereignis nach `seconds` Spielzeit. */
+  | { readonly kind: "followUp"; readonly event: string; readonly seconds: number };
 
 export interface EventChoice {
   readonly label: string;
@@ -58,13 +60,43 @@ export const EVENTS = {
       { label: "Alles einlagern (+5 min Goldproduktion)", effects: [{ kind: "gainSeconds", resource: "gold", seconds: 300 }] },
     ],
   },
+  plague_wave: {
+    title: "Die Seuchenwelle",
+    text: "Gebetet wurde viel, gelüftet wenig. Jetzt hustet ganz Vhal, und der Bader hat die Preise verdoppelt.",
+    condition: () => false,
+    choices: [
+      { label: "Die Stadttore schließen (−35 % Gold)", effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.35 }] },
+      { label: "Weiterbeten (Gold ×0,4 für 10 min, Kirche +10)", effects: [{ kind: "buff", resource: "gold", factor: 0.4, seconds: 600 }, { kind: "reputation", deltas: { church: 10 } }] },
+    ],
+  },
+  preacher: {
+    title: "Der Prediger kehrt zurück",
+    text: "Einer der Pilger, die du abgewiesen hast, steht wieder am Tor. Er trägt jetzt eine Kutte, einen Stab und sehr viel Groll. Hinter ihm stehen hundert Anhänger.",
+    condition: () => false,
+    choices: [
+      { label: "Ihn predigen lassen (+20 min Glauben, Volk +10)", effects: [{ kind: "gainSeconds", resource: "faith", seconds: 1200 }, { kind: "reputation", deltas: { people: 10 } }] },
+      { label: "Ihn verjagen (Kirche −15, Volk −10)", effects: [{ kind: "reputation", deltas: { church: -15, people: -10 } }] },
+    ],
+  },
+  raid_return: {
+    title: "Die Reiter kehren zurück",
+    text: "Die Reiter ohne Wappen haben bemerkt, dass niemand sie verfolgt hat. Sie sind wieder da, diesmal mit Freunden.",
+    condition: () => false,
+    choices: [
+      { label: "Ausfall wagen (−20 % Soldaten, +8 Gefangene)", effects: [{ kind: "loseSoldiers", fraction: 0.2 }, { kind: "prisoners", amount: 8 }] },
+      { label: "Lösegeld zahlen (−25 % Gold)", effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.25 }] },
+    ],
+  },
   plague: {
     title: "Die Pest kehrt zurück",
     text: "In den Hütten am Fluss husten die Kinder Blut. Die Alten schlagen Kreuze, der Bader schlägt Rechnungen.",
     condition: (s) => s.buildings.serf >= 20,
     choices: [
       { label: "Quarantäne (−20 % Gold)", effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.2 }] },
-      { label: "Beten und hoffen (Gold ×0,5 für 5 min)", effects: [{ kind: "buff", resource: "gold", factor: 0.5, seconds: 300 }] },
+      {
+        label: "Beten und hoffen (Gold ×0,5 für 5 min – die Seuche könnte wiederkommen)",
+        effects: [{ kind: "buff", resource: "gold", factor: 0.5, seconds: 300 }, { kind: "followUp", event: "plague_wave", seconds: 900 }],
+      },
     ],
   },
   merchant: {
@@ -82,7 +114,10 @@ export const EVENTS = {
     condition: (s) => s.tiles.warroom && s.warroom.soldiers >= 10,
     choices: [
       { label: "Verfolgen (−10 % Soldaten, +3 Gefangene)", effects: [{ kind: "loseSoldiers", fraction: 0.1 }, { kind: "prisoners", amount: 3 }] },
-      { label: "Die Mauern halten (−15 % Gold)", effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.15 }] },
+      {
+        label: "Die Mauern halten (−15 % Gold – sie kommen vielleicht wieder)",
+        effects: [{ kind: "loseFraction", resource: "gold", fraction: 0.15 }, { kind: "followUp", event: "raid_return", seconds: 1200 }],
+      },
     ],
   },
   wisp: {
@@ -100,7 +135,10 @@ export const EVENTS = {
     condition: (s) => s.tiles.chapel,
     choices: [
       { label: "Aufnehmen (+10 min Glauben)", effects: [{ kind: "gainSeconds", resource: "faith", seconds: 600 }] },
-      { label: "Abweisen (+2 min Goldproduktion)", effects: [{ kind: "gainSeconds", resource: "gold", seconds: 120 }] },
+      {
+        label: "Abweisen (+2 min Goldproduktion – Pilger vergessen nicht)",
+        effects: [{ kind: "gainSeconds", resource: "gold", seconds: 120 }, { kind: "followUp", event: "preacher", seconds: 1500 }],
+      },
     ],
   },
 } as const satisfies Record<string, EventDef>;

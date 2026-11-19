@@ -15,6 +15,8 @@
   import Scene from "./Scene.svelte";
   import Heraldry from "./Heraldry.svelte";
   import TimelapseOverlay from "./TimelapseOverlay.svelte";
+  import FloatLayer from "./FloatLayer.svelte";
+  import { flash } from "./fx";
   import { settings } from "../app/settings";
   import { startGamepad } from "../app/gamepad";
 
@@ -26,6 +28,15 @@
   const storyQueue = $derived(game.storyQueue);
   const blocking = $derived($storyQueue.length > 0 || $snapshot.state.events.pending !== null || decisionOpen($snapshot.state, "trust"));
   $effect(() => audio.setMuffled(active === "crypt"));
+
+  // Meilensteine (Erfolge, neue Kapitel) bekommen einen Lichtblitz.
+  const notice = $derived(game.notice);
+  $effect(() => {
+    if ($notice?.kind === "achievement") flash();
+  });
+  $effect(() => {
+    if ($storyQueue.length > 0) flash();
+  });
 
   $effect(() => startGamepad(() => game.dispatch({ type: "collect" })));
 
@@ -95,7 +106,7 @@
     <ResourceBar snap={$snapshot} />
   </header>
 
-  <Scene {game} />
+  <Scene {game} onselect={(id) => { if ($snapshot.state.tiles[id]) active = id; }} />
 
   <main class="layout">
     <nav class="menu" aria-label={$tx("Orte der Burg")}>
@@ -120,6 +131,7 @@
 <ChoiceDialog {game} />
 <NoticeToast {game} />
 <TimelapseOverlay {game} />
+<FloatLayer />
 
 <style>
   .skip {

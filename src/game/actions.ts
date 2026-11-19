@@ -37,6 +37,7 @@ import {
   upgradeStation,
 } from "./extensions";
 import { DECISIONS } from "../content/depth";
+import { buyOffer, haggle, placeDistrict, startQuest } from "./living";
 import { startResearch } from "./alchemy";
 import { forceLabor, interrogate } from "./dungeon";
 import { launchExpedition, recruit } from "./warroom";
@@ -98,7 +99,12 @@ export type Action =
   | { readonly type: "equipRetainer"; readonly retainer: RetainerId }
   | { readonly type: "assignRetainer"; readonly retainer: RetainerId; readonly office: OfficeId | null }
   | { readonly type: "conquer"; readonly index: number }
-  | { readonly type: "upgradeStation"; readonly station: StationId };
+  | { readonly type: "upgradeStation"; readonly station: StationId }
+  | { readonly type: "pokeRaven" }
+  | { readonly type: "buyOffer"; readonly index: number }
+  | { readonly type: "haggle"; readonly index: number }
+  | { readonly type: "placeDistrict"; readonly index: number; readonly building: BuildingId | null }
+  | { readonly type: "startQuest"; readonly retainer: RetainerId };
 
 export function resolveBuyAmount(state: DeepReadonly<GameState>, building: BuildingId, amount: BuyAmount): number {
   const def = BUILDINGS[building];
@@ -138,8 +144,8 @@ function collect(state: GameState): Result {
   return OK;
 }
 
-/** resolveEvent braucht die aktuellen Raten und wird deshalb in der Simulation behandelt. */
-export function applyAction(state: GameState, action: Exclude<Action, { type: "resolveEvent" }>): Result {
+/** resolveEvent und pokeRaven brauchen die aktuellen Raten und werden deshalb in der Simulation behandelt. */
+export function applyAction(state: GameState, action: Exclude<Action, { type: "resolveEvent" | "pokeRaven" }>): Result {
   switch (action.type) {
     case "collect":
       return collect(state);
@@ -207,6 +213,14 @@ export function applyAction(state: GameState, action: Exclude<Action, { type: "r
       return conquer(state, action.index);
     case "upgradeStation":
       return upgradeStation(state, action.station);
+    case "buyOffer":
+      return buyOffer(state, action.index);
+    case "haggle":
+      return haggle(state, action.index);
+    case "placeDistrict":
+      return placeDistrict(state, action.index, action.building);
+    case "startQuest":
+      return startQuest(state, action.retainer);
     default: {
       const unreachable: never = action;
       throw new Error(`Unbekannte Aktion: ${JSON.stringify(unreachable)}`);

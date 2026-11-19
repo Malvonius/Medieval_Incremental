@@ -6,7 +6,8 @@
     import { BUILDINGS, type BuildingId } from "../../content/balance";
   import { type BuyAmount, resolveBuyAmount } from "../../game/actions";
   import { buildingCost, unitRate } from "../../game/rates";
-    import { formatNumber } from "../format";
+  import { formatNumber } from "../format";
+  import { floatAt } from "../fx";
 
   let {
     game,
@@ -44,7 +45,10 @@
   <button
     class="btn buy"
     disabled={!affordable}
-    onclick={() => game.dispatch({ type: "buyBuilding", building, amount })}
+    onclick={(e) => {
+      const target = e.currentTarget;
+      if (game.dispatch({ type: "buyBuilding", building, amount }).ok) floatAt(target, `+${shown} ${$loc.building(building).name}`, "buy");
+    }}
   >
     <span>{$tx("Kaufen")} ×{shown}</span>
     <span class="cost num">{formatNumber(cost)} {$t(`res.${def.costResource}`)}</span>

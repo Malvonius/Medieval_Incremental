@@ -37,6 +37,7 @@ import {
   TALENT_IDS,
   type TalentId,
 } from "../content/extensions";
+import { MERCHANT_FIRST_SECONDS, type OfferKind, PLAN_SIZE, RAVEN_GIFT_SECONDS } from "../content/living";
 import { FLAG_IDS, type FlagId, RESOURCE_IDS, type ResourceId, TILE_IDS, type TileId } from "../content/ids";
 
 export const SAVE_VERSION = 1;
@@ -99,6 +100,24 @@ export interface EventState {
   /** Sekunden bis zum nächsten Ereigniswurf. */
   timer: number;
   buff: { resource: ResourceId; factor: number; remaining: number } | null;
+  /** Geplante Folgeereignisse (Spielsekunde, ab der sie anstehen). */
+  followUps: { id: EventId; at: number }[];
+}
+
+export type OfferMood = "new" | "deal" | "firm" | "offended" | "sold";
+
+export interface MerchantOffer {
+  kind: OfferKind;
+  price: Decimal;
+  amount: Decimal;
+  mood: OfferMood;
+}
+
+export interface MerchantState {
+  /** Sekunden bis zur Ankunft (abwesend) bzw. bis zur Abreise (anwesend). */
+  timer: number;
+  present: boolean;
+  offers: MerchantOffer[];
 }
 
 /** Bleibt über Neues Spiel+ hinweg erhalten. */
@@ -139,6 +158,12 @@ export interface RetainerState {
   level: number;
   office: OfficeId | null;
   equipped: boolean;
+  /** 0–100; fällt sie auf 0, verlässt die Person Vhal. */
+  loyalty: number;
+  /** Erfüllte Auftragsschritte. */
+  quest: number;
+  /** Restsekunden des laufenden Auftrags, oder null. */
+  questRemaining: number | null;
 }
 
 export interface WorkshopState {
@@ -181,6 +206,10 @@ export interface GameState {
   /** Indizes eroberter Kartenfelder, die Burg zuerst. */
   map: { owned: number[] };
   workshop: WorkshopState;
+  raven: { timer: number; gift: boolean; pokes: number };
+  merchant: MerchantState;
+  /** Burgplan: je Feld ein Gebäudeviertel oder leer. */
+  plan: (BuildingId | null)[];
   stats: { playSeconds: number; clicks: number; eventsResolved: number; runStart: number };
   /** Epoch-Millisekunden des letzten Speicherns – Basis für Offline-Fortschritt. */
   lastSeen: number;
@@ -206,7 +235,7 @@ export function createInitialState(now: number): GameState {
     achievements: recordFrom(ACHIEVEMENT_IDS, () => false),
     // XOR liefert in JS int32 – erst >>> 0 macht daraus einen nicht-negativen uint32.
     rng: ((now >>> 0) ^ 0x9e3779b9) >>> 0,
-    events: { pending: null, timer: 240, buff: null },
+    events: { pending: null, timer: 240, buff: null, followUps: [] },
     automation: { enabled: true, timer: 0 },
     meta: {
       ngPlus: 0,
@@ -225,6 +254,9 @@ export function createInitialState(now: number): GameState {
     retinue: recordFrom(RETAINER_IDS, () => null),
     map: { owned: [MAP_CENTER] },
     workshop: { levels: recordFrom(STATION_IDS, () => 0), ore: 0, ingots: 0, blades: 0 },
+    raven: { timer: RAVEN_GIFT_SECONDS, gift: false, pokes: 0 },
+    merchant: { timer: MERCHANT_FIRST_SECONDS, present: false, offers: [] },
+    plan: Array.from({ length: PLAN_SIZE }, () => null),
     stats: { playSeconds: 0, clicks: 0, eventsResolved: 0, runStart: 0 },
     lastSeen: now,
   };

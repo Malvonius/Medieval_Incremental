@@ -3,6 +3,7 @@
   import type { TileId } from "../content/ids";
   import { hasAffordable } from "../game/affordable";
   import { TILES } from "./tiles/registry";
+  import TileIcon from "./TileIcon.svelte";
   import { t, tx } from "../i18n";
 
   let {
@@ -48,7 +49,11 @@
         title={unlocked ? $t(`tile.${tile.id}`) : $tx(tile.sealedHint)}
         onclick={() => onselect(tile.id)}
       >
-        <span class="glyph" aria-hidden="true">{unlocked ? tile.glyph : "?"}</span>
+        {#if unlocked}
+          <TileIcon tile={tile.id} />
+        {:else}
+          <span class="glyph" aria-hidden="true">?</span>
+        {/if}
         <span class="label">{unlocked ? $t(`tile.${tile.id}`) : $t("tile.sealed")}</span>
       </button>
     </li>

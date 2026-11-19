@@ -1,7 +1,9 @@
-import { Decimal, isFiniteDecimal } from "../core/decimal";
+import { Decimal, ZERO, isFiniteDecimal } from "../core/decimal";
 import { SaveError } from "../core/save";
 import type { DeepReadonly } from "../core/types";
 import {
+  BUILDING_IDS,
+  type BuildingId,
   ENDING_IDS,
   EXPEDITION_IDS,
   WAVES,
@@ -11,15 +13,19 @@ import {
   type RecipeId,
   type ResearchId,
 } from "../content/balance";
-import { CHALLENGE_IDS, EVENT_IDS } from "../content/depth";
+import { CHALLENGE_IDS, EVENT_IDS, type EventId } from "../content/depth";
 import { RESOURCE_IDS, type ResourceId } from "../content/ids";
+import { LOYALTY_MAX, LOYALTY_START, OFFER_KINDS, type OfferKind, PLAN_SIZE } from "../content/living";
 import { MAP, MAP_CENTER, OFFICE_IDS, type OfficeId, REPUTATION_MAX, REPUTATION_MIN, RETAINER_MAX_LEVEL } from "../content/extensions";
 import {
   type ActiveExpedition,
   type AlchemyState,
   type EventState,
   type GameState,
+  type MerchantOffer,
+  type MerchantState,
   type MetaState,
+  type OfferMood,
   RUN_LOG_CAP,
   type RetainerState,
   type RunKind,
@@ -70,7 +76,12 @@ export function toPlain(state: DeepReadonly<GameState>) {
     story: { completed: [...state.story.completed], completedAt: state.story.completed.map((_, i) => state.story.completedAt[i] ?? 0) },
     achievements: { ...state.achievements },
     rng: state.rng,
-    events: { pending: state.events.pending, timer: state.events.timer, buff: state.events.buff === null ? null : { ...state.events.buff } },
+    events: {
+      pending: state.events.pending,
+      timer: state.events.timer,
+      buff: state.events.buff === null ? null : { ...state.events.buff },
+      followUps: state.events.followUps.map((f) => ({ ...f })),
+    },
     automation: { ...state.automation },
     meta: {
       ...state.meta,
@@ -85,6 +96,13 @@ export function toPlain(state: DeepReadonly<GameState>) {
     retinue: Object.fromEntries(Object.entries(state.retinue).map(([k, v]) => [k, v === null ? null : { ...v }])),
     map: { owned: [...state.map.owned] },
     workshop: { ...state.workshop, levels: { ...state.workshop.levels } },
+    raven: { ...state.raven },
+    merchant: {
+      timer: state.merchant.timer,
+      present: state.merchant.present,
+      offers: state.merchant.offers.map((o) => ({ kind: o.kind, price: o.price.toString(), amount: o.amount.toString(), mood: o.mood })),
+    },
+    plan: [...state.plan],
     stats: { ...state.stats },
     lastSeen: state.lastSeen,
   };
@@ -141,6 +159,7 @@ function readRecord<K extends string, V>(
 }
 
 const RECIPE_SET: ReadonlySet<string> = new Set(RECIPE_IDS);
+const BUILDING_SET: ReadonlySet<string> = new Set(BUILDING_IDS);
 const EXPEDITION_SET: ReadonlySet<string> = new Set(EXPEDITION_IDS);
 const RESEARCH_SET: ReadonlySet<string> = new Set(RESEARCH_IDS);
 
@@ -178,7 +197,13 @@ function readEvents(source: Record<string, unknown>, defaults: EventState): Even
       remaining: readNumber(rawBuff["remaining"], "events.buff.remaining", 0),
     };
   }
-  return { pending: pending as EventState["pending"], timer: readNumber(source["timer"], "events.timer", defaults.timer), buff };
+  const rawFollow = source["followUps"] ?? [];
+  if (!Array.isArray(rawFollow)) throw new SaveError('Feld "events.followUps" muss eine Liste sein.');
+  const followUps = rawFollow.map((f, i) => {
+    if (!isObject(f) || typeof f["id"] !== "string" || !EVENT_SET.has(f["id"])) throw new SaveError(`Feld "events.followUps[${i}]" ist ungültig.`);
+    return { id: f["id"] as EventId, at: readNumber(f["at"], `events.followUps[${i}].at`, 0) };
+  });
+  return { pending: pending as EventState["pending"], timer: readNumber(source["timer"], "events.timer", defaults.timer), buff, followUps };
 }
 
 function readMeta(source: Record<string, unknown>, defaults: MetaState): MetaState {
@@ -223,7 +248,16 @@ function readRetinue(source: Record<string, unknown>, defaults: GameState["retin
     if (office !== null && (typeof office !== "string" || !OFFICE_SET.has(office))) throw new SaveError(`Feld "${path}.office" ist unbekannt.`);
     const level = readNumber(value["level"], `${path}.level`, 1, { integer: true });
     if (level < 1 || level > RETAINER_MAX_LEVEL) throw new SaveError(`Feld "${path}.level" ist ungültig.`);
-    return { level, office: office as OfficeId | null, equipped: readBoolean(value["equipped"], `${path}.equipped`, false) };
+    const quest = readNumber(value["quest"], `${path}.quest`, 0, { integer: true });
+    const rawRemaining = value["questRemaining"];
+    return {
+      level,
+      office: office as OfficeId | null,
+      equipped: readBoolean(value["equipped"], `${path}.equipped`, false),
+      loyalty: Math.min(LOYALTY_MAX, readNumber(value["loyalty"], `${path}.loyalty`, LOYALTY_START)),
+      quest,
+      questRemaining: rawRemaining === undefined || rawRemaining === null ? null : readNumber(rawRemaining, `${path}.questRemaining`, 0),
+    };
   });
 }
 
@@ -259,6 +293,44 @@ function readFactions(source: Record<string, unknown>, defaults: GameState["fact
     }),
     courted: readRecord(section(source, "courted"), defaults.courted, "factions.courted", (v, p, f) => readNumber(v, p, f, { integer: true })),
   };
+}
+
+const OFFER_SET: ReadonlySet<string> = new Set(OFFER_KINDS);
+const MOODS: ReadonlySet<string> = new Set<OfferMood>(["new", "deal", "firm", "offended", "sold"]);
+
+function readMerchant(source: Record<string, unknown>, defaults: MerchantState): MerchantState {
+  const raw = source["offers"] ?? [];
+  if (!Array.isArray(raw)) throw new SaveError('Feld "merchant.offers" muss eine Liste sein.');
+  const offers = raw.map((o, i): MerchantOffer => {
+    const path = `merchant.offers[${i}]`;
+    if (!isObject(o) || typeof o["kind"] !== "string" || !OFFER_SET.has(o["kind"])) throw new SaveError(`Feld "${path}.kind" ist ungültig.`);
+    if (typeof o["mood"] !== "string" || !MOODS.has(o["mood"])) throw new SaveError(`Feld "${path}.mood" ist ungültig.`);
+    return {
+      kind: o["kind"] as OfferKind,
+      price: readDecimal(o["price"], `${path}.price`, ZERO),
+      amount: readDecimal(o["amount"], `${path}.amount`, ZERO),
+      mood: o["mood"] as OfferMood,
+    };
+  });
+  return {
+    timer: readNumber(source["timer"], "merchant.timer", defaults.timer),
+    present: readBoolean(source["present"], "merchant.present", false),
+    offers,
+  };
+}
+
+function readPlan(value: unknown): GameState["plan"] {
+  const plan: GameState["plan"] = Array.from({ length: PLAN_SIZE }, () => null);
+  if (value === undefined) return plan;
+  if (!Array.isArray(value)) throw new SaveError('Feld "plan" muss eine Liste sein.');
+  const seen = new Set<string>();
+  value.slice(0, PLAN_SIZE).forEach((cell, i) => {
+    if (cell === null) return;
+    if (typeof cell !== "string" || !BUILDING_SET.has(cell) || seen.has(cell)) throw new SaveError(`Feld "plan[${i}]" ist ungültig.`);
+    seen.add(cell);
+    plan[i] = cell as BuildingId;
+  });
+  return plan;
 }
 
 function readWorkshop(source: Record<string, unknown>, defaults: GameState["workshop"]): GameState["workshop"] {
@@ -386,6 +458,13 @@ export function fromPlain(data: unknown, now: number): GameState {
     retinue: readRetinue(section(data, "retinue"), d.retinue),
     map: readMap(section(data, "map")),
     workshop: readWorkshop(section(data, "workshop"), d.workshop),
+    raven: {
+      timer: readNumber(section(data, "raven")["timer"], "raven.timer", d.raven.timer),
+      gift: readBoolean(section(data, "raven")["gift"], "raven.gift", false),
+      pokes: readCount(section(data, "raven")["pokes"], "raven.pokes", 0),
+    },
+    merchant: readMerchant(section(data, "merchant"), d.merchant),
+    plan: readPlan(data["plan"]),
     stats: {
       playSeconds: readNumber(stats["playSeconds"], "stats.playSeconds", 0),
       clicks: readCount(stats["clicks"], "stats.clicks", 0),

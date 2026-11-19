@@ -2,6 +2,7 @@
   import { tx } from "../i18n";
   import { loc } from "../i18n/content";
   import { PORTRAITS, portraitFor } from "./portraits";
+  import { backdropFor } from "./backdrops";
   import type { GameController } from "../app/controller";
   import { locale } from "../i18n";
   import { settings } from "../app/settings";
@@ -47,7 +48,7 @@
 
 {#if node}
   <div class="backdrop">
-    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="story-title">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="story-title" style:--backdrop="url({backdropFor(node.id, node.act)})">
       <p class="act">{$tx("Akt")} {ACT_NUMERALS[node.act - 1]}</p>
       <h2 id="story-title">{$loc.story(node).title}</h2>
       {#if portrait}
@@ -82,7 +83,11 @@
     width: 100%;
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
-    background: linear-gradient(180deg, #221b14 0%, #15110d 100%);
+    /* Gemalter Schauplatz oben, nach unten in Pergamentdunkel auslaufend – der Text bleibt lesbar. */
+    background:
+      linear-gradient(180deg, rgb(21 17 13 / 0.35) 0%, rgb(21 17 13 / 0.85) 150px, #15110d 210px),
+      var(--backdrop, none) top center / 100% 210px no-repeat,
+      #15110d;
     border: 1px solid var(--border-strong);
     border-radius: var(--radius);
     outline: 1px solid rgb(212 165 74 / 0.18);

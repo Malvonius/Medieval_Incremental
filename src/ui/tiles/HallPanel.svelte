@@ -18,7 +18,9 @@
   } from "../../content/extensions";
   import { courtCost, levelCost } from "../../game/extensions";
   import { retinueFactor } from "../../game/bonuses";
-  import { formatFactor, formatNumber } from "../format";
+  import { formatDuration, formatFactor, formatNumber } from "../format";
+  import { QUESTS, RIVALS } from "../../content/living";
+  import { t } from "../../i18n";
 
   let { game }: { game: GameController } = $props();
 
@@ -34,6 +36,7 @@
 <section class="panel-section">
   <h3 class="section-title">{$tx("Gefolge")}</h3>
   <p class="hint">{$tx("Jede Stufe im Amt bringt +4 %, im Wunschamt doppelt. Ein Schwert an der Seite macht alles noch einmal anderthalbmal so gut.")}</p>
+  <p class="hint">{$tx("Wer befördert, ausgerüstet oder ins Amt gesetzt wird, wird treuer – sein Rivale nicht. Fällt die Treue auf null, geht die Person. Aufträge bringen Treue, eine Stufe und eine Geschichte.")}</p>
   <ul class="list">
     {#each RETAINER_IDS as id (id)}
       {@const def = RETAINERS[id]}
@@ -65,6 +68,11 @@
                 {$tx("Befördern")} <span class="num">{formatNumber(cost)}</span>
               </button>
             {/if}
+            <span class="loyalty" title={$tx("Treue")}>
+              <span class="sr-only">{$tx("Treue")}</span>
+              <span class="track"><span class="fill" class:low={r.loyalty < 25} style:width="{r.loyalty}%"></span></span>
+              <span class="num">{Math.round(r.loyalty)}</span>
+            </span>
             {#if !r.equipped}
               <button class="btn" disabled={snap.state.resources.swords.lt(RETAINER_EQUIP_SWORDS)} onclick={() => game.dispatch({ type: "equipRetainer", retainer: id })}>
                 {$tx("Ausrüsten")} <span class="num">{RETAINER_EQUIP_SWORDS}</span> ⚔
@@ -73,6 +81,27 @@
               <span class="tag">⚔ {$tx("ausgerüstet")}</span>
             {/if}
           </div>
+          <p class="rival">{$tx("Kann {name} nicht ausstehen.", { name: RETAINERS[RIVALS[id]].name })}</p>
+          {@const step = QUESTS[id][r.quest]}
+          {#if step}
+            <div class="quest">
+              <span class="qtitle">{$bi(step.title)}</span>
+              <span class="ask">{$bi(step.ask)}</span>
+              {#if r.questRemaining !== null}
+                <span class="num running">{$tx("Unterwegs – noch {time}", { time: formatDuration(r.questRemaining) })}</span>
+              {:else}
+                <button
+                  class="btn"
+                  disabled={snap.state.resources[step.cost.resource].lt(step.cost.amount)}
+                  onclick={() => game.dispatch({ type: "startQuest", retainer: id })}
+                >
+                  {$tx("Auftrag geben")} <span class="num">{formatNumber(step.cost.amount)}</span> {$t(`res.${step.cost.resource}`)} · {formatDuration(step.seconds)}
+                </button>
+              {/if}
+            </div>
+          {:else}
+            <p class="rival">✓ {$tx("Alle Aufträge erfüllt.")}</p>
+          {/if}
         {/if}
       </li>
     {/each}
@@ -172,6 +201,61 @@
     border: 1px solid var(--border-strong);
     border-radius: 999px;
     color: var(--gold);
+  }
+
+  .loyalty {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+  }
+
+  .loyalty .track {
+    width: 60px;
+    height: 6px;
+    background: var(--surface);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .loyalty .fill {
+    display: block;
+    height: 100%;
+    background: var(--moss);
+  }
+
+  .loyalty .fill.low {
+    background: var(--blood-bright);
+  }
+
+  .rival {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .quest {
+    display: grid;
+    gap: 4px;
+    padding: 6px 8px;
+    border-left: 2px solid var(--gold);
+    background: rgb(0 0 0 / 0.2);
+  }
+
+  .qtitle {
+    font-family: var(--font-display);
+    color: var(--gold);
+  }
+
+  .ask {
+    font-family: var(--font-story);
+    font-size: 0.9rem;
+  }
+
+  .running {
+    color: var(--ember);
+    font-size: 0.85rem;
   }
 
   .offices {
